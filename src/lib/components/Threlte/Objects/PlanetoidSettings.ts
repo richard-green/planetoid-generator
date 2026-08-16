@@ -173,6 +173,53 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   triangleDetail: 'Triangle detail',
 }
 
+export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
+  seed: '--start-seed',
+  colorScale: '--color-scale',
+  tintShadowFloor: '--tint-shadow-floor',
+  swirliness: '--swirliness',
+  craterCount: '--crater-count',
+  craterStrength: '--crater-strength',
+  craterColorStrength: '--crater-color',
+  volcanoCount: '--volcano-count',
+  volcanoScale: '--volcano-scale',
+  volcanoStrength: '--volcano-strength',
+  volcanoColorStrength: '--volcano-color',
+  ridgeColorWeight: '--ridge-color-weight',
+  riftColorWeight: '--rift-color-weight',
+  craterRayStrength: '--crater-rays',
+  craterRayVisibility: '--ray-visibility',
+  craterRayDensity: '--ray-density',
+  craterRaySharpness: '--ray-sharpness',
+  craterRayLengthPower: '--ray-length-power',
+  ridgeStrength: '--ridge-strength',
+  ridgeScale: '--ridge-scale',
+  ridgeSharpness: '--ridge-sharpness',
+  riftStrength: '--rift-strength',
+  riftScale: '--rift-scale',
+  riftWidth: '--rift-width',
+  riftSharpness: '--rift-sharpness',
+  ridgesRiftsBlend: '--ridges-rifts-blend',
+  bumpTextureSize: '--bump-tex-height',
+  colorTextureSize: '--color-tex-height',
+  bumpScale: '--bump-scale',
+  roughness: '--roughness',
+  metalness: '--metalness',
+  largeScale: '--large-scale',
+  mediumScale: '--medium-scale',
+  smallScale: '--small-scale',
+  triangleDetail: '--triangle-detail',
+}
+
+export const PlanetoidCliToggleFlags = {
+  autoRotate: '--auto-rotate',
+  showDebugMeshes: '--show-debug-meshes',
+  cratersEnabled: '--craters-enabled',
+  ridgesEnabled: '--ridges-enabled',
+  riftsEnabled: '--rifts-enabled',
+  volcanoesEnabled: '--volcanoes-enabled',
+} as const
+
 export const PlanetoidUiLabels = {
   seed: 'Seed',
   palette: 'Palette',

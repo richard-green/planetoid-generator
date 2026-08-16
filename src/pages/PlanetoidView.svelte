@@ -13,6 +13,8 @@
     DefaultPlanetoidSettings,
     MaxValues,
     MinValues,
+    PlanetoidCliFlagByRangeKey,
+    PlanetoidCliToggleFlags,
     PlanetoidUiLabels,
     type PlanetoidSettings,
   } from '../lib/components/Threlte/Objects/PlanetoidSettings'
@@ -808,6 +810,102 @@
     presetsManagerOpen = true
   }
 
+  function quoteCliValue(value: string) {
+    return JSON.stringify(value)
+  }
+
+  function toBooleanCliValue(value: boolean) {
+    return value ? 'true' : 'false'
+  }
+
+  function buildCliCommandFromPreset(
+    settings: PlanetoidSettings,
+    mode: PlanetoidViewMode,
+    toggles: {
+      cratersEnabled: boolean
+      ridgesEnabled: boolean
+      riftsEnabled: boolean
+      volcanoesEnabled: boolean
+    }
+  ) {
+    const args: string[] = [
+      '--palette',
+      quoteCliValue(settings.palette),
+      '--surface-tint',
+      quoteCliValue(settings.surfaceTint),
+      '--view-mode',
+      mode,
+    ]
+
+    var firstKeys = (Object.keys(PlanetoidCliFlagByRangeKey) as NumericControlKey[]).filter(
+      (k) => !(k in ['seed'])
+    )
+
+    for (const key of firstKeys) {
+      const flag = PlanetoidCliFlagByRangeKey[key]
+      const value = settings[key]
+      args.push(flag, String(value))
+    }
+
+    args.push(PlanetoidCliToggleFlags.autoRotate, toBooleanCliValue(settings.autoRotate))
+    args.push(PlanetoidCliToggleFlags.showDebugMeshes, toBooleanCliValue(settings.showDebugMeshes))
+    args.push(PlanetoidCliToggleFlags.cratersEnabled, toBooleanCliValue(toggles.cratersEnabled))
+    args.push(PlanetoidCliToggleFlags.ridgesEnabled, toBooleanCliValue(toggles.ridgesEnabled))
+    args.push(PlanetoidCliToggleFlags.riftsEnabled, toBooleanCliValue(toggles.riftsEnabled))
+    args.push(PlanetoidCliToggleFlags.volcanoesEnabled, toBooleanCliValue(toggles.volcanoesEnabled))
+
+    args.push(PlanetoidCliFlagByRangeKey.seed, '1')
+    args.push('--step', '1')
+    args.push('--count', '1')
+
+    return `npm run auto-generate-planetoids -- ${args.join(' ')}`
+  }
+
+  async function copyTextToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function exportCurrentPresetToCli() {
+    closePresetsMenu()
+    const command = buildCliCommandFromPreset(planetoid, sceneViewMode, {
+      cratersEnabled: effectiveCratersEnabled,
+      ridgesEnabled: effectiveRidgesEnabled,
+      riftsEnabled: effectiveRiftsEnabled,
+      volcanoesEnabled: effectiveVolcanoesEnabled,
+    })
+
+    const copied = await copyTextToClipboard(command)
+    if (copied) {
+      window.alert('CLI command copied to clipboard.')
+    } else {
+      window.prompt('Copy this CLI command:', command)
+    }
+  }
+
+  async function exportPresetToCli(preset: PlanetoidPreset) {
+    const command = buildCliCommandFromPreset(preset.settings, sceneViewMode, {
+      cratersEnabled:
+        preset.settings.enableCraters ||
+        preset.settings.craterCount > 0 ||
+        preset.settings.craterStrength > 0,
+      ridgesEnabled: preset.settings.enableRidges || preset.settings.ridgeStrength > 0,
+      riftsEnabled: preset.settings.enableRifts || preset.settings.riftStrength > 0,
+      volcanoesEnabled: preset.settings.enableVolcanoes || preset.settings.volcanoCount > 0,
+    })
+
+    const copied = await copyTextToClipboard(command)
+    if (copied) {
+      window.alert(`CLI command copied for preset: ${preset.name}`)
+    } else {
+      window.prompt(`Copy CLI command for ${preset.name}:`, command)
+    }
+  }
+
   function onWindowPointerDown(event: PointerEvent) {
     if (!presetsMenuOpen || !presetsMenuElement) return
 
@@ -1321,6 +1419,14 @@
               >
                 Manage presets
               </button>
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={exportCurrentPresetToCli}
+              >
+                Copy current as CLI command
+              </button>
             </div>
           </details>
         </div>
@@ -1648,13 +1754,22 @@
           {#each BUILTIN_PRESETS as preset (preset.id)}
             <li class="preset-row">
               <span>{preset.name}</span>
-              <button
-                type="button"
-                class="preset-row-button"
-                onclick={() => applyPresetAndCloseManager(preset)}
-              >
-                Apply
-              </button>
+              <div class="preset-row-actions">
+                <button
+                  type="button"
+                  class="preset-row-button"
+                  onclick={() => applyPresetAndCloseManager(preset)}
+                >
+                  Apply
+                </button>
+                <button
+                  type="button"
+                  class="preset-row-button"
+                  onclick={() => exportPresetToCli(preset)}
+                >
+                  CLI
+                </button>
+              </div>
             </li>
           {/each}
         </ul>
@@ -1676,6 +1791,13 @@
                     onclick={() => applyPresetAndCloseManager(preset)}
                   >
                     Apply
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-row-button"
+                    onclick={() => exportPresetToCli(preset)}
+                  >
+                    CLI
                   </button>
                   <button
                     type="button"

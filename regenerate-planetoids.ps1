@@ -55,7 +55,7 @@ function Invoke-PlanetoidBatch {
 
     $currentStartSeed = $script:StartSeed
 
-    $args = @(
+    $cliArgs = @(
         '--palette', $Palette,
         '--surface-tint', $SurfaceTint,
         '--color-scale', $ColorScale,
@@ -70,45 +70,45 @@ function Invoke-PlanetoidBatch {
         '--count', $Count
     )
 
-    if ($TintShadowFloor -ne $null) { $args += @('--tint-shadow-floor', $TintShadowFloor) }
-    if ($Swirliness -ne $null) { $args += @('--swirliness', $Swirliness) }
-    if ($CraterCount -ne $null) { $args += @('--crater-count', $CraterCount) }
-    if ($CraterStrength -ne $null) { $args += @('--crater-strength', $CraterStrength) }
-    if ($CraterColor -ne $null) { $args += @('--crater-color', $CraterColor) }
-    if ($CraterRays -ne $null) { $args += @('--crater-rays', $CraterRays) }
-    if ($RayVisibility -ne $null) { $args += @('--ray-visibility', $RayVisibility) }
-    if ($RayDensity -ne $null) { $args += @('--ray-density', $RayDensity) }
-    if ($RaySharpness -ne $null) { $args += @('--ray-sharpness', $RaySharpness) }
-    if ($RayLengthPower -ne $null) { $args += @('--ray-length-power', $RayLengthPower) }
-    if ($RidgeStrength -ne $null) { $args += @('--ridge-strength', $RidgeStrength) }
-    if ($RidgeScale -ne $null) { $args += @('--ridge-scale', $RidgeScale) }
-    if ($RidgeSharpness -ne $null) { $args += @('--ridge-sharpness', $RidgeSharpness) }
-    if ($RidgeColorWeight -ne $null) { $args += @('--ridge-color-weight', $RidgeColorWeight) }
-    if ($RiftStrength -ne $null) { $args += @('--rift-strength', $RiftStrength) }
-    if ($RiftScale -ne $null) { $args += @('--rift-scale', $RiftScale) }
-    if ($RiftWidth -ne $null) { $args += @('--rift-width', $RiftWidth) }
-    if ($RiftSharpness -ne $null) { $args += @('--rift-sharpness', $RiftSharpness) }
-    if ($RiftColorWeight -ne $null) { $args += @('--rift-color-weight', $RiftColorWeight) }
-    if ($RidgesRiftsBlend -ne $null) { $args += @('--ridges-rifts-blend', $RidgesRiftsBlend) }
-    if ($VolcanoCount -ne $null) { $args += @('--volcano-count', $VolcanoCount) }
-    if ($VolcanoScale -ne $null) { $args += @('--volcano-scale', $VolcanoScale) }
-    if ($VolcanoStrength -ne $null) { $args += @('--volcano-strength', $VolcanoStrength) }
-    if ($VolcanoColor -ne $null) { $args += @('--volcano-color', $VolcanoColor) }
-    if ($BumpTexHeight -ne $null) { $args += @('--bump-tex-height', $BumpTexHeight) }
-    if ($ColorTexHeight -ne $null) { $args += @('--color-tex-height', $ColorTexHeight) }
-    if ($ViewMode -ne "") { $args += @('--view-mode', $ViewMode) }
-    if ($Step -ne $null) { $args += @('--step', $Step) }
-    if ($AutoRotate -ne $null) { $args += @('--auto-rotate', $AutoRotate.ToString().ToLowerInvariant()) }
-    if ($ShowDebugMeshes -ne $null) { $args += @('--show-debug-meshes', $ShowDebugMeshes.ToString().ToLowerInvariant()) }
-    if ($CratersEnabled -ne $null) { $args += @('--craters-enabled', $CratersEnabled.ToString().ToLowerInvariant()) }
-    if ($RidgesEnabled -ne $null) { $args += @('--ridges-enabled', $RidgesEnabled.ToString().ToLowerInvariant()) }
-    if ($RiftsEnabled -ne $null) { $args += @('--rifts-enabled', $RiftsEnabled.ToString().ToLowerInvariant()) }
-    if ($VolcanoesEnabled -ne $null) { $args += @('--volcanoes-enabled', $VolcanoesEnabled.ToString().ToLowerInvariant()) }
-    if ($BaseUrl -ne "") { $args += @('--base-url', $BaseUrl) }
-    if ($OutputDir -ne "") { $args += @('--output-dir', $OutputDir) }
-    if ($FrameSettleMs -ne $null) { $args += @('--frame-settle-ms', $FrameSettleMs) }
+    if ($TintShadowFloor -ne $null) { $cliArgs += @('--tint-shadow-floor', $TintShadowFloor) }
+    if ($Swirliness -ne $null) { $cliArgs += @('--swirliness', $Swirliness) }
+    if ($CraterCount -ne $null) { $cliArgs += @('--crater-count', $CraterCount) }
+    if ($CraterStrength -ne $null) { $cliArgs += @('--crater-strength', $CraterStrength) }
+    if ($CraterColor -ne $null) { $cliArgs += @('--crater-color', $CraterColor) }
+    if ($CraterRays -ne $null) { $cliArgs += @('--crater-rays', $CraterRays) }
+    if ($RayVisibility -ne $null) { $cliArgs += @('--ray-visibility', $RayVisibility) }
+    if ($RayDensity -ne $null) { $cliArgs += @('--ray-density', $RayDensity) }
+    if ($RaySharpness -ne $null) { $cliArgs += @('--ray-sharpness', $RaySharpness) }
+    if ($RayLengthPower -ne $null) { $cliArgs += @('--ray-length-power', $RayLengthPower) }
+    if ($RidgeStrength -ne $null) { $cliArgs += @('--ridge-strength', $RidgeStrength) }
+    if ($RidgeScale -ne $null) { $cliArgs += @('--ridge-scale', $RidgeScale) }
+    if ($RidgeSharpness -ne $null) { $cliArgs += @('--ridge-sharpness', $RidgeSharpness) }
+    if ($RidgeColorWeight -ne $null) { $cliArgs += @('--ridge-color-weight', $RidgeColorWeight) }
+    if ($RiftStrength -ne $null) { $cliArgs += @('--rift-strength', $RiftStrength) }
+    if ($RiftScale -ne $null) { $cliArgs += @('--rift-scale', $RiftScale) }
+    if ($RiftWidth -ne $null) { $cliArgs += @('--rift-width', $RiftWidth) }
+    if ($RiftSharpness -ne $null) { $cliArgs += @('--rift-sharpness', $RiftSharpness) }
+    if ($RiftColorWeight -ne $null) { $cliArgs += @('--rift-color-weight', $RiftColorWeight) }
+    if ($RidgesRiftsBlend -ne $null) { $cliArgs += @('--ridges-rifts-blend', $RidgesRiftsBlend) }
+    if ($VolcanoCount -ne $null) { $cliArgs += @('--volcano-count', $VolcanoCount) }
+    if ($VolcanoScale -ne $null) { $cliArgs += @('--volcano-scale', $VolcanoScale) }
+    if ($VolcanoStrength -ne $null) { $cliArgs += @('--volcano-strength', $VolcanoStrength) }
+    if ($VolcanoColor -ne $null) { $cliArgs += @('--volcano-color', $VolcanoColor) }
+    if ($BumpTexHeight -ne $null) { $cliArgs += @('--bump-tex-height', $BumpTexHeight) }
+    if ($ColorTexHeight -ne $null) { $cliArgs += @('--color-tex-height', $ColorTexHeight) }
+    if ($ViewMode -ne "") { $cliArgs += @('--view-mode', $ViewMode) }
+    if ($Step -ne $null) { $cliArgs += @('--step', $Step) }
+    if ($AutoRotate -ne $null) { $cliArgs += @('--auto-rotate', $AutoRotate.ToString().ToLowerInvariant()) }
+    if ($ShowDebugMeshes -ne $null) { $cliArgs += @('--show-debug-meshes', $ShowDebugMeshes.ToString().ToLowerInvariant()) }
+    if ($CratersEnabled -ne $null) { $cliArgs += @('--craters-enabled', $CratersEnabled.ToString().ToLowerInvariant()) }
+    if ($RidgesEnabled -ne $null) { $cliArgs += @('--ridges-enabled', $RidgesEnabled.ToString().ToLowerInvariant()) }
+    if ($RiftsEnabled -ne $null) { $cliArgs += @('--rifts-enabled', $RiftsEnabled.ToString().ToLowerInvariant()) }
+    if ($VolcanoesEnabled -ne $null) { $cliArgs += @('--volcanoes-enabled', $VolcanoesEnabled.ToString().ToLowerInvariant()) }
+    if ($BaseUrl -ne "") { $cliArgs += @('--base-url', $BaseUrl) }
+    if ($OutputDir -ne "") { $cliArgs += @('--output-dir', $OutputDir) }
+    if ($FrameSettleMs -ne $null) { $cliArgs += @('--frame-settle-ms', $FrameSettleMs) }
 
-    npm run auto-generate-planetoids -- @args
+    npm run auto-generate-planetoids -- @cliArgs
 
     $script:StartSeed = $currentStartSeed + $script:StartSeedOffsetPerCall
 }

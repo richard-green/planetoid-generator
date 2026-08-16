@@ -2,6 +2,7 @@
 
 import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
+import type { Locator, Page } from 'playwright'
 import { firefox } from 'playwright'
 import {
   PlanetoidPaletteNames as VALID_PALETTES,
@@ -10,6 +11,8 @@ import {
 import {
   MaxValues,
   MinValues,
+  PlanetoidCliFlagByRangeKey,
+  PlanetoidCliToggleFlags,
   PlanetoidRangeLabels,
   PlanetoidUiLabels,
   type PlanetoidRangeKey,
@@ -19,26 +22,15 @@ const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as PlanetoidRangeKey[]).filte
   (key) => key !== 'seed'
 )
 
-function sanitizeLabelToKebab(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
-function toNumericCliFlag(key: PlanetoidRangeKey) {
-  return sanitizeLabelToKebab(PlanetoidRangeLabels[key])
-}
-
 const CLI_FLAG_TO_RANGE_KEY = new Map<string, PlanetoidRangeKey>()
 for (const key of NUMERIC_RANGE_KEYS) {
-  CLI_FLAG_TO_RANGE_KEY.set(`--${toNumericCliFlag(key)}`, key)
+  CLI_FLAG_TO_RANGE_KEY.set(PlanetoidCliFlagByRangeKey[key], key)
 }
 
 const NUMERIC_HELP_LINES = NUMERIC_RANGE_KEYS.map((key) => {
-  const flag = toNumericCliFlag(key)
+  const flag = PlanetoidCliFlagByRangeKey[key]
   const label = PlanetoidRangeLabels[key]
-  return `  --${flag} <n> ${label} (range: ${MinValues[key]} to ${MaxValues[key]})`
+  return `  ${flag} <n> ${label} (range: ${MinValues[key]} to ${MaxValues[key]})`
 })
 
 type ScriptOptions = {
@@ -151,6 +143,116 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   frameSettleMs: 50,
 }
 
+const LOCATOR_CONFIG = {
+  roleTargets: {
+    planetoidNavLink: {
+      role: 'link' as const,
+      name: 'Planetoids',
+      exact: true,
+    },
+  },
+  selectors: {
+    controlsPanel: '.controls',
+    canvas: '.canvas-shell canvas',
+    sceneViewModeRadio: (mode: NonNullable<ScriptOptions['viewMode']>) =>
+      `input[name="scene-view-mode"][value="${mode}"]`,
+    numberInputByLabel: (label: string) => `label:has-text("${label}") input[type="number"]`,
+    selectByLabel: (label: string) => `label:has-text("${label}") select`,
+    colorInputByLabel: (label: string) => `label:has-text("${label}") input[type="color"]`,
+    checkboxByLabel: (label: string) => `label:has-text("${label}") input`,
+    sectionToggleBySummaryLabel: (label: string) =>
+      `summary:has-text("${label}") input[type="checkbox"]`,
+    sectionSummaryByLabel: (label: string) => `summary:has-text("${label}")`,
+  },
+}
+
+type ScriptLocators = {
+  controls: Locator
+  planetoidNavLink: Locator
+  seedInput: Locator
+  paletteSelect: Locator
+  viewModeRadios: Record<NonNullable<ScriptOptions['viewMode']>, Locator>
+  surfaceTintInput: Locator
+  autoRotateToggle: Locator
+  debugMeshesToggle: Locator
+  numericInputByKey: Record<PlanetoidRangeKey, Locator>
+  sectionToggles: {
+    cratersEnabled: Locator
+    ridgesEnabled: Locator
+    riftsEnabled: Locator
+    volcanoesEnabled: Locator
+  }
+  sectionSummaries: {
+    craters: Locator
+    ridges: Locator
+    rifts: Locator
+    volcanoes: Locator
+  }
+  canvas: Locator
+}
+
+function buildLocators(page: Page): ScriptLocators {
+  const { selectors, roleTargets } = LOCATOR_CONFIG
+
+  return {
+    controls: page.locator(selectors.controlsPanel),
+    planetoidNavLink: page.getByRole(roleTargets.planetoidNavLink.role, {
+      name: roleTargets.planetoidNavLink.name,
+      exact: roleTargets.planetoidNavLink.exact,
+    }),
+    seedInput: page.locator(selectors.numberInputByLabel(PlanetoidUiLabels.seed)).first(),
+    paletteSelect: page.locator(selectors.selectByLabel(PlanetoidUiLabels.palette)).first(),
+    viewModeRadios: {
+      mesh: page.locator(selectors.sceneViewModeRadio('mesh')).first(),
+      bump: page.locator(selectors.sceneViewModeRadio('bump')).first(),
+      texture: page.locator(selectors.sceneViewModeRadio('texture')).first(),
+      ray: page.locator(selectors.sceneViewModeRadio('ray')).first(),
+    },
+    surfaceTintInput: page
+      .locator(selectors.colorInputByLabel(PlanetoidUiLabels.surfaceTint))
+      .first(),
+    autoRotateToggle: page.locator(selectors.checkboxByLabel(PlanetoidUiLabels.autoRotate)).first(),
+    debugMeshesToggle: page
+      .locator(selectors.checkboxByLabel(PlanetoidUiLabels.showDebugMeshes))
+      .first(),
+    numericInputByKey: Object.fromEntries(
+      NUMERIC_RANGE_KEYS.map((key) => [
+        key,
+        page.locator(selectors.numberInputByLabel(PlanetoidRangeLabels[key])).first(),
+      ])
+    ) as Record<PlanetoidRangeKey, Locator>,
+    sectionToggles: {
+      cratersEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.craters))
+        .first(),
+      ridgesEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.ridges))
+        .first(),
+      riftsEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.rifts))
+        .first(),
+      volcanoesEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.volcanoes))
+        .first(),
+    },
+    sectionSummaries: {
+      craters: page
+        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.craters))
+        .first(),
+      ridges: page
+        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.ridges))
+        .first(),
+      rifts: page
+        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.rifts))
+        .first(),
+      volcanoes: page
+        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.volcanoes))
+        .first(),
+    },
+    canvas: page.locator(selectors.canvas),
+  }
+}
+
 function createLogger(): Logger {
   function stamp() {
     return new Date().toISOString()
@@ -250,210 +352,6 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
-    if (arg === '--color-scale' && next) {
-      options.colorScale = parseNumber(next, 'color-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--tint-shadow-floor' && next) {
-      options.tintShadowFloor = parseNumber(next, 'tint-shadow-floor')
-      i++
-      continue
-    }
-
-    if (arg === '--swirliness' && next) {
-      options.swirliness = parseNumber(next, 'swirliness')
-      i++
-      continue
-    }
-
-    if (arg === '--crater-count' && next) {
-      options.craterCount = parseNumber(next, 'crater-count')
-      i++
-      continue
-    }
-
-    if (arg === '--crater-strength' && next) {
-      options.craterStrength = parseNumber(next, 'crater-strength')
-      i++
-      continue
-    }
-
-    if (arg === '--crater-color' && next) {
-      options.craterColorStrength = parseNumber(next, 'crater-color')
-      i++
-      continue
-    }
-
-    if (arg === '--crater-rays' && next) {
-      options.craterRayStrength = parseNumber(next, 'crater-rays')
-      i++
-      continue
-    }
-
-    if (arg === '--ray-visibility' && next) {
-      options.craterRayVisibility = parseNumber(next, 'ray-visibility')
-      i++
-      continue
-    }
-
-    if (arg === '--ray-density' && next) {
-      options.craterRayDensity = parseNumber(next, 'ray-density')
-      i++
-      continue
-    }
-
-    if (arg === '--ray-sharpness' && next) {
-      options.craterRaySharpness = parseNumber(next, 'ray-sharpness')
-      i++
-      continue
-    }
-
-    if (arg === '--ray-length-power' && next) {
-      options.craterRayLengthPower = parseNumber(next, 'ray-length-power')
-      i++
-      continue
-    }
-
-    if (arg === '--ridge-strength' && next) {
-      options.ridgeStrength = parseNumber(next, 'ridge-strength')
-      i++
-      continue
-    }
-
-    if (arg === '--ridge-scale' && next) {
-      options.ridgeScale = parseNumber(next, 'ridge-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--ridge-sharpness' && next) {
-      options.ridgeSharpness = parseNumber(next, 'ridge-sharpness')
-      i++
-      continue
-    }
-
-    if (arg === '--ridge-color-weight' && next) {
-      options.ridgeColorWeight = parseNumber(next, 'ridge-color-weight')
-      i++
-      continue
-    }
-
-    if (arg === '--rift-strength' && next) {
-      options.riftStrength = parseNumber(next, 'rift-strength')
-      i++
-      continue
-    }
-
-    if (arg === '--rift-scale' && next) {
-      options.riftScale = parseNumber(next, 'rift-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--rift-width' && next) {
-      options.riftWidth = parseNumber(next, 'rift-width')
-      i++
-      continue
-    }
-
-    if (arg === '--rift-sharpness' && next) {
-      options.riftSharpness = parseNumber(next, 'rift-sharpness')
-      i++
-      continue
-    }
-
-    if (arg === '--rift-color-weight' && next) {
-      options.riftColorWeight = parseNumber(next, 'rift-color-weight')
-      i++
-      continue
-    }
-
-    if (arg === '--ridges-rifts-blend' && next) {
-      options.ridgesRiftsBlend = parseNumber(next, 'ridges-rifts-blend')
-      i++
-      continue
-    }
-
-    if (arg === '--volcano-count' && next) {
-      options.volcanoCount = parseNumber(next, 'volcano-count')
-      i++
-      continue
-    }
-
-    if (arg === '--volcano-scale' && next) {
-      options.volcanoScale = parseNumber(next, 'volcano-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--volcano-strength' && next) {
-      options.volcanoStrength = parseNumber(next, 'volcano-strength')
-      i++
-      continue
-    }
-
-    if (arg === '--volcano-color' && next) {
-      options.volcanoColorStrength = parseNumber(next, 'volcano-color')
-      i++
-      continue
-    }
-
-    if (arg === '--bump-tex-height' && next) {
-      options.bumpTextureSize = parseNumber(next, 'bump-tex-height')
-      i++
-      continue
-    }
-
-    if (arg === '--color-tex-height' && next) {
-      options.colorTextureSize = parseNumber(next, 'color-tex-height')
-      i++
-      continue
-    }
-
-    if (arg === '--large-scale' && next) {
-      options.largeScale = parseNumber(next, 'large-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--medium-scale' && next) {
-      options.mediumScale = parseNumber(next, 'medium-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--small-scale' && next) {
-      options.smallScale = parseNumber(next, 'small-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--bump-scale' && next) {
-      options.bumpScale = parseNumber(next, 'bump-scale')
-      i++
-      continue
-    }
-
-    if (arg === '--roughness' && next) {
-      options.roughness = parseNumber(next, 'roughness')
-      i++
-      continue
-    }
-
-    if (arg === '--metalness' && next) {
-      options.metalness = parseNumber(next, 'metalness')
-      i++
-      continue
-    }
-
-    if (arg === '--triangle-detail' && next) {
-      options.triangleDetail = parseNumber(next, 'triangle-detail')
-      i++
-      continue
-    }
-
     if (arg === '--base-url' && next) {
       options.baseUrl = next
       i++
@@ -472,37 +370,37 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
-    if (arg === '--auto-rotate' && next) {
+    if (arg === PlanetoidCliToggleFlags.autoRotate && next) {
       options.autoRotate = parseBoolean(next, 'auto-rotate')
       i++
       continue
     }
 
-    if (arg === '--show-debug-meshes' && next) {
+    if (arg === PlanetoidCliToggleFlags.showDebugMeshes && next) {
       options.showDebugMeshes = parseBoolean(next, 'show-debug-meshes')
       i++
       continue
     }
 
-    if (arg === '--craters-enabled' && next) {
+    if (arg === PlanetoidCliToggleFlags.cratersEnabled && next) {
       options.cratersEnabled = parseBoolean(next, 'craters-enabled')
       i++
       continue
     }
 
-    if (arg === '--ridges-enabled' && next) {
+    if (arg === PlanetoidCliToggleFlags.ridgesEnabled && next) {
       options.ridgesEnabled = parseBoolean(next, 'ridges-enabled')
       i++
       continue
     }
 
-    if (arg === '--rifts-enabled' && next) {
+    if (arg === PlanetoidCliToggleFlags.riftsEnabled && next) {
       options.riftsEnabled = parseBoolean(next, 'rifts-enabled')
       i++
       continue
     }
 
-    if (arg === '--volcanoes-enabled' && next) {
+    if (arg === PlanetoidCliToggleFlags.volcanoesEnabled && next) {
       options.volcanoesEnabled = parseBoolean(next, 'volcanoes-enabled')
       i++
       continue
@@ -521,12 +419,12 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --palette <name>        Palette name (example: oxidizedBasalt)',
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
           ...NUMERIC_HELP_LINES,
-          '  --auto-rotate <bool>    Enable/disable auto-rotate',
-          '  --show-debug-meshes <bool> Enable/disable debug meshes (mesh mode only)',
-          '  --craters-enabled <bool> Enable/disable crater section',
-          '  --ridges-enabled <bool> Enable/disable ridges section',
-          '  --rifts-enabled <bool>  Enable/disable rifts section',
-          '  --volcanoes-enabled <bool> Enable/disable volcanoes section',
+          `  ${PlanetoidCliToggleFlags.autoRotate} <bool>    Enable/disable auto-rotate`,
+          `  ${PlanetoidCliToggleFlags.showDebugMeshes} <bool> Enable/disable debug meshes (mesh mode only)`,
+          `  ${PlanetoidCliToggleFlags.cratersEnabled} <bool> Enable/disable crater section`,
+          `  ${PlanetoidCliToggleFlags.ridgesEnabled} <bool> Enable/disable ridges section`,
+          `  ${PlanetoidCliToggleFlags.riftsEnabled} <bool>  Enable/disable rifts section`,
+          `  ${PlanetoidCliToggleFlags.volcanoesEnabled} <bool> Enable/disable volcanoes section`,
           '  --base-url <url>        Planetoid page URL (default: http://127.0.0.1:5173/planetoids)',
           '  --output-dir <path>     Output directory (default: public/generated/planetoid)',
           '  --frame-settle-ms <n>   Delay after updates in ms (default: 50)',
@@ -617,7 +515,7 @@ async function main() {
   for (const key of NUMERIC_RANGE_KEYS) {
     const value = (options as Record<string, unknown>)[key]
     assertRange(
-      toNumericCliFlag(key),
+      PlanetoidCliFlagByRangeKey[key].slice(2),
       typeof value === 'number' ? value : undefined,
       MinValues[key],
       MaxValues[key]
@@ -650,8 +548,21 @@ async function main() {
     await page.goto(options.baseUrl, { waitUntil: 'networkidle' })
     logger.info('Initial navigation complete')
 
-    const controls = page.locator('.controls')
-    const planetoidNavLink = page.getByRole('link', { name: 'Planetoids', exact: true })
+    const locators = buildLocators(page)
+    const {
+      controls,
+      planetoidNavLink,
+      seedInput,
+      paletteSelect,
+      viewModeRadios,
+      surfaceTintInput,
+      autoRotateToggle,
+      debugMeshesToggle,
+      numericInputByKey,
+      sectionToggles,
+      sectionSummaries,
+      canvas,
+    } = locators
 
     if (!(await controls.isVisible({ timeout: 2000 }).catch(() => false))) {
       logger.warn('Controls panel not visible after initial load; attempting nav click')
@@ -663,48 +574,7 @@ async function main() {
       }
     }
 
-    const seedInput = page
-      .locator(`label:has-text("${PlanetoidUiLabels.seed}") input[type="number"]`)
-      .first()
-    const paletteSelect = page
-      .locator(`label:has-text("${PlanetoidUiLabels.palette}") select`)
-      .first()
-    const meshModeRadio = page.locator('input[name="scene-view-mode"][value="mesh"]').first()
-    const bumpModeRadio = page.locator('input[name="scene-view-mode"][value="bump"]').first()
-    const textureModeRadio = page.locator('input[name="scene-view-mode"][value="texture"]').first()
-    const rayModeRadio = page.locator('input[name="scene-view-mode"][value="ray"]').first()
-    const surfaceTintInput = page
-      .locator(`label:has-text("${PlanetoidUiLabels.surfaceTint}") input[type="color"]`)
-      .first()
-    const autoRotateToggle = page
-      .locator(`label:has-text("${PlanetoidUiLabels.autoRotate}") input`)
-      .first()
-    const debugMeshesToggle = page
-      .locator(`label:has-text("${PlanetoidUiLabels.showDebugMeshes}") input`)
-      .first()
-
-    const numericInputByKey = Object.fromEntries(
-      NUMERIC_RANGE_KEYS.map((key) => [
-        key,
-        page.locator(`label:has-text("${PlanetoidRangeLabels[key]}") input[type="number"]`).first(),
-      ])
-    ) as Record<PlanetoidRangeKey, ReturnType<typeof page.locator>>
-    const cratersEnabledToggle = page
-      .locator(`summary:has-text("${PlanetoidUiLabels.sections.craters}") input[type="checkbox"]`)
-      .first()
-    const ridgesEnabledToggle = page
-      .locator(`summary:has-text("${PlanetoidUiLabels.sections.ridges}") input[type="checkbox"]`)
-      .first()
-    const riftsEnabledToggle = page
-      .locator(`summary:has-text("${PlanetoidUiLabels.sections.rifts}") input[type="checkbox"]`)
-      .first()
-    const volcanoesEnabledToggle = page
-      .locator(`summary:has-text("${PlanetoidUiLabels.sections.volcanoes}") input[type="checkbox"]`)
-      .first()
-    const canvas = page.locator('.canvas-shell canvas')
-
-    async function ensureSectionOpen(summaryText: string) {
-      const summary = page.locator(`summary:has-text("${summaryText}")`).first()
+    async function ensureSectionOpen(summary: Locator) {
       if (!(await summary.isVisible().catch(() => false))) {
         return
       }
@@ -723,20 +593,38 @@ async function main() {
     await surfaceTintInput.waitFor({ state: 'visible' })
     await autoRotateToggle.waitFor({ state: 'visible' })
     await debugMeshesToggle.waitFor({ state: 'visible' })
-    await cratersEnabledToggle.waitFor({ state: 'visible' })
-    await ridgesEnabledToggle.waitFor({ state: 'visible' })
-    await riftsEnabledToggle.waitFor({ state: 'visible' })
-    await volcanoesEnabledToggle.waitFor({ state: 'visible' })
+    await sectionToggles.cratersEnabled.waitFor({ state: 'visible' })
+    await sectionToggles.ridgesEnabled.waitFor({ state: 'visible' })
+    await sectionToggles.riftsEnabled.waitFor({ state: 'visible' })
+    await sectionToggles.volcanoesEnabled.waitFor({ state: 'visible' })
     await canvas.waitFor({ state: 'visible' })
     logger.info('All required UI elements are visible')
 
-    await ensureSectionOpen(PlanetoidUiLabels.sections.craters)
-    await ensureSectionOpen(PlanetoidUiLabels.sections.ridges)
-    await ensureSectionOpen(PlanetoidUiLabels.sections.rifts)
-    await ensureSectionOpen(PlanetoidUiLabels.sections.volcanoes)
+    await ensureSectionOpen(sectionSummaries.craters)
+    await ensureSectionOpen(sectionSummaries.ridges)
+    await ensureSectionOpen(sectionSummaries.rifts)
+    await ensureSectionOpen(sectionSummaries.volcanoes)
 
-    for (const key of NUMERIC_RANGE_KEYS) {
-      await numericInputByKey[key].waitFor({ state: 'visible' })
+    async function ensureLocatorVisible(locator: Locator) {
+      if (await locator.isVisible().catch(() => false)) {
+        return
+      }
+
+      const containingDetails = locator.locator('xpath=ancestor::details[1]').first()
+      if (await containingDetails.count()) {
+        const isOpen = await containingDetails
+          .evaluate((el) => (el as HTMLDetailsElement).open)
+          .catch(() => true)
+
+        if (!isOpen) {
+          const summary = containingDetails.locator('summary').first()
+          if (await summary.isVisible().catch(() => false)) {
+            await summary.click()
+          }
+        }
+      }
+
+      await locator.waitFor({ state: 'visible' })
     }
 
     if (requestedPalette) {
@@ -748,21 +636,15 @@ async function main() {
 
     if (options.viewMode) {
       logger.info(`Applying view mode: ${options.viewMode}`)
-      if (options.viewMode === 'mesh') await meshModeRadio.check()
-      if (options.viewMode === 'bump') await bumpModeRadio.check()
-      if (options.viewMode === 'texture') await textureModeRadio.check()
-      if (options.viewMode === 'ray') await rayModeRadio.check()
+      await viewModeRadios[options.viewMode].check()
       await page.waitForTimeout(options.frameSettleMs)
     }
 
-    async function applyNumericOverride(
-      name: string,
-      locator: ReturnType<typeof page.locator>,
-      value: number | undefined
-    ) {
+    async function applyNumericOverride(name: string, locator: Locator, value: number | undefined) {
       if (value === undefined) return
 
       logger.info(`Applying ${name}: ${value}`)
+      await ensureLocatorVisible(locator)
       await locator.fill(String(value))
       await locator.press('Enter')
     }
@@ -783,7 +665,7 @@ async function main() {
 
     async function applyToggleOverride(
       name: string,
-      locator: ReturnType<typeof page.locator>,
+      locator: Locator,
       enabled: boolean | undefined
     ) {
       if (enabled === undefined) return
@@ -798,10 +680,18 @@ async function main() {
 
     await applyToggleOverride('auto rotate', autoRotateToggle, options.autoRotate)
     await applyToggleOverride('show debug meshes', debugMeshesToggle, options.showDebugMeshes)
-    await applyToggleOverride('craters enabled', cratersEnabledToggle, options.cratersEnabled)
-    await applyToggleOverride('ridges enabled', ridgesEnabledToggle, options.ridgesEnabled)
-    await applyToggleOverride('rifts enabled', riftsEnabledToggle, options.riftsEnabled)
-    await applyToggleOverride('volcanoes enabled', volcanoesEnabledToggle, options.volcanoesEnabled)
+    await applyToggleOverride(
+      'craters enabled',
+      sectionToggles.cratersEnabled,
+      options.cratersEnabled
+    )
+    await applyToggleOverride('ridges enabled', sectionToggles.ridgesEnabled, options.ridgesEnabled)
+    await applyToggleOverride('rifts enabled', sectionToggles.riftsEnabled, options.riftsEnabled)
+    await applyToggleOverride(
+      'volcanoes enabled',
+      sectionToggles.volcanoesEnabled,
+      options.volcanoesEnabled
+    )
 
     if (
       normalizedSurfaceTint ||
