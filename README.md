@@ -4,6 +4,10 @@ Single-page app for generating planetoid and asteroid artwork directly in the br
 
 The app is built with Svelte + Vite and renders with THRELTE/Three.js. It generates procedural results and lets you export different render outputs, including texture and bump map imagery.
 
+## Live demo
+
+https://rdgreen.dev/planetoids/
+
 ## What this project does
 
 - Interactive browser UI for procedural planetoid generation
