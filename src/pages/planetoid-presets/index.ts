@@ -1,5 +1,6 @@
 import { iceworldPreset } from './iceworldPreset'
 import { metallicCratersPreset } from './metallicCratersPreset'
+import { potatoPreset } from './potatoPreset'
 import { rockyClassicPreset } from './rockyClassicPreset'
 import { volcanicRiftPreset } from './volcanicRiftPreset'
 
@@ -10,4 +11,5 @@ export const BUILTIN_PRESETS = [
   iceworldPreset,
   volcanicRiftPreset,
   metallicCratersPreset,
+  potatoPreset,
 ]
