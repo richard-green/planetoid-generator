@@ -50,7 +50,13 @@ This repo includes a Playwright-driven generator script that controls the SPA in
 ### Run one batch directly
 
 ```bash
-npm run auto-generate-planetoids -- --count 10 --start-seed 1 --step 1 --view-mode texture
+npm run auto-generate-planetoids -- --count 10 --seed 1 --step 1 --view-mode texture
+```
+
+Gas giant equivalent:
+
+```bash
+npm run auto-generate-gas-giants -- --count 10 --seed 1 --step 1 --palette jovianBands
 ```
 
 Common options:
@@ -68,6 +74,14 @@ Common options:
 ```
 
 This helper runs multiple generation batches with different palette/settings profiles.
+
+For gas giants:
+
+```powershell
+./regenerate-giants.ps1
+```
+
+This helper runs curated gas giant profiles and advances start seeds between each batch.
 
 ## Example outputs
 

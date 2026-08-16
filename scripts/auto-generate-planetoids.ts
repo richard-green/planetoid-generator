@@ -319,7 +319,7 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
-    if (arg === '--start-seed' && next) {
+    if (arg === '--seed' && next) {
       options.startSeed = parseNumber(next, 'start-seed')
       i++
       continue
@@ -413,7 +413,7 @@ function parseArgs(argv: string[]): ScriptOptions {
           '',
           'Options:',
           '  --count <n>             Number of images to generate (default: 1)',
-          '  --start-seed <n>        Starting seed value (default: 1)',
+          '  --seed <n>              Starting seed value (default: 1)',
           '  --step <n>              Seed increment per image (default: 1)',
           '  --view-mode <name>      mesh | bump | texture | ray',
           '  --palette <name>        Palette name (example: oxidizedBasalt)',

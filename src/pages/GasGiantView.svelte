@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Canvas } from '@threlte/core'
+  import { tick } from 'svelte'
   import { WebGLRenderer } from 'three'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
   import {
@@ -9,11 +10,15 @@
   } from '../lib/components/Threlte/Objects/GasGiantPalettes'
   import {
     DefaultGasGiantSettings,
+    GasGiantCliFlagByRangeKey,
+    GasGiantCliToggleFlags,
     GasGiantUiLabels,
     MaxValues,
     MinValues,
+    type GasGiantRangeKey,
     type GasGiantSettings,
   } from '../lib/components/Threlte/Objects/GasGiantSettings'
+  import { BUILTIN_GAS_GIANT_PRESETS, type GasGiantPreset } from './gas-giant-presets'
 
   type GasGiantViewSettings = GasGiantSettings
   type GasGiantUiState = {
@@ -26,10 +31,23 @@
     stormsEnabled: boolean
   }
 
+  type GasGiantSceneExports = {
+    downloadTextureMapPng: (fileName?: string) => Promise<boolean>
+    downloadBumpMapPng: (fileName?: string) => Promise<boolean>
+  }
+
   const GAS_GIANT_SETTINGS_STORAGE_KEY = 'gas-giant-view-settings-v1'
   const GAS_GIANT_UI_STORAGE_KEY = 'gas-giant-view-ui-v1'
+  const GAS_GIANT_PRESETS_STORAGE_KEY = 'gas-giant-view-presets-v1'
 
   const DEFAULT_GAS_GIANT_SETTINGS: GasGiantViewSettings = { ...DefaultGasGiantSettings }
+  const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
+    (key) => key !== 'seed'
+  )
+
+  let canvasShell: HTMLDivElement | undefined = $state(undefined)
+  let gasGiantScene: GasGiantSceneExports | undefined = $state(undefined)
+  let isSaving = $state(false)
 
   let seed = $state(DEFAULT_GAS_GIANT_SETTINGS.seed)
   let autoRotate = $state(DEFAULT_GAS_GIANT_SETTINGS.autoRotate)
@@ -54,6 +72,7 @@
 
   let settingsHydrated = $state(false)
   let sectionTogglesHydrated = $state(false)
+  let presetsHydrated = $state(false)
 
   let sceneSectionOpen = $state(true)
   let colorSettingsSectionOpen = $state(true)
@@ -64,10 +83,33 @@
   let stormsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
   let wasStormsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
 
+  let presetsMenuOpen = $state(false)
+  let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
+  let presetsManagerOpen = $state(false)
+  let userPresets = $state<GasGiantPreset[]>([])
+
   const effectiveStormsEnabled = $derived(stormsEnabled)
 
   function clamp(value: number, min: number, max: number) {
     return Math.min(Math.max(value, min), max)
+  }
+
+  function getTimestamp() {
+    const now = new Date()
+    const yyyy = String(now.getFullYear())
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const hh = String(now.getHours()).padStart(2, '0')
+    const min = String(now.getMinutes()).padStart(2, '0')
+    const ss = String(now.getSeconds()).padStart(2, '0')
+
+    return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
+  }
+
+  function nextAnimationFrame() {
+    return new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve())
+    })
   }
 
   function sanitizeGasGiantSettings(input: unknown): GasGiantViewSettings {
@@ -185,6 +227,33 @@
     }
   }
 
+  function sanitizePresetName(input: unknown) {
+    if (typeof input !== 'string') return ''
+    return input.trim().replace(/\s+/g, ' ').slice(0, 48)
+  }
+
+  function createPresetId() {
+    const random = Math.random().toString(36).slice(2, 8)
+    return `giant-preset-${Date.now()}-${random}`
+  }
+
+  function sanitizePreset(input: unknown): GasGiantPreset | null {
+    if (typeof input !== 'object' || input === null) return null
+
+    const raw = input as Record<string, unknown>
+    const name = sanitizePresetName(raw.name)
+    if (!name) return null
+
+    const id =
+      typeof raw.id === 'string' && raw.id.trim().length > 0 ? raw.id.trim() : createPresetId()
+
+    return {
+      id,
+      name,
+      settings: sanitizeGasGiantSettings(raw.settings),
+    }
+  }
+
   function applyGasGiantSettings(settings: GasGiantViewSettings) {
     seed = settings.seed
     autoRotate = settings.autoRotate
@@ -196,6 +265,7 @@
     cloudBandSharpness = settings.cloudBandSharpness
     cloudChaos = settings.cloudChaos
     enableStorms = settings.enableStorms
+    stormsEnabled = settings.enableStorms
     stormCount = settings.stormCount
     stormScale = settings.stormScale
     stormPower = settings.stormPower
@@ -206,6 +276,189 @@
     metalness = settings.metalness
     bumpTextureSize = settings.bumpTextureSize
     colorTextureSize = settings.colorTextureSize
+  }
+
+  function resetSceneToDefaults() {
+    applyGasGiantSettings(DEFAULT_GAS_GIANT_SETTINGS)
+  }
+
+  function closePresetsMenu() {
+    presetsMenuOpen = false
+  }
+
+  function onResetSceneFromMenu() {
+    closePresetsMenu()
+    resetSceneToDefaults()
+  }
+
+  function saveCurrentPreset() {
+    const enteredName = window.prompt('Name this preset:', 'My giant preset')
+    const name = sanitizePresetName(enteredName)
+    if (!name) return
+
+    const nextPreset: GasGiantPreset = {
+      id: createPresetId(),
+      name,
+      settings: sanitizeGasGiantSettings({
+        seed,
+        autoRotate,
+        palette,
+        surfaceTint,
+        colorScale,
+        tintShadowFloor,
+        cloudBandCount,
+        cloudBandSharpness,
+        cloudChaos,
+        enableStorms: effectiveStormsEnabled,
+        stormCount,
+        stormScale,
+        stormPower,
+        stormStrength,
+        stormColorStrength,
+        bumpScale,
+        roughness,
+        metalness,
+        bumpTextureSize,
+        colorTextureSize,
+      }),
+    }
+
+    userPresets = [nextPreset, ...userPresets]
+  }
+
+  function onSavePresetFromMenu() {
+    closePresetsMenu()
+    saveCurrentPreset()
+  }
+
+  function onManagePresetsFromMenu() {
+    closePresetsMenu()
+    presetsManagerOpen = true
+  }
+
+  function quoteCliValue(value: string) {
+    return JSON.stringify(value)
+  }
+
+  function toBooleanCliValue(value: boolean) {
+    return value ? 'true' : 'false'
+  }
+
+  function buildCliCommandFromPreset(
+    settings: GasGiantSettings,
+    toggles: { stormsEnabled: boolean }
+  ) {
+    const args: string[] = [
+      '--palette',
+      quoteCliValue(settings.palette),
+      '--surface-tint',
+      quoteCliValue(settings.surfaceTint),
+    ]
+
+    for (const key of NUMERIC_RANGE_KEYS) {
+      const flag = GasGiantCliFlagByRangeKey[key]
+      const value = settings[key]
+      args.push(flag, String(value))
+    }
+
+    args.push(GasGiantCliToggleFlags.autoRotate, toBooleanCliValue(settings.autoRotate))
+    args.push(GasGiantCliToggleFlags.stormsEnabled, toBooleanCliValue(toggles.stormsEnabled))
+
+    args.push(GasGiantCliFlagByRangeKey.seed, '1')
+    args.push('--step', '1')
+    args.push('--count', '1')
+
+    return `npm run auto-generate-gas-giants -- ${args.join(' ')}`
+  }
+
+  async function copyTextToClipboard(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  async function exportCurrentPresetToCli() {
+    closePresetsMenu()
+    const command = buildCliCommandFromPreset(
+      {
+        seed,
+        autoRotate,
+        palette,
+        surfaceTint,
+        colorScale,
+        tintShadowFloor,
+        cloudBandCount,
+        cloudBandSharpness,
+        cloudChaos,
+        enableStorms: effectiveStormsEnabled,
+        stormCount,
+        stormScale,
+        stormPower,
+        stormStrength,
+        stormColorStrength,
+        bumpScale,
+        roughness,
+        metalness,
+        bumpTextureSize,
+        colorTextureSize,
+      },
+      { stormsEnabled: effectiveStormsEnabled }
+    )
+
+    const copied = await copyTextToClipboard(command)
+    if (copied) {
+      window.alert('CLI command copied to clipboard.')
+    } else {
+      window.prompt('Copy this CLI command:', command)
+    }
+  }
+
+  async function exportPresetToCli(preset: GasGiantPreset) {
+    const stormsEnabledFromPreset =
+      preset.settings.enableStorms ||
+      preset.settings.stormCount > 0 ||
+      preset.settings.stormStrength > 0
+
+    const command = buildCliCommandFromPreset(preset.settings, {
+      stormsEnabled: stormsEnabledFromPreset,
+    })
+
+    const copied = await copyTextToClipboard(command)
+    if (copied) {
+      window.alert(`CLI command copied for preset: ${preset.name}`)
+    } else {
+      window.prompt(`Copy CLI command for ${preset.name}:`, command)
+    }
+  }
+
+  function onWindowPointerDown(event: PointerEvent) {
+    if (!presetsMenuOpen || !presetsMenuElement) return
+
+    const target = event.target
+    if (!(target instanceof Node)) return
+    if (presetsMenuElement.contains(target)) return
+
+    closePresetsMenu()
+  }
+
+  function applyPreset(preset: GasGiantPreset) {
+    applyGasGiantSettings(preset.settings)
+  }
+
+  function applyPresetAndCloseManager(preset: GasGiantPreset) {
+    applyPreset(preset)
+    presetsManagerOpen = false
+  }
+
+  function deleteUserPreset(presetId: string) {
+    userPresets = userPresets.filter((entry) => entry.id !== presetId)
+  }
+
+  function closePresetManager() {
+    presetsManagerOpen = false
   }
 
   $effect(() => {
@@ -332,6 +585,41 @@
   })
 
   $effect(() => {
+    if (presetsHydrated) return
+
+    try {
+      const raw = localStorage.getItem(GAS_GIANT_PRESETS_STORAGE_KEY)
+
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        const list = Array.isArray(parsed) ? parsed : []
+        const sanitized: GasGiantPreset[] = []
+
+        for (const entry of list) {
+          const preset = sanitizePreset(entry)
+          if (preset) sanitized.push(preset)
+        }
+
+        userPresets = sanitized
+      }
+    } catch (error) {
+      console.warn('Failed to restore gas giant presets from localStorage', error)
+    } finally {
+      presetsHydrated = true
+    }
+  })
+
+  $effect(() => {
+    if (!presetsHydrated) return
+
+    try {
+      localStorage.setItem(GAS_GIANT_PRESETS_STORAGE_KEY, JSON.stringify(userPresets))
+    } catch (error) {
+      console.warn('Failed to persist gas giant presets to localStorage', error)
+    }
+  })
+
+  $effect(() => {
     if (!sectionTogglesHydrated) return
 
     if (effectiveStormsEnabled !== wasStormsEnabled) {
@@ -340,12 +628,69 @@
     }
   })
 
+  async function saveScenePng() {
+    if (!canvasShell || isSaving) return
+
+    const canvas = canvasShell.querySelector('canvas')
+    if (!(canvas instanceof HTMLCanvasElement)) {
+      return
+    }
+
+    isSaving = true
+    try {
+      await tick()
+      await nextAnimationFrame()
+
+      const fileName = `generated-gas-giant-${getTimestamp()}.png`
+      const dataUrl = canvas.toDataURL('image/png')
+      const downloadLink = document.createElement('a')
+
+      downloadLink.href = dataUrl
+      downloadLink.download = fileName
+      downloadLink.click()
+    } catch (error) {
+      console.error(error)
+    } finally {
+      isSaving = false
+    }
+  }
+
+  async function downloadTextureMapPng() {
+    if (!gasGiantScene || isSaving) return
+
+    isSaving = true
+    try {
+      const fileName = `generated-gas-giant-texture-${getTimestamp()}.png`
+      await gasGiantScene.downloadTextureMapPng(fileName)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      isSaving = false
+    }
+  }
+
+  async function downloadBumpMapPng() {
+    if (!gasGiantScene || isSaving) return
+
+    isSaving = true
+    try {
+      const fileName = `generated-gas-giant-bump-${getTimestamp()}.png`
+      await gasGiantScene.downloadBumpMapPng(fileName)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      isSaving = false
+    }
+  }
+
   const selectedPaletteGradient = $derived(
     `linear-gradient(90deg, ${GasGiantPalettes[palette]
       .map((entry) => `rgb(${entry.r}, ${entry.g}, ${entry.b})`)
       .join(', ')})`
   )
 </script>
+
+<svelte:window onpointerdown={onWindowPointerDown} />
 
 <div class="page">
   <h1 class="page-title">
@@ -371,7 +716,7 @@
   </h1>
 
   <section class="threlte-view">
-    <div class="canvas-shell">
+    <div class="canvas-shell" bind:this={canvasShell}>
       <Canvas
         createRenderer={(canvas) =>
           new WebGLRenderer({
@@ -383,6 +728,7 @@
           })}
       >
         <GasGiantScene
+          bind:this={gasGiantScene}
           {seed}
           {autoRotate}
           {palette}
@@ -410,6 +756,75 @@
     <div class="controls">
       <fieldset>
         <legend>Scene</legend>
+        <div class="save-actions" aria-label="Save and export actions">
+          <div class="export-actions">
+            <button
+              type="button"
+              class="action"
+              onclick={saveScenePng}
+              disabled={isSaving}
+              aria-label="Save scene PNG"
+            >
+              PNG
+            </button>
+            <button
+              type="button"
+              class="action"
+              onclick={downloadTextureMapPng}
+              disabled={isSaving}
+              aria-label="Download texture map"
+            >
+              TEX
+            </button>
+            <button
+              type="button"
+              class="action"
+              onclick={downloadBumpMapPng}
+              disabled={isSaving}
+              aria-label="Download bump map"
+            >
+              BMP
+            </button>
+          </div>
+          <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
+            <summary class="action preset-menu-trigger" aria-label="Preset actions">PRESETS</summary
+            >
+            <div class="preset-menu-dropdown" role="menu" aria-label="Preset actions menu">
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={onResetSceneFromMenu}
+              >
+                Reset scene to defaults
+              </button>
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={onSavePresetFromMenu}
+              >
+                Save a preset
+              </button>
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={onManagePresetsFromMenu}
+              >
+                Manage presets
+              </button>
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={exportCurrentPresetToCli}
+              >
+                Copy current as CLI command
+              </button>
+            </div>
+          </details>
+        </div>
         <details class="control-section" bind:open={sceneSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
@@ -446,21 +861,23 @@
             style:background={selectedPaletteGradient}
             aria-label="Selected giant palette gradient"
           ></div>
-          <label>
+          <label class="extra-pad">
             <span class="label-row">
               <span>{GasGiantUiLabels.surfaceTint}</span>
               <span class="label-value">{surfaceTint.toUpperCase()}</span>
             </span>
             <input type="color" bind:value={surfaceTint} />
           </label>
-          <label class="compact-number-row">
-            <span>Palette influence</span>
-            <input type="number" min={0} max={2} step="0.05" bind:value={colorScale} />
-          </label>
-          <label class="compact-number-row">
-            <span>Tint shadow floor</span>
-            <input type="number" min={0} max={0.9} step="0.01" bind:value={tintShadowFloor} />
-          </label>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Palette influence</span>
+              <input type="number" min={0} max={2} step="0.05" bind:value={colorScale} />
+            </label>
+            <label class="compact-number-row">
+              <span>Tint shadow floor</span>
+              <input type="number" min={0} max={0.9} step="0.01" bind:value={tintShadowFloor} />
+            </label>
+          </div>
         </details>
 
         <details class="control-section" bind:open={cloudSettingsSectionOpen}>
@@ -468,18 +885,20 @@
             <span class="summary-chevron" aria-hidden="true"></span>
             <span>Cloud bands</span>
           </summary>
-          <label class="compact-number-row">
-            <span>Cloud band count</span>
-            <input type="number" min={2} max={28} step="1" bind:value={cloudBandCount} />
-          </label>
-          <label class="compact-number-row">
-            <span>Band sharpness</span>
-            <input type="number" min={0} max={1} step="0.01" bind:value={cloudBandSharpness} />
-          </label>
-          <label class="compact-number-row">
-            <span>Cloud chaos</span>
-            <input type="number" min={0} max={2} step="0.01" bind:value={cloudChaos} />
-          </label>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Cloud band count</span>
+              <input type="number" min={2} max={28} step="1" bind:value={cloudBandCount} />
+            </label>
+            <label class="compact-number-row">
+              <span>Band sharpness</span>
+              <input type="number" min={0} max={1} step="0.01" bind:value={cloudBandSharpness} />
+            </label>
+            <label class="compact-number-row">
+              <span>Cloud chaos</span>
+              <input type="number" min={0} max={2} step="0.01" bind:value={cloudChaos} />
+            </label>
+          </div>
         </details>
 
         <details class="control-section" bind:open={textureResolutionSectionOpen}>
@@ -487,14 +906,16 @@
             <span class="summary-chevron" aria-hidden="true"></span>
             <span>Texture resolution</span>
           </summary>
-          <label class="compact-number-row">
-            <span>Bump texture height</span>
-            <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
-          </label>
-          <label class="compact-number-row">
-            <span>Color texture height</span>
-            <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
-          </label>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Bump texture height</span>
+              <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
+            </label>
+            <label class="compact-number-row">
+              <span>Color texture height</span>
+              <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
+            </label>
+          </div>
         </details>
       </fieldset>
 
@@ -517,61 +938,63 @@
               />
             </label>
           </summary>
-          <label class="compact-number-row">
-            <span>Storm count</span>
-            <input
-              type="number"
-              min={0}
-              max={32}
-              step="1"
-              bind:value={stormCount}
-              disabled={!effectiveStormsEnabled}
-            />
-          </label>
-          <label class="compact-number-row">
-            <span>Storm scale</span>
-            <input
-              type="number"
-              min={0}
-              max={0.45}
-              step="0.01"
-              bind:value={stormScale}
-              disabled={!effectiveStormsEnabled}
-            />
-          </label>
-          <label class="compact-number-row">
-            <span>Storm falloff power</span>
-            <input
-              type="number"
-              min={0.5}
-              max={6}
-              step="0.1"
-              bind:value={stormPower}
-              disabled={!effectiveStormsEnabled}
-            />
-          </label>
-          <label class="compact-number-row">
-            <span>Storm strength</span>
-            <input
-              type="number"
-              min={0}
-              max={1.5}
-              step="0.01"
-              bind:value={stormStrength}
-              disabled={!effectiveStormsEnabled}
-            />
-          </label>
-          <label class="compact-number-row">
-            <span>Storm color strength</span>
-            <input
-              type="number"
-              min={0}
-              max={1.5}
-              step="0.01"
-              bind:value={stormColorStrength}
-              disabled={!effectiveStormsEnabled}
-            />
-          </label>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Storm count</span>
+              <input
+                type="number"
+                min={0}
+                max={32}
+                step="1"
+                bind:value={stormCount}
+                disabled={!effectiveStormsEnabled}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Storm scale</span>
+              <input
+                type="number"
+                min={0}
+                max={0.45}
+                step="0.01"
+                bind:value={stormScale}
+                disabled={!effectiveStormsEnabled}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Storm falloff power</span>
+              <input
+                type="number"
+                min={0.5}
+                max={6}
+                step="0.1"
+                bind:value={stormPower}
+                disabled={!effectiveStormsEnabled}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Storm strength</span>
+              <input
+                type="number"
+                min={0}
+                max={1.5}
+                step="0.01"
+                bind:value={stormStrength}
+                disabled={!effectiveStormsEnabled}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Storm color strength</span>
+              <input
+                type="number"
+                min={0}
+                max={1.5}
+                step="0.01"
+                bind:value={stormColorStrength}
+                disabled={!effectiveStormsEnabled}
+              />
+            </label>
+          </div>
         </details>
       </fieldset>
 
@@ -582,330 +1005,104 @@
             <span class="summary-chevron" aria-hidden="true"></span>
             <span>Properties</span>
           </summary>
-          <label class="compact-number-row">
-            <span>Bump scale</span>
-            <input type="number" min={0} max={10} step="0.05" bind:value={bumpScale} />
-          </label>
-          <label class="compact-number-row">
-            <span>Roughness</span>
-            <input type="number" min={0} max={1} step="0.01" bind:value={roughness} />
-          </label>
-          <label class="compact-number-row">
-            <span>Metalness</span>
-            <input type="number" min={0} max={1} step="0.01" bind:value={metalness} />
-          </label>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Bump scale</span>
+              <input type="number" min={0} max={10} step="0.05" bind:value={bumpScale} />
+            </label>
+            <label class="compact-number-row">
+              <span>Roughness</span>
+              <input type="number" min={0} max={1} step="0.01" bind:value={roughness} />
+            </label>
+            <label class="compact-number-row">
+              <span>Metalness</span>
+              <input type="number" min={0} max={1} step="0.01" bind:value={metalness} />
+            </label>
+          </div>
         </details>
       </fieldset>
     </div>
   </section>
 </div>
 
+{#if presetsManagerOpen}
+  <div class="preset-manager-backdrop" role="dialog" aria-modal="true" aria-label="Preset manager">
+    <section class="preset-manager-panel">
+      <header class="preset-manager-header">
+        <h2>Manage Presets</h2>
+        <button type="button" class="close-manager-button" onclick={closePresetManager}
+          >Close</button
+        >
+      </header>
+
+      <div class="preset-group">
+        <h3>Preconfigured</h3>
+        <ul class="preset-list">
+          {#each BUILTIN_GAS_GIANT_PRESETS as preset (preset.id)}
+            <li class="preset-row">
+              <span>{preset.name}</span>
+              <div class="preset-row-actions">
+                <button
+                  type="button"
+                  class="preset-row-button"
+                  onclick={() => applyPresetAndCloseManager(preset)}
+                >
+                  Apply
+                </button>
+                <button
+                  type="button"
+                  class="preset-row-button"
+                  onclick={() => exportPresetToCli(preset)}
+                >
+                  CLI
+                </button>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      </div>
+
+      <div class="preset-group">
+        <h3>Saved</h3>
+        {#if userPresets.length === 0}
+          <p class="preset-empty">No saved presets yet.</p>
+        {:else}
+          <ul class="preset-list">
+            {#each userPresets as preset (preset.id)}
+              <li class="preset-row">
+                <span>{preset.name}</span>
+                <div class="preset-row-actions">
+                  <button
+                    type="button"
+                    class="preset-row-button"
+                    onclick={() => applyPresetAndCloseManager(preset)}
+                  >
+                    Apply
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-row-button"
+                    onclick={() => exportPresetToCli(preset)}
+                  >
+                    CLI
+                  </button>
+                  <button
+                    type="button"
+                    class="preset-row-button delete"
+                    onclick={() => deleteUserPreset(preset.id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </div>
+    </section>
+  </div>
+{/if}
+
 <style>
-  .page {
-    min-height: 100%;
-    display: grid;
-    grid-template-rows: auto 1fr;
-  }
-
-  .page-title {
-    margin: 0;
-    padding: 1.1rem 1.25rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.8rem;
-    color: #f2f8ff;
-    font-size: clamp(1.2rem, 2vw, 1.9rem);
-    font-weight: 760;
-    letter-spacing: 0.03em;
-    line-height: 1.1;
-    text-transform: uppercase;
-    border-top: 1px solid rgba(176, 208, 239, 0.35);
-    border-bottom: 1px solid rgba(176, 208, 239, 0.26);
-    background:
-      radial-gradient(circle at 0% 20%, rgba(42, 104, 166, 0.35), transparent 55%),
-      linear-gradient(120deg, #1b325d, #122443), rgba(6, 13, 28, 0.72);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.06),
-      0 8px 26px rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(4px);
-  }
-
-  .page-title-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-  }
-
-  .page-title-link {
-    border: 1px solid rgba(176, 208, 239, 0.45);
-    border-radius: 999px;
-    color: #eaf3ff;
-    background: rgba(5, 14, 30, 0.55);
-    padding: 0.4rem 0.8rem;
-    text-decoration: none;
-    font-size: 0.72rem;
-    letter-spacing: 0.07em;
-    transition:
-      transform 120ms ease,
-      border-color 120ms ease,
-      background-color 120ms ease;
-  }
-
-  .page-title-link:hover {
-    transform: translateY(-1px);
-    border-color: rgba(222, 238, 255, 0.85);
-    background: rgba(10, 24, 49, 0.82);
-  }
-
-  .page-title-link:focus-visible {
-    outline: 2px solid #6cb3ff;
-    outline-offset: 2px;
-  }
-
-  .page-title-github-link {
-    width: 2rem;
-    height: 2rem;
-    min-width: 2rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(176, 208, 239, 0.45);
-    border-radius: 999px;
-    color: #eaf3ff;
-    background: rgba(5, 14, 30, 0.55);
-    transition:
-      transform 120ms ease,
-      border-color 120ms ease,
-      background-color 120ms ease;
-  }
-
-  .page-title-github-link:hover {
-    transform: translateY(-1px);
-    border-color: rgba(222, 238, 255, 0.85);
-    background: rgba(10, 24, 49, 0.82);
-  }
-
-  .page-title-github-link:focus-visible {
-    outline: 2px solid #6cb3ff;
-    outline-offset: 2px;
-  }
-
-  .page-title-github-link svg {
-    width: 1.2rem;
-    height: 1.2rem;
-  }
-
-  .threlte-view {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 1rem;
-    min-height: 0;
-    padding: 1rem;
-    background:
-      radial-gradient(circle at top, rgba(38, 80, 128, 0.58), transparent 75%),
-      linear-gradient(180deg, #030b19 0%, #081329 100%);
-  }
-
-  .canvas-shell {
-    width: min(100%, calc(90vh - 1rem));
-    aspect-ratio: 1 / 1;
-    max-height: calc(90vh - 4rem);
-    justify-self: start;
-    border: 1px solid #8eb4dd;
-    border-radius: 18px;
-    overflow: hidden;
-    background: #01040b;
-  }
-
-  .canvas-shell :global(canvas) {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  .controls {
-    display: grid;
-    gap: 1rem;
-    align-content: start;
-  }
-
-  fieldset {
-    margin: 0;
-    border: 1px solid #8eb4dd;
-    border-radius: 14px;
-    padding: 1rem;
-    display: grid;
-    gap: 0.85rem;
-    background: rgba(5, 12, 25, 0.88);
-    color: #d7e4f4;
-  }
-
-  legend {
-    padding: 0 0.35rem;
-    color: #f0f6ff;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-  }
-
-  label {
-    display: grid;
-    gap: 0.35rem;
-    font-size: 0.88rem;
-  }
-
-  select,
-  input {
-    border: 1px solid #8eb4dd;
-    border-radius: 10px;
-    padding: 0.55rem 0.7rem;
-    background: rgba(10, 18, 34, 0.95);
-    color: #f0f6ff;
-  }
-
-  .toggle-row {
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .compact-number-row {
-    grid-template-columns: 1fr minmax(7ch, 9ch);
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .label-row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    column-gap: 0.75rem;
-  }
-
-  .label-value {
-    text-align: right;
-    opacity: 0.7;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.02em;
-    padding-right: 0.2rem;
-  }
-
-  .palette-preview {
-    width: 100%;
-    height: 2rem;
-    margin: 0.6rem 0;
-    border-radius: 10px;
-    border: 1px solid rgba(173, 209, 241, 0.62);
-    box-shadow:
-      inset 0 0 0 1px rgba(3, 8, 16, 0.55),
-      0 4px 14px rgba(0, 0, 0, 0.2);
-  }
-
-  .control-section {
-    border: 1px solid rgba(142, 180, 221, 0.18);
-    border-radius: 10px;
-    padding: 0.5rem 0.75rem 0.75rem;
-    background: rgba(7, 14, 28, 0.55);
-  }
-
-  .control-section:not([open]) {
-    padding: 0.35rem 0.75rem;
-  }
-
-  .control-section summary {
-    cursor: pointer;
-    list-style: none;
-    display: inline-flex;
-    width: 100%;
-    box-sizing: border-box;
-    align-items: center;
-    gap: 0.45rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #f0f6ff;
-    margin: 0;
-  }
-
-  .control-section[open] summary {
-    margin: 0.1rem 0 0.6rem;
-  }
-
-  .control-section summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .summary-with-toggle {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  .summary-main {
-    display: flex;
-    align-items: center;
-    gap: 0.45rem;
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .summary-chevron {
-    width: 0;
-    height: 0;
-    border-top: 0.34rem solid transparent;
-    border-bottom: 0.34rem solid transparent;
-    border-left: 0.48rem solid #f0f6ff;
-    opacity: 0.82;
-    transform: rotate(0deg);
-    transition: transform 140ms ease;
-    transform-origin: 30% 50%;
-    flex: 0 0 auto;
-  }
-
-  .control-section[open] .summary-chevron {
-    transform: rotate(90deg);
-  }
-
-  .summary-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin-left: auto;
-  }
-
-  .summary-toggle input[type='checkbox'] {
-    width: 1rem;
-    height: 1rem;
-    padding: 0;
-  }
-
-  @media (max-width: 1080px) {
-    .threlte-view {
-      grid-template-columns: 1fr;
-    }
-
-    .canvas-shell {
-      width: min(100%, 540px);
-      max-height: min(70vh, 540px);
-      justify-self: center;
-    }
-
-    .controls {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .page-title {
-      flex-wrap: wrap;
-      gap: 0.6rem;
-      padding: 0.95rem 1rem;
-    }
-
-    .page-title-actions {
-      width: 100%;
-      justify-content: flex-end;
-    }
-  }
+  @import './generator-view-common.css';
 </style>
-

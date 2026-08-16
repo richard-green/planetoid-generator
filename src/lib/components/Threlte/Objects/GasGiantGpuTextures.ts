@@ -250,7 +250,7 @@ const fragmentShader = `
     );
 
     float filigreeRaw = filigreeA * 0.68 + filigreeB * 0.32;
-    float filigree = filigreeRaw * seamMask * mix(0.08, 1.9, chaosNorm);
+    float filigree = filigreeRaw * seamMask * mix(0.04, 0.95, chaosNorm);
     return vec2(broadBands, filigree);
   }
 
@@ -311,10 +311,10 @@ const fragmentShader = `
     float bandIndex = bandInfo.z;
 
     if (uMode == 1) {
-      float cloudCell = fractalNoise(remappedPos * 18.0 + seed * 0.91 + vec3(9.3, 17.1, 41.7));
+      float cloudCell = fractalNoise(remappedPos * 12.0 + seed * 0.91 + vec3(9.3, 17.1, 41.7));
       float cloudPuffs = pow(clamp((cloudCell + 1.0) * 0.5, 0.0, 1.0), 2.2) - 0.35;
-      float wispyRelief = filigree * mix(0.02, 1.0, chaosNorm);
-      float cloudRelief = broadBands * 0.14 + cloudPuffs * 0.09 + wispyRelief + stormActivity * 0.08;
+      float wispyRelief = filigree * mix(0.02, 0.62, chaosNorm);
+      float cloudRelief = broadBands * 0.12 + cloudPuffs * 0.06 + wispyRelief + stormActivity * 0.06;
 
       float value = clamp(0.5 + cloudRelief, 0.0, 1.0);
       gl_FragColor = vec4(vec3(value), 1.0);
@@ -322,20 +322,22 @@ const fragmentShader = `
     }
 
     float cloudLarge = fractalNoise(remappedPos * 3.8 + seed * 0.51 + vec3(13.4, 7.2, 29.8));
-    float cloudMedium = fractalNoise(remappedPos * 11.2 + seed * 0.88 + vec3(43.1, 19.4, 5.7));
-    float cloudFine = fractalNoise(remappedPos * 36.0 + seed * 1.42 + vec3(27.7, 61.5, 11.9));
+    float cloudMedium = fractalNoise(remappedPos * 9.0 + seed * 0.88 + vec3(43.1, 19.4, 5.7));
+    float cloudFine = fractalNoise(remappedPos * 18.0 + seed * 1.42 + vec3(27.7, 61.5, 11.9));
 
     float cloudValue =
       broadBands * 0.22 +
       cloudLarge * 0.18 +
-      cloudMedium * 0.1 +
-      cloudFine * 0.04 +
-      filigree * mix(0.04, 0.85, chaosNorm);
+      cloudMedium * 0.06 +
+      cloudFine * 0.015 +
+      filigree * mix(0.02, 0.42, chaosNorm);
 
     cloudValue += stormActivity * mix(0.02, 0.14, clamp(uStormStrength / 1.5, 0.0, 1.0));
 
-    float chaosGrain = fractalNoise(remappedPos * mix(7.0, 44.0, chaosNorm) + seed * 1.61 + vec3(8.7, 41.3, 27.4));
-    cloudValue += chaosGrain * mix(0.0, 0.2, chaosNorm);
+    float edgeDistance = min(bandLocalT, 1.0 - bandLocalT);
+    float seamRegion = 1.0 - smoothstep(0.06, 0.24, edgeDistance);
+    float chaosGrain = fractalNoise(remappedPos * mix(5.5, 24.0, chaosNorm) + seed * 1.61 + vec3(8.7, 41.3, 27.4));
+    cloudValue += chaosGrain * seamRegion * mix(0.0, 0.08, chaosNorm);
 
     float gradientDrift = cloudValue * mix(0.01, 0.08, chaosNorm);
     float paletteT = clamp(baseBandT + gradientDrift, 0.0, 1.0);
@@ -382,7 +384,6 @@ const fragmentShader = `
     float bandMix = bandLocalT * bandLocalT * (3.0 - 2.0 * bandLocalT);
     vec3 pseudoRandomBandGradient = mix(bandAExtended, bandBExtended, bandMix);
 
-    float edgeDistance = min(bandLocalT, 1.0 - bandLocalT);
     float edgeSoftness = mix(0.22, 0.08, clamp(uBandSharpness, 0.0, 1.0));
     float edgeFeather = smoothstep(0.0, edgeSoftness, edgeDistance);
     vec3 softenedBandGradient = mix(baseGradientColor, pseudoRandomBandGradient, edgeFeather);
@@ -612,4 +613,3 @@ export function createGasGiantBumpTexture(
 
   return texture
 }
-

@@ -45,6 +45,30 @@ export type GasGiantRangeValues = Pick<
 
 export type GasGiantRangeKey = keyof GasGiantRangeValues
 
+export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
+  seed: '--seed',
+  colorScale: '--color-scale',
+  tintShadowFloor: '--tint-shadow-floor',
+  cloudBandCount: '--cloud-band-count',
+  cloudBandSharpness: '--cloud-band-sharpness',
+  cloudChaos: '--cloud-chaos',
+  stormCount: '--storm-count',
+  stormScale: '--storm-scale',
+  stormPower: '--storm-power',
+  stormStrength: '--storm-strength',
+  stormColorStrength: '--storm-color-strength',
+  bumpScale: '--bump-scale',
+  roughness: '--roughness',
+  metalness: '--metalness',
+  bumpTextureSize: '--bump-tex-height',
+  colorTextureSize: '--color-tex-height',
+}
+
+export const GasGiantCliToggleFlags = {
+  autoRotate: '--auto-rotate',
+  stormsEnabled: '--storms-enabled',
+} as const
+
 export const DefaultGasGiantSettings: GasGiantSettings = {
   seed: 21,
   autoRotate: true,
@@ -132,4 +156,3 @@ export const MaxValues: GasGiantRangeValues = {
   bumpTextureSize: 2048,
   colorTextureSize: 2048,
 }
-

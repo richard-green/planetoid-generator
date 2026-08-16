@@ -175,4 +175,3 @@ export const GasGiantPalettes: Record<GasGiantPaletteName, Palette> = {
     { r: 150, g: 86, b: 52 },
   ],
 }
-

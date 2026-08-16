@@ -174,7 +174,7 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
 }
 
 export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
-  seed: '--start-seed',
+  seed: '--seed',
   colorScale: '--color-scale',
   tintShadowFloor: '--tint-shadow-floor',
   swirliness: '--swirliness',

@@ -66,7 +66,7 @@ function Invoke-PlanetoidBatch {
         '--medium-scale', $MediumScale,
         '--small-scale', $SmallScale,
         '--triangle-detail', $TriangleDetail,
-        '--start-seed', $currentStartSeed,
+        '--seed', $currentStartSeed,
         '--count', $Count
     )
 

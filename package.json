@@ -7,6 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "auto-generate-planetoids": "tsx scripts/auto-generate-planetoids.ts",
+    "auto-generate-gas-giants": "tsx scripts/auto-generate-gas-giants.ts",
     "lint": "eslint \"src/**/*.{ts,js,svelte}\"",
     "format": "prettier --write ."
   },

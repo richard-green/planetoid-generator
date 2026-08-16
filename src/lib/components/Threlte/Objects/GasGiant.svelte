@@ -1,8 +1,15 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from '@threlte/core'
-  import { Color, IcosahedronGeometry, Mesh, MeshStandardMaterial } from 'three'
+  import {
+    Color,
+    IcosahedronGeometry,
+    Mesh,
+    MeshStandardMaterial,
+    WebGLRenderTarget,
+    type Texture,
+  } from 'three'
   import { onDestroy } from 'svelte'
-  import { GasGiantPalettes, type GasGiantPaletteName } from './GasGiantPalettes'
+  import { GasGiantPalettes } from './GasGiantPalettes'
   import { DefaultGasGiantSettings, type GasGiantSettings } from './GasGiantSettings'
   import {
     createGasGiantBumpTexture,
@@ -44,6 +51,78 @@
   const { renderer } = useThrelte()
 
   const geometry = new IcosahedronGeometry(2, 18)
+
+  function flipRowsRgba(source: Uint8Array, width: number, height: number) {
+    const rowSize = width * 4
+    const flipped = new Uint8Array(source.length)
+
+    for (let y = 0; y < height; y++) {
+      const sourceStart = y * rowSize
+      const targetStart = (height - 1 - y) * rowSize
+      flipped.set(source.subarray(sourceStart, sourceStart + rowSize), targetStart)
+    }
+
+    return flipped
+  }
+
+  function triggerPngDownload(
+    width: number,
+    height: number,
+    rgbaPixels: Uint8Array,
+    fileName: string
+  ) {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+
+    const context = canvas.getContext('2d')
+    if (!context) return false
+
+    const imageData = new ImageData(new Uint8ClampedArray(rgbaPixels), width, height)
+    context.putImageData(imageData, 0, 0)
+
+    const link = document.createElement('a')
+    link.href = canvas.toDataURL('image/png')
+    link.download = fileName
+    link.click()
+
+    return true
+  }
+
+  function downloadRenderTexture(texture: Texture | null | undefined, fileName: string) {
+    if (!renderer || !texture) return false
+
+    const renderTarget = texture.userData.renderTarget as WebGLRenderTarget | undefined
+    if (!renderTarget) return false
+
+    const width = renderTarget.width
+    const height = renderTarget.height
+    const pixels = new Uint8Array(width * height * 4)
+    const previousTarget = renderer.getRenderTarget()
+
+    try {
+      renderer.setRenderTarget(renderTarget)
+      renderer.readRenderTargetPixels(renderTarget, 0, 0, width, height, pixels)
+    } catch (error) {
+      console.error('Failed to read render target pixels', error)
+      return false
+    } finally {
+      renderer.setRenderTarget(previousTarget)
+    }
+
+    const flipped = flipRowsRgba(pixels, width, height)
+    return triggerPngDownload(width, height, flipped, fileName)
+  }
+
+  export async function downloadTextureMapPng(fileName = 'gas-giant-texture-map.png') {
+    const colorMap = (material?.map as Texture | null | undefined) ?? colourTexture
+    return downloadRenderTexture(colorMap, fileName)
+  }
+
+  export async function downloadBumpMapPng(fileName = 'gas-giant-bump-map.png') {
+    const bumpMap = (material?.bumpMap as Texture | null | undefined) ?? bumpTexture
+    return downloadRenderTexture(bumpMap, fileName)
+  }
 
   function createRandom(initialSeed: number) {
     let state = initialSeed | 0
@@ -164,4 +243,3 @@
 <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
   <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
 </T.Mesh>
-

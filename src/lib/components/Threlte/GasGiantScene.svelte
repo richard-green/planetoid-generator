@@ -33,6 +33,11 @@
   }: Props = $props()
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
+  type GasGiantExports = {
+    downloadTextureMapPng: (fileName?: string) => Promise<boolean>
+    downloadBumpMapPng: (fileName?: string) => Promise<boolean>
+  }
+  let gasGiantRef: GasGiantExports | undefined = $state(undefined)
   const { camera, scene } = useThrelte()
 
   interactivity()
@@ -52,6 +57,14 @@
     controlsRef.mouseButtons.RIGHT = MOUSE.ROTATE
     controlsRef.update()
   })
+
+  export async function downloadTextureMapPng(fileName?: string) {
+    return (await gasGiantRef?.downloadTextureMapPng(fileName)) ?? false
+  }
+
+  export async function downloadBumpMapPng(fileName?: string) {
+    return (await gasGiantRef?.downloadBumpMapPng(fileName)) ?? false
+  }
 </script>
 
 <T.PerspectiveCamera makeDefault position={[0, 2, 7]}>
@@ -74,6 +87,7 @@
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
 <GasGiant
+  bind:this={gasGiantRef}
   {palette}
   {surfaceTint}
   {colorScale}
@@ -95,4 +109,3 @@
   {bumpTextureSize}
   {colorTextureSize}
 />
-

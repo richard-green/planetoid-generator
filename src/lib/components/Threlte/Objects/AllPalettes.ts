@@ -7,4 +7,3 @@ export const AllPalettes: Record<AnyPaletteName, Palette> = {
   ...PlanetoidPalettes,
   ...GasGiantPalettes,
 }
-
