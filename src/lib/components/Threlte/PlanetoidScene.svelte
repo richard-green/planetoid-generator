@@ -35,7 +35,8 @@
     craterRayDensity?: number
     craterRaySharpness?: number
     craterRayLengthPower?: number
-    enableRidgesRifts?: boolean
+    enableRidges?: boolean
+    enableRifts?: boolean
     ridgeStrength?: number
     ridgeScale?: number
     ridgeSharpness?: number
@@ -80,7 +81,8 @@
     craterRayDensity = 1,
     craterRaySharpness = 1,
     craterRayLengthPower = 2.8,
-    enableRidgesRifts = false,
+    enableRidges = false,
+    enableRifts = false,
     ridgeStrength = 0.5,
     ridgeScale = 2.2,
     ridgeSharpness = 1.6,
@@ -248,7 +250,8 @@
   {craterRayDensity}
   {craterRaySharpness}
   {craterRayLengthPower}
-  {enableRidgesRifts}
+  {enableRidges}
+  {enableRifts}
   {ridgeStrength}
   {ridgeScale}
   {ridgeSharpness}

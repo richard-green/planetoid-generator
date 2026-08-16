@@ -29,7 +29,8 @@ type BumpTextureOptions = {
   volcanoScale?: number
   volcanoStrength?: number
   swirliness?: number
-  enableRidgesRifts?: boolean
+  enableRidges?: boolean
+  enableRifts?: boolean
   ridgeStrength?: number
   ridgeScale?: number
   ridgeSharpness?: number
@@ -47,7 +48,8 @@ type ColourTextureOptions = {
   swirliness?: number
   ridgeColorWeight?: number
   riftColorWeight?: number
-  enableRidgesRifts?: boolean
+  enableRidges?: boolean
+  enableRifts?: boolean
   ridgeStrength?: number
   ridgeScale?: number
   ridgeSharpness?: number
@@ -113,7 +115,8 @@ const fragmentShader = `
   uniform float uCraterRayDensity;
   uniform float uCraterRaySharpness;
   uniform float uCraterRayLengthPower;
-  uniform int uEnableRidgesRifts;
+  uniform int uEnableRidges;
+  uniform int uEnableRifts;
   uniform float uRidgeStrength;
   uniform float uRidgeScale;
   uniform float uRidgeSharpness;
@@ -704,9 +707,14 @@ const fragmentShader = `
       ? accumulateVolcanoColorSignals(uv)
       : vec2(0.0);
     float volcanoColorWarp = volcanoColorSignals.x * 0.9 - volcanoColorSignals.y * 1.05;
-    vec2 ridgeRiftColorSignals = (uEnableRidgesRifts == 1)
-      ? ridgeRiftSignals(remappedPos, seed)
-      : vec2(0.0);
+    vec2 ridgeRiftColorSignals = vec2(0.0);
+    if (uEnableRidges == 1 || uEnableRifts == 1) {
+      vec2 baseRidgeRiftSignals = ridgeRiftSignals(remappedPos, seed);
+      ridgeRiftColorSignals = vec2(
+        (uEnableRidges == 1) ? baseRidgeRiftSignals.x : 0.0,
+        (uEnableRifts == 1) ? baseRidgeRiftSignals.y : 0.0
+      );
+    }
     float craterRayMask = accumulateCraterRayMaskAA(uv);
 
     bool debugEquator = (uDebugMidline == 1) && isDebugEquatorPixel(y);
@@ -719,7 +727,14 @@ const fragmentShader = `
       float bumpBase = fractalNoise(remappedPos * 8.7 + seed * 1.03 + vec3(1.1, 2.3, 3.7));
       float bumpDust = fractalNoise(remappedPos * 93.0 + seed * 1.79 + vec3(11.3, 17.9, 23.1));
       float bumpGrain = fractalNoise(remappedPos * 187.0 + seed * 2.41 + vec3(29.3, 31.7, 37.1));
-      float ridgeRift = (uEnableRidgesRifts == 1) ? ridgeRiftHeight(remappedPos, seed) : 0.0;
+      float ridgeRift = 0.0;
+      if (uEnableRidges == 1 || uEnableRifts == 1) {
+        vec2 ridgeRiftSignalsLocal = ridgeRiftSignals(remappedPos, seed);
+        float blend = clamp(uRidgesRiftsBlend, 0.0, 1.0);
+        float ridgeTerm = (uEnableRidges == 1) ? ridgeRiftSignalsLocal.x * (1.0 - blend) : 0.0;
+        float riftTerm = (uEnableRifts == 1) ? -ridgeRiftSignalsLocal.y * blend : 0.0;
+        ridgeRift = ridgeTerm + riftTerm;
+      }
 
       float polarHighFrequencyScale = mix(0.15, 1.0, equatorFactor);
 
@@ -865,7 +880,8 @@ const material = new ShaderMaterial({
     uCraterRayDensity: new Uniform(1),
     uCraterRaySharpness: new Uniform(1),
     uCraterRayLengthPower: new Uniform(2.8),
-    uEnableRidgesRifts: new Uniform(0),
+    uEnableRidges: new Uniform(0),
+    uEnableRifts: new Uniform(0),
     uRidgeStrength: new Uniform(0.5),
     uRidgeScale: new Uniform(2.2),
     uRidgeSharpness: new Uniform(1.6),
@@ -972,7 +988,8 @@ function renderTexture(
     craterRayDensity?: number
     craterRaySharpness?: number
     craterRayLengthPower?: number
-    enableRidgesRifts?: boolean
+    enableRidges?: boolean
+    enableRifts?: boolean
     ridgeStrength?: number
     ridgeScale?: number
     ridgeSharpness?: number
@@ -1043,7 +1060,8 @@ function renderTexture(
     1.0,
     5.0
   )
-  material.uniforms.uEnableRidgesRifts.value = options.enableRidgesRifts ? 1 : 0
+  material.uniforms.uEnableRidges.value = options.enableRidges ? 1 : 0
+  material.uniforms.uEnableRifts.value = options.enableRifts ? 1 : 0
   material.uniforms.uRidgeStrength.value = toClampedNumber(options.ridgeStrength, 0.5, 0.0, 2.0)
   material.uniforms.uRidgeScale.value = toClampedNumber(options.ridgeScale, 2.2, 0.5, 8.0)
   material.uniforms.uRidgeSharpness.value = toClampedNumber(options.ridgeSharpness, 1.6, 0.5, 4.0)
@@ -1121,7 +1139,8 @@ export function createPlanetoidColourTexture(
     volcanoColorStrength: options.volcanoColorStrength,
     ridgeColorWeight: options.ridgeColorWeight,
     riftColorWeight: options.riftColorWeight,
-    enableRidgesRifts: options.enableRidgesRifts,
+    enableRidges: options.enableRidges,
+    enableRifts: options.enableRifts,
     ridgeStrength: options.ridgeStrength,
     ridgeScale: options.ridgeScale,
     ridgeSharpness: options.ridgeSharpness,
@@ -1162,7 +1181,8 @@ export function createPlanetoidBumpTexture(
     volcanoScale: options.volcanoScale,
     volcanoStrength: options.volcanoStrength,
     swirliness: options.swirliness,
-    enableRidgesRifts: options.enableRidgesRifts,
+    enableRidges: options.enableRidges,
+    enableRifts: options.enableRifts,
     ridgeStrength: options.ridgeStrength,
     ridgeScale: options.ridgeScale,
     ridgeSharpness: options.ridgeSharpness,

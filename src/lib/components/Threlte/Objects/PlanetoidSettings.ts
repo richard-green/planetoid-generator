@@ -3,7 +3,8 @@ import type { PlanetoidPaletteName } from './PlanetoidPalettes'
 export type PlanetoidSettings = {
   autoRotate: boolean
   showDebugMeshes: boolean
-  enableRidgesRifts: boolean
+  enableRidges: boolean
+  enableRifts: boolean
   enableVolcanoes: boolean
   seed: number
   palette: PlanetoidPaletteName
@@ -88,7 +89,8 @@ export type PlanetoidRangeKey = keyof PlanetoidRangeValues
 export const DefaultPlanetoidSettings: PlanetoidSettings = {
   autoRotate: false,
   showDebugMeshes: false,
-  enableRidgesRifts: false,
+  enableRidges: false,
+  enableRifts: false,
   enableVolcanoes: false,
   seed: 1,
   palette: 'rocky',

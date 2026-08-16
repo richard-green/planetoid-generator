@@ -53,7 +53,8 @@
     craterRayDensity?: number
     craterRaySharpness?: number
     craterRayLengthPower?: number
-    enableRidgesRifts?: boolean
+    enableRidges?: boolean
+    enableRifts?: boolean
     ridgeStrength?: number
     ridgeScale?: number
     ridgeSharpness?: number
@@ -98,7 +99,8 @@
     craterRayDensity = 1,
     craterRaySharpness = 1,
     craterRayLengthPower = 2.8,
-    enableRidgesRifts = false,
+    enableRidges = false,
+    enableRifts = false,
     ridgeStrength = 0.5,
     ridgeScale = 2.2,
     ridgeSharpness = 1.6,
@@ -537,7 +539,8 @@
     const currentVolcanoColorStrength = volcanoColorStrength
     const currentRidgeColorWeight = ridgeColorWeight
     const currentRiftColorWeight = riftColorWeight
-    const ridgesRiftsEnabled = enableRidgesRifts
+    const ridgesEnabled = enableRidges
+    const riftsEnabled = enableRifts
     const currentRidgeStrength = ridgeStrength
     const currentRidgeScale = ridgeScale
     const currentRidgeSharpness = ridgeSharpness
@@ -573,7 +576,8 @@
         volcanoColorStrength: currentVolcanoColorStrength,
         ridgeColorWeight: currentRidgeColorWeight,
         riftColorWeight: currentRiftColorWeight,
-        enableRidgesRifts: ridgesRiftsEnabled,
+        enableRidges: ridgesEnabled,
+        enableRifts: riftsEnabled,
         ridgeStrength: currentRidgeStrength,
         ridgeScale: currentRidgeScale,
         ridgeSharpness: currentRidgeSharpness,
@@ -724,7 +728,8 @@
     const currentVolcanoCount = volcanoCount
     const currentVolcanoScale = volcanoScale
     const currentVolcanoStrength = volcanoStrength
-    const ridgesRiftsEnabled = enableRidgesRifts
+    const ridgesEnabled = enableRidges
+    const riftsEnabled = enableRifts
     const currentRidgeStrength = ridgeStrength
     const currentRidgeScale = ridgeScale
     const currentRidgeSharpness = ridgeSharpness
@@ -742,7 +747,8 @@
       volcanoCount: currentVolcanoCount,
       volcanoScale: currentVolcanoScale,
       volcanoStrength: currentVolcanoStrength,
-      enableRidgesRifts: ridgesRiftsEnabled,
+      enableRidges: ridgesEnabled,
+      enableRifts: riftsEnabled,
       ridgeStrength: currentRidgeStrength,
       ridgeScale: currentRidgeScale,
       ridgeSharpness: currentRidgeSharpness,

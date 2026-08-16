@@ -24,7 +24,8 @@
     | 'surfaceTint'
     | 'autoRotate'
     | 'showDebugMeshes'
-    | 'enableRidgesRifts'
+    | 'enableRidges'
+    | 'enableRifts'
     | 'enableVolcanoes'
   >
 
@@ -437,10 +438,16 @@
         ? raw.showDebugMeshes
         : DEFAULT_PLANETOID_SETTINGS.showDebugMeshes
 
-    const enableRidgesRifts =
+    const legacyEnableRidgesRifts =
       typeof raw.enableRidgesRifts === 'boolean'
         ? raw.enableRidgesRifts
-        : DEFAULT_PLANETOID_SETTINGS.enableRidgesRifts
+        : DEFAULT_PLANETOID_SETTINGS.enableRidges || DEFAULT_PLANETOID_SETTINGS.enableRifts
+
+    const enableRidges =
+      typeof raw.enableRidges === 'boolean' ? raw.enableRidges : legacyEnableRidgesRifts
+
+    const enableRifts =
+      typeof raw.enableRifts === 'boolean' ? raw.enableRifts : legacyEnableRidgesRifts
 
     const enableVolcanoes =
       typeof raw.enableVolcanoes === 'boolean'
@@ -683,7 +690,8 @@
       craterRayDensity,
       craterRaySharpness,
       craterRayLengthPower,
-      enableRidgesRifts,
+      enableRidges,
+      enableRifts,
       enableVolcanoes,
       ridgeStrength,
       ridgeScale,
@@ -1202,7 +1210,8 @@
           craterRayDensity={planetoid.craterRayDensity}
           craterRaySharpness={planetoid.craterRaySharpness}
           craterRayLengthPower={planetoid.craterRayLengthPower}
-          enableRidgesRifts={effectiveRidgesEnabled || effectiveRiftsEnabled}
+          enableRidges={effectiveRidgesEnabled}
+          enableRifts={effectiveRiftsEnabled}
           ridgeStrength={effectiveRidgesEnabled ? planetoid.ridgeStrength : 0}
           ridgeScale={planetoid.ridgeScale}
           ridgeSharpness={planetoid.ridgeSharpness}
