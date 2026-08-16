@@ -69,6 +69,7 @@
     metalness?: number
     autoRotate?: boolean
     showDebugMeshes?: boolean
+    enableLimbBumpFix?: boolean
     triangleDetail?: number
     bumpTextureSize?: number
     colorTextureSize?: number
@@ -116,6 +117,7 @@
     metalness = 0.02,
     autoRotate = false,
     showDebugMeshes = true,
+    enableLimbBumpFix = true,
     triangleDetail = 20,
     bumpTextureSize = 800,
     colorTextureSize = 256,
@@ -770,7 +772,8 @@
     bumpDebugTexture = bumpTexture
     if (material) {
       material.bumpMap = bumpTexture
-      material.bumpScale = currentBumpScale
+      // Safer artifact reduction: lower bump influence to reduce grazing-angle sparkle.
+      material.bumpScale = enableLimbBumpFix ? currentBumpScale * 0.55 : currentBumpScale
       material.needsUpdate = true
     }
     if (bumpDebugMaterial) {

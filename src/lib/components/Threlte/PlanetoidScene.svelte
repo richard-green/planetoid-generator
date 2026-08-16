@@ -50,6 +50,7 @@
     metalness?: number
     autoRotate?: boolean
     showDebugMeshes?: boolean
+    enableLimbBumpFix?: boolean
     viewMode?: PlanetoidViewMode
     triangleDetail?: number
     bumpTextureSize?: number
@@ -97,6 +98,7 @@
     metalness = 0.02,
     autoRotate = false,
     showDebugMeshes = true,
+    enableLimbBumpFix = true,
     viewMode = 'mesh',
     triangleDetail = 5,
     bumpTextureSize = 800,
@@ -267,6 +269,7 @@
   {metalness}
   {autoRotate}
   {showDebugMeshes}
+  {enableLimbBumpFix}
   {viewMode}
   {triangleDetail}
   {bumpTextureSize}

@@ -3,6 +3,7 @@ import type { PlanetoidPaletteName } from './PlanetoidPalettes'
 export type PlanetoidSettings = {
   autoRotate: boolean
   showDebugMeshes: boolean
+  enableLimbBumpFix: boolean
   enableCraters: boolean
   enableRidges: boolean
   enableRifts: boolean
@@ -90,6 +91,7 @@ export type PlanetoidRangeKey = keyof PlanetoidRangeValues
 export const DefaultPlanetoidSettings: PlanetoidSettings = {
   autoRotate: false,
   showDebugMeshes: false,
+  enableLimbBumpFix: true,
   enableCraters: true,
   enableRidges: false,
   enableRifts: false,
@@ -177,6 +179,7 @@ export const PlanetoidUiLabels = {
   surfaceTint: 'Surface tint',
   autoRotate: 'Auto-rotate planetoid',
   showDebugMeshes: 'Show debug meshes',
+  enableLimbBumpFix: 'Reduce limb bump artifacts',
   sections: {
     craters: 'Craters',
     ridges: 'Ridges',

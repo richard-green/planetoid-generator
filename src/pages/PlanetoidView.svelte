@@ -24,6 +24,7 @@
     | 'surfaceTint'
     | 'autoRotate'
     | 'showDebugMeshes'
+    | 'enableLimbBumpFix'
     | 'enableCraters'
     | 'enableRidges'
     | 'enableRifts'
@@ -439,6 +440,11 @@
         ? raw.showDebugMeshes
         : DEFAULT_PLANETOID_SETTINGS.showDebugMeshes
 
+    const enableLimbBumpFix =
+      typeof raw.enableLimbBumpFix === 'boolean'
+        ? raw.enableLimbBumpFix
+        : DEFAULT_PLANETOID_SETTINGS.enableLimbBumpFix
+
     const legacyEnableRidgesRifts =
       typeof raw.enableRidgesRifts === 'boolean'
         ? raw.enableRidgesRifts
@@ -696,6 +702,7 @@
       craterRayDensity,
       craterRaySharpness,
       craterRayLengthPower,
+      enableLimbBumpFix,
       enableCraters,
       enableRidges,
       enableRifts,
@@ -1232,6 +1239,7 @@
           metalness={planetoid.metalness}
           autoRotate={planetoid.autoRotate}
           showDebugMeshes={sceneViewMode === 'mesh' ? planetoid.showDebugMeshes : false}
+          enableLimbBumpFix={planetoid.enableLimbBumpFix}
           viewMode={sceneViewMode}
         />
       </Canvas>
@@ -1359,6 +1367,10 @@
             bind:checked={planetoid.showDebugMeshes}
             disabled={sceneViewMode !== 'mesh'}
           />
+        </label>
+        <label class="toggle-row">
+          <span>{PlanetoidUiLabels.enableLimbBumpFix}</span>
+          <input type="checkbox" bind:checked={planetoid.enableLimbBumpFix} />
         </label>
         <label class="compact-number-row">
           <span>Seed</span>

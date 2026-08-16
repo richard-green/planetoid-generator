@@ -48,5 +48,6 @@ export const potatoPreset: PlanetoidPreset = {
     metalness: 0.5,
     autoRotate: false,
     showDebugMeshes: false,
+    enableLimbBumpFix: true,
   },
 }
