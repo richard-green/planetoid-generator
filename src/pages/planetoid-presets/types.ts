@@ -5,4 +5,3 @@ export type PlanetoidPreset = {
   name: string
   settings: PlanetoidSettings
 }
-

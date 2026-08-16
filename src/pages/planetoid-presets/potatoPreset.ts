@@ -48,4 +48,3 @@ export const potatoPreset: PlanetoidPreset = {
     showDebugMeshes: false,
   },
 }
-

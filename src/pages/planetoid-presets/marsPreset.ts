@@ -48,4 +48,3 @@ export const marsPreset: PlanetoidPreset = {
     showDebugMeshes: false,
   },
 }
-

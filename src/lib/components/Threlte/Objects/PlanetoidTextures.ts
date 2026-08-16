@@ -701,4 +701,3 @@ export function createPlanetoidRayMaskTexture(
 
   return texture
 }
-
