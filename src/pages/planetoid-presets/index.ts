@@ -1,0 +1,13 @@
+import { iceworldPreset } from './iceworldPreset'
+import { metallicCratersPreset } from './metallicCratersPreset'
+import { rockyClassicPreset } from './rockyClassicPreset'
+import { volcanicRiftPreset } from './volcanicRiftPreset'
+
+export type { PlanetoidPreset } from './types'
+
+export const BUILTIN_PRESETS = [
+  rockyClassicPreset,
+  iceworldPreset,
+  volcanicRiftPreset,
+  metallicCratersPreset,
+]
