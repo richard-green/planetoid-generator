@@ -10,6 +10,12 @@ export type GasGiantSettings = {
   cloudBandCount: number
   cloudBandSharpness: number
   cloudChaos: number
+  enableStorms: boolean
+  stormCount: number
+  stormScale: number
+  stormPower: number
+  stormStrength: number
+  stormColorStrength: number
   bumpScale: number
   roughness: number
   metalness: number
@@ -25,6 +31,11 @@ export type GasGiantRangeValues = Pick<
   | 'cloudBandCount'
   | 'cloudBandSharpness'
   | 'cloudChaos'
+  | 'stormCount'
+  | 'stormScale'
+  | 'stormPower'
+  | 'stormStrength'
+  | 'stormColorStrength'
   | 'bumpScale'
   | 'roughness'
   | 'metalness'
@@ -44,6 +55,12 @@ export const DefaultGasGiantSettings: GasGiantSettings = {
   cloudBandCount: 11,
   cloudBandSharpness: 0.58,
   cloudChaos: 0.8,
+  enableStorms: true,
+  stormCount: 8,
+  stormScale: 0.18,
+  stormPower: 2.2,
+  stormStrength: 0.45,
+  stormColorStrength: 0.4,
   bumpScale: 0.7,
   roughness: 0.82,
   metalness: 0.05,
@@ -58,6 +75,11 @@ export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
   cloudBandCount: 'Cloud band count',
   cloudBandSharpness: 'Band sharpness',
   cloudChaos: 'Cloud chaos',
+  stormCount: 'Storm count',
+  stormScale: 'Storm scale',
+  stormPower: 'Storm falloff power',
+  stormStrength: 'Storm strength',
+  stormColorStrength: 'Storm color strength',
   bumpScale: 'Bump scale',
   roughness: 'Roughness',
   metalness: 'Metalness',
@@ -70,6 +92,7 @@ export const GasGiantUiLabels = {
   palette: 'Palette',
   surfaceTint: 'Surface tint',
   autoRotate: 'Auto-rotate giant',
+  enableStorms: 'Enable storm systems',
 } as const
 
 export const MinValues: GasGiantRangeValues = {
@@ -79,6 +102,11 @@ export const MinValues: GasGiantRangeValues = {
   cloudBandCount: 2,
   cloudBandSharpness: 0,
   cloudChaos: 0,
+  stormCount: 0,
+  stormScale: 0,
+  stormPower: 0.5,
+  stormStrength: 0,
+  stormColorStrength: 0,
   bumpScale: 0,
   roughness: 0,
   metalness: 0,
@@ -93,6 +121,11 @@ export const MaxValues: GasGiantRangeValues = {
   cloudBandCount: 28,
   cloudBandSharpness: 1,
   cloudChaos: 2,
+  stormCount: 32,
+  stormScale: 0.45,
+  stormPower: 6,
+  stormStrength: 1.5,
+  stormColorStrength: 1.5,
   bumpScale: 10,
   roughness: 1,
   metalness: 1,

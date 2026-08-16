@@ -18,6 +18,12 @@
     cloudBandCount = DefaultGasGiantSettings.cloudBandCount,
     cloudBandSharpness = DefaultGasGiantSettings.cloudBandSharpness,
     cloudChaos = DefaultGasGiantSettings.cloudChaos,
+    enableStorms = DefaultGasGiantSettings.enableStorms,
+    stormCount = DefaultGasGiantSettings.stormCount,
+    stormScale = DefaultGasGiantSettings.stormScale,
+    stormPower = DefaultGasGiantSettings.stormPower,
+    stormStrength = DefaultGasGiantSettings.stormStrength,
+    stormColorStrength = DefaultGasGiantSettings.stormColorStrength,
     bumpScale = DefaultGasGiantSettings.bumpScale,
     roughness = DefaultGasGiantSettings.roughness,
     metalness = DefaultGasGiantSettings.metalness,
@@ -76,6 +82,12 @@
   {cloudBandCount}
   {cloudBandSharpness}
   {cloudChaos}
+  {enableStorms}
+  {stormCount}
+  {stormScale}
+  {stormPower}
+  {stormStrength}
+  {stormColorStrength}
   {bumpScale}
   {roughness}
   {metalness}

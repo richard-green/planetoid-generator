@@ -9,14 +9,25 @@
   } from '../lib/components/Threlte/Objects/GasGiantPalettes'
   import {
     DefaultGasGiantSettings,
+    GasGiantUiLabels,
     MaxValues,
     MinValues,
     type GasGiantSettings,
   } from '../lib/components/Threlte/Objects/GasGiantSettings'
 
   type GasGiantViewSettings = GasGiantSettings
+  type GasGiantUiState = {
+    sceneSectionOpen: boolean
+    colorSettingsSectionOpen: boolean
+    cloudSettingsSectionOpen: boolean
+    stormSectionOpen: boolean
+    materialPropertiesSectionOpen: boolean
+    textureResolutionSectionOpen: boolean
+    stormsEnabled: boolean
+  }
 
   const GAS_GIANT_SETTINGS_STORAGE_KEY = 'gas-giant-view-settings-v1'
+  const GAS_GIANT_UI_STORAGE_KEY = 'gas-giant-view-ui-v1'
 
   const DEFAULT_GAS_GIANT_SETTINGS: GasGiantViewSettings = { ...DefaultGasGiantSettings }
 
@@ -29,6 +40,12 @@
   let cloudBandCount = $state(DEFAULT_GAS_GIANT_SETTINGS.cloudBandCount)
   let cloudBandSharpness = $state(DEFAULT_GAS_GIANT_SETTINGS.cloudBandSharpness)
   let cloudChaos = $state(DEFAULT_GAS_GIANT_SETTINGS.cloudChaos)
+  let enableStorms = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
+  let stormCount = $state(DEFAULT_GAS_GIANT_SETTINGS.stormCount)
+  let stormScale = $state(DEFAULT_GAS_GIANT_SETTINGS.stormScale)
+  let stormPower = $state(DEFAULT_GAS_GIANT_SETTINGS.stormPower)
+  let stormStrength = $state(DEFAULT_GAS_GIANT_SETTINGS.stormStrength)
+  let stormColorStrength = $state(DEFAULT_GAS_GIANT_SETTINGS.stormColorStrength)
   let bumpScale = $state(DEFAULT_GAS_GIANT_SETTINGS.bumpScale)
   let roughness = $state(DEFAULT_GAS_GIANT_SETTINGS.roughness)
   let metalness = $state(DEFAULT_GAS_GIANT_SETTINGS.metalness)
@@ -36,6 +53,18 @@
   let colorTextureSize = $state(DEFAULT_GAS_GIANT_SETTINGS.colorTextureSize)
 
   let settingsHydrated = $state(false)
+  let sectionTogglesHydrated = $state(false)
+
+  let sceneSectionOpen = $state(true)
+  let colorSettingsSectionOpen = $state(true)
+  let cloudSettingsSectionOpen = $state(true)
+  let stormSectionOpen = $state(true)
+  let materialPropertiesSectionOpen = $state(true)
+  let textureResolutionSectionOpen = $state(false)
+  let stormsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
+  let wasStormsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
+
+  const effectiveStormsEnabled = $derived(stormsEnabled)
 
   function clamp(value: number, min: number, max: number) {
     return Math.min(Math.max(value, min), max)
@@ -57,6 +86,13 @@
 
     const legacyCloudFiligreeStrength =
       typeof raw.cloudFiligreeStrength === 'number' ? raw.cloudFiligreeStrength : undefined
+
+    const legacyStormsEnabled =
+      typeof raw.enableStorms === 'boolean'
+        ? raw.enableStorms
+        : typeof raw.stormCount === 'number'
+          ? raw.stormCount > 0
+          : DEFAULT_GAS_GIANT_SETTINGS.enableStorms
 
     return {
       seed:
@@ -97,6 +133,31 @@
           : typeof legacyCloudFiligreeStrength === 'number'
             ? clamp(legacyCloudFiligreeStrength, MinValues.cloudChaos, MaxValues.cloudChaos)
             : DEFAULT_GAS_GIANT_SETTINGS.cloudChaos,
+      enableStorms: legacyStormsEnabled,
+      stormCount:
+        typeof raw.stormCount === 'number'
+          ? Math.round(clamp(raw.stormCount, MinValues.stormCount, MaxValues.stormCount))
+          : DEFAULT_GAS_GIANT_SETTINGS.stormCount,
+      stormScale:
+        typeof raw.stormScale === 'number'
+          ? clamp(raw.stormScale, MinValues.stormScale, MaxValues.stormScale)
+          : DEFAULT_GAS_GIANT_SETTINGS.stormScale,
+      stormPower:
+        typeof raw.stormPower === 'number'
+          ? clamp(raw.stormPower, MinValues.stormPower, MaxValues.stormPower)
+          : DEFAULT_GAS_GIANT_SETTINGS.stormPower,
+      stormStrength:
+        typeof raw.stormStrength === 'number'
+          ? clamp(raw.stormStrength, MinValues.stormStrength, MaxValues.stormStrength)
+          : DEFAULT_GAS_GIANT_SETTINGS.stormStrength,
+      stormColorStrength:
+        typeof raw.stormColorStrength === 'number'
+          ? clamp(
+              raw.stormColorStrength,
+              MinValues.stormColorStrength,
+              MaxValues.stormColorStrength
+            )
+          : DEFAULT_GAS_GIANT_SETTINGS.stormColorStrength,
       bumpScale:
         typeof raw.bumpScale === 'number'
           ? clamp(raw.bumpScale, MinValues.bumpScale, MaxValues.bumpScale)
@@ -134,6 +195,12 @@
     cloudBandCount = settings.cloudBandCount
     cloudBandSharpness = settings.cloudBandSharpness
     cloudChaos = settings.cloudChaos
+    enableStorms = settings.enableStorms
+    stormCount = settings.stormCount
+    stormScale = settings.stormScale
+    stormPower = settings.stormPower
+    stormStrength = settings.stormStrength
+    stormColorStrength = settings.stormColorStrength
     bumpScale = settings.bumpScale
     roughness = settings.roughness
     metalness = settings.metalness
@@ -170,6 +237,12 @@
         cloudBandCount,
         cloudBandSharpness,
         cloudChaos,
+        enableStorms: effectiveStormsEnabled,
+        stormCount,
+        stormScale,
+        stormPower,
+        stormStrength,
+        stormColorStrength,
         bumpScale,
         roughness,
         metalness,
@@ -180,6 +253,90 @@
       localStorage.setItem(GAS_GIANT_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
     } catch (error) {
       console.warn('Failed to persist gas giant settings to localStorage', error)
+    }
+  })
+
+  function sanitizeGasGiantUiState(input: unknown): GasGiantUiState | null {
+    if (typeof input !== 'object' || input === null) return null
+
+    const raw = input as Record<string, unknown>
+    const hasAllKeys =
+      typeof raw.sceneSectionOpen === 'boolean' &&
+      typeof raw.colorSettingsSectionOpen === 'boolean' &&
+      typeof raw.cloudSettingsSectionOpen === 'boolean' &&
+      typeof raw.stormSectionOpen === 'boolean' &&
+      typeof raw.materialPropertiesSectionOpen === 'boolean' &&
+      typeof raw.textureResolutionSectionOpen === 'boolean' &&
+      typeof raw.stormsEnabled === 'boolean'
+
+    if (!hasAllKeys) return null
+
+    return {
+      sceneSectionOpen: raw.sceneSectionOpen as boolean,
+      colorSettingsSectionOpen: raw.colorSettingsSectionOpen as boolean,
+      cloudSettingsSectionOpen: raw.cloudSettingsSectionOpen as boolean,
+      stormSectionOpen: raw.stormSectionOpen as boolean,
+      materialPropertiesSectionOpen: raw.materialPropertiesSectionOpen as boolean,
+      textureResolutionSectionOpen: raw.textureResolutionSectionOpen as boolean,
+      stormsEnabled: raw.stormsEnabled as boolean,
+    }
+  }
+
+  $effect(() => {
+    if (!settingsHydrated || sectionTogglesHydrated) return
+
+    let restoredUiState: GasGiantUiState | null = null
+    try {
+      const rawUi = localStorage.getItem(GAS_GIANT_UI_STORAGE_KEY)
+      if (rawUi) {
+        restoredUiState = sanitizeGasGiantUiState(JSON.parse(rawUi))
+      }
+    } catch (error) {
+      console.warn('Failed to restore gas giant UI state from localStorage', error)
+    }
+
+    if (restoredUiState) {
+      sceneSectionOpen = restoredUiState.sceneSectionOpen
+      colorSettingsSectionOpen = restoredUiState.colorSettingsSectionOpen
+      cloudSettingsSectionOpen = restoredUiState.cloudSettingsSectionOpen
+      stormSectionOpen = restoredUiState.stormSectionOpen
+      materialPropertiesSectionOpen = restoredUiState.materialPropertiesSectionOpen
+      textureResolutionSectionOpen = restoredUiState.textureResolutionSectionOpen
+      stormsEnabled = restoredUiState.stormsEnabled
+    } else {
+      stormsEnabled = enableStorms
+    }
+
+    wasStormsEnabled = stormsEnabled
+    sectionTogglesHydrated = true
+  })
+
+  $effect(() => {
+    if (!settingsHydrated || !sectionTogglesHydrated) return
+
+    try {
+      const uiState: GasGiantUiState = {
+        sceneSectionOpen,
+        colorSettingsSectionOpen,
+        cloudSettingsSectionOpen,
+        stormSectionOpen,
+        materialPropertiesSectionOpen,
+        textureResolutionSectionOpen,
+        stormsEnabled,
+      }
+
+      localStorage.setItem(GAS_GIANT_UI_STORAGE_KEY, JSON.stringify(uiState))
+    } catch (error) {
+      console.warn('Failed to persist gas giant UI state to localStorage', error)
+    }
+  })
+
+  $effect(() => {
+    if (!sectionTogglesHydrated) return
+
+    if (effectiveStormsEnabled !== wasStormsEnabled) {
+      stormSectionOpen = effectiveStormsEnabled
+      wasStormsEnabled = effectiveStormsEnabled
     }
   })
 
@@ -235,6 +392,12 @@
           {cloudBandCount}
           {cloudBandSharpness}
           {cloudChaos}
+          enableStorms={effectiveStormsEnabled}
+          {stormCount}
+          {stormScale}
+          {stormPower}
+          {stormStrength}
+          {stormColorStrength}
           {bumpScale}
           {roughness}
           {metalness}
@@ -246,75 +409,192 @@
 
     <div class="controls">
       <fieldset>
-        <legend>Giant Setup</legend>
-        <label>
-          Palette
-          <select bind:value={palette}>
-            {#each GasGiantPaletteNames as option (option)}
-              <option value={option}>{option}</option>
-            {/each}
-          </select>
-        </label>
-        <div
-          class="palette-preview"
-          style:background={selectedPaletteGradient}
-          aria-label="Selected giant palette gradient"
-        ></div>
-        <label>
-          <span class="label-row">
-            <span>Surface tint</span>
-            <span class="label-value">{surfaceTint.toUpperCase()}</span>
-          </span>
-          <input type="color" bind:value={surfaceTint} />
-        </label>
-        <label class="toggle-row">
-          <span>Auto-rotate giant</span>
-          <input type="checkbox" bind:checked={autoRotate} />
-        </label>
-        <label class="compact-number-row">
-          <span>Seed</span>
-          <input type="number" min={0} max={999999} step="1" bind:value={seed} />
-        </label>
-        <label class="compact-number-row">
-          <span>Cloud band count</span>
-          <input type="number" min={2} max={28} step="1" bind:value={cloudBandCount} />
-        </label>
-        <label class="compact-number-row">
-          <span>Band sharpness</span>
-          <input type="number" min={0} max={1} step="0.01" bind:value={cloudBandSharpness} />
-        </label>
-        <label class="compact-number-row">
-          <span>Cloud chaos</span>
-          <input type="number" min={0} max={2} step="0.01" bind:value={cloudChaos} />
-        </label>
-        <label class="compact-number-row">
-          <span>Palette influence</span>
-          <input type="number" min={0} max={2} step="0.05" bind:value={colorScale} />
-        </label>
-        <label class="compact-number-row">
-          <span>Tint shadow floor</span>
-          <input type="number" min={0} max={0.9} step="0.01" bind:value={tintShadowFloor} />
-        </label>
-        <label class="compact-number-row">
-          <span>Bump scale</span>
-          <input type="number" min={0} max={10} step="0.05" bind:value={bumpScale} />
-        </label>
-        <label class="compact-number-row">
-          <span>Roughness</span>
-          <input type="number" min={0} max={1} step="0.01" bind:value={roughness} />
-        </label>
-        <label class="compact-number-row">
-          <span>Metalness</span>
-          <input type="number" min={0} max={1} step="0.01" bind:value={metalness} />
-        </label>
-        <label class="compact-number-row">
-          <span>Bump texture height</span>
-          <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
-        </label>
-        <label class="compact-number-row">
-          <span>Color texture height</span>
-          <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
-        </label>
+        <legend>Scene</legend>
+        <details class="control-section" bind:open={sceneSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>View</span>
+          </summary>
+          <label class="toggle-row">
+            <span>{GasGiantUiLabels.autoRotate}</span>
+            <input type="checkbox" bind:checked={autoRotate} />
+          </label>
+          <label class="compact-number-row">
+            <span>{GasGiantUiLabels.seed}</span>
+            <input type="number" min={0} max={999999} step="1" bind:value={seed} />
+          </label>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Texture</legend>
+        <details class="control-section" bind:open={colorSettingsSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Color settings</span>
+          </summary>
+          <label>
+            {GasGiantUiLabels.palette}
+            <select bind:value={palette}>
+              {#each GasGiantPaletteNames as option (option)}
+                <option value={option}>{option}</option>
+              {/each}
+            </select>
+          </label>
+          <div
+            class="palette-preview"
+            style:background={selectedPaletteGradient}
+            aria-label="Selected giant palette gradient"
+          ></div>
+          <label>
+            <span class="label-row">
+              <span>{GasGiantUiLabels.surfaceTint}</span>
+              <span class="label-value">{surfaceTint.toUpperCase()}</span>
+            </span>
+            <input type="color" bind:value={surfaceTint} />
+          </label>
+          <label class="compact-number-row">
+            <span>Palette influence</span>
+            <input type="number" min={0} max={2} step="0.05" bind:value={colorScale} />
+          </label>
+          <label class="compact-number-row">
+            <span>Tint shadow floor</span>
+            <input type="number" min={0} max={0.9} step="0.01" bind:value={tintShadowFloor} />
+          </label>
+        </details>
+
+        <details class="control-section" bind:open={cloudSettingsSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Cloud bands</span>
+          </summary>
+          <label class="compact-number-row">
+            <span>Cloud band count</span>
+            <input type="number" min={2} max={28} step="1" bind:value={cloudBandCount} />
+          </label>
+          <label class="compact-number-row">
+            <span>Band sharpness</span>
+            <input type="number" min={0} max={1} step="0.01" bind:value={cloudBandSharpness} />
+          </label>
+          <label class="compact-number-row">
+            <span>Cloud chaos</span>
+            <input type="number" min={0} max={2} step="0.01" bind:value={cloudChaos} />
+          </label>
+        </details>
+
+        <details class="control-section" bind:open={textureResolutionSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Texture resolution</span>
+          </summary>
+          <label class="compact-number-row">
+            <span>Bump texture height</span>
+            <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
+          </label>
+          <label class="compact-number-row">
+            <span>Color texture height</span>
+            <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
+          </label>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Features</legend>
+        <details class="control-section" bind:open={stormSectionOpen}>
+          <summary
+            class="summary-with-toggle"
+            onclick={(event) => !effectiveStormsEnabled && event.preventDefault()}
+          >
+            <span class="summary-main">
+              <span class="summary-chevron" aria-hidden="true"></span>
+              <span>Storm systems</span>
+            </span>
+            <label class="summary-toggle">
+              <input
+                type="checkbox"
+                bind:checked={stormsEnabled}
+                onclick={(event) => event.stopPropagation()}
+              />
+            </label>
+          </summary>
+          <label class="compact-number-row">
+            <span>Storm count</span>
+            <input
+              type="number"
+              min={0}
+              max={32}
+              step="1"
+              bind:value={stormCount}
+              disabled={!effectiveStormsEnabled}
+            />
+          </label>
+          <label class="compact-number-row">
+            <span>Storm scale</span>
+            <input
+              type="number"
+              min={0}
+              max={0.45}
+              step="0.01"
+              bind:value={stormScale}
+              disabled={!effectiveStormsEnabled}
+            />
+          </label>
+          <label class="compact-number-row">
+            <span>Storm falloff power</span>
+            <input
+              type="number"
+              min={0.5}
+              max={6}
+              step="0.1"
+              bind:value={stormPower}
+              disabled={!effectiveStormsEnabled}
+            />
+          </label>
+          <label class="compact-number-row">
+            <span>Storm strength</span>
+            <input
+              type="number"
+              min={0}
+              max={1.5}
+              step="0.01"
+              bind:value={stormStrength}
+              disabled={!effectiveStormsEnabled}
+            />
+          </label>
+          <label class="compact-number-row">
+            <span>Storm color strength</span>
+            <input
+              type="number"
+              min={0}
+              max={1.5}
+              step="0.01"
+              bind:value={stormColorStrength}
+              disabled={!effectiveStormsEnabled}
+            />
+          </label>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Material</legend>
+        <details class="control-section" bind:open={materialPropertiesSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Properties</span>
+          </summary>
+          <label class="compact-number-row">
+            <span>Bump scale</span>
+            <input type="number" min={0} max={10} step="0.05" bind:value={bumpScale} />
+          </label>
+          <label class="compact-number-row">
+            <span>Roughness</span>
+            <input type="number" min={0} max={1} step="0.01" bind:value={roughness} />
+          </label>
+          <label class="compact-number-row">
+            <span>Metalness</span>
+            <input type="number" min={0} max={1} step="0.01" bind:value={metalness} />
+          </label>
+        </details>
       </fieldset>
     </div>
   </section>
@@ -513,9 +793,90 @@
   .palette-preview {
     width: 100%;
     height: 2rem;
-    border-radius: 999px;
+    margin: 0.6rem 0;
+    border-radius: 10px;
     border: 1px solid rgba(173, 209, 241, 0.62);
-    box-shadow: inset 0 0 0 1px rgba(3, 8, 16, 0.55);
+    box-shadow:
+      inset 0 0 0 1px rgba(3, 8, 16, 0.55),
+      0 4px 14px rgba(0, 0, 0, 0.2);
+  }
+
+  .control-section {
+    border: 1px solid rgba(142, 180, 221, 0.18);
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem 0.75rem;
+    background: rgba(7, 14, 28, 0.55);
+  }
+
+  .control-section:not([open]) {
+    padding: 0.35rem 0.75rem;
+  }
+
+  .control-section summary {
+    cursor: pointer;
+    list-style: none;
+    display: inline-flex;
+    width: 100%;
+    box-sizing: border-box;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #f0f6ff;
+    margin: 0;
+  }
+
+  .control-section[open] summary {
+    margin: 0.1rem 0 0.6rem;
+  }
+
+  .control-section summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .summary-with-toggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .summary-main {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .summary-chevron {
+    width: 0;
+    height: 0;
+    border-top: 0.34rem solid transparent;
+    border-bottom: 0.34rem solid transparent;
+    border-left: 0.48rem solid #f0f6ff;
+    opacity: 0.82;
+    transform: rotate(0deg);
+    transition: transform 140ms ease;
+    transform-origin: 30% 50%;
+    flex: 0 0 auto;
+  }
+
+  .control-section[open] .summary-chevron {
+    transform: rotate(90deg);
+  }
+
+  .summary-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+  }
+
+  .summary-toggle input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    padding: 0;
   }
 
   @media (max-width: 1080px) {

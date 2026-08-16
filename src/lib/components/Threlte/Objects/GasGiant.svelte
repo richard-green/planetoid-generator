@@ -21,6 +21,12 @@
     cloudBandCount = DefaultGasGiantSettings.cloudBandCount,
     cloudBandSharpness = DefaultGasGiantSettings.cloudBandSharpness,
     cloudChaos = DefaultGasGiantSettings.cloudChaos,
+    enableStorms = DefaultGasGiantSettings.enableStorms,
+    stormCount = DefaultGasGiantSettings.stormCount,
+    stormScale = DefaultGasGiantSettings.stormScale,
+    stormPower = DefaultGasGiantSettings.stormPower,
+    stormStrength = DefaultGasGiantSettings.stormStrength,
+    stormColorStrength = DefaultGasGiantSettings.stormColorStrength,
     bumpScale = DefaultGasGiantSettings.bumpScale,
     roughness = DefaultGasGiantSettings.roughness,
     metalness = DefaultGasGiantSettings.metalness,
@@ -63,6 +69,11 @@
     if (!renderer || !material) return
 
     const paletteData = GasGiantPalettes[palette]
+    const effectiveStormCount = enableStorms ? stormCount : 0
+    const effectiveStormScale = enableStorms ? stormScale : 0
+    const effectiveStormPower = enableStorms ? stormPower : 2.2
+    const effectiveStormStrength = enableStorms ? stormStrength : 0
+    const effectiveStormColorStrength = enableStorms ? stormColorStrength : 0
 
     const nextTexture = createGasGiantColourTexture(
       renderer,
@@ -76,6 +87,11 @@
         bandCount: cloudBandCount,
         bandSharpness: cloudBandSharpness,
         cloudChaos,
+        stormCount: effectiveStormCount,
+        stormScale: effectiveStormScale,
+        stormPower: effectiveStormPower,
+        stormStrength: effectiveStormStrength,
+        stormColorStrength: effectiveStormColorStrength,
       }
     )
 
@@ -95,6 +111,11 @@
     if (!renderer || !material) return
 
     const paletteData = GasGiantPalettes[palette]
+    const effectiveStormCount = enableStorms ? stormCount : 0
+    const effectiveStormScale = enableStorms ? stormScale : 0
+    const effectiveStormPower = enableStorms ? stormPower : 2.2
+    const effectiveStormStrength = enableStorms ? stormStrength : 0
+    const effectiveStormColorStrength = enableStorms ? stormColorStrength : 0
 
     const nextBump = createGasGiantBumpTexture(
       renderer,
@@ -108,6 +129,11 @@
         bandCount: cloudBandCount,
         bandSharpness: cloudBandSharpness,
         cloudChaos,
+        stormCount: effectiveStormCount,
+        stormScale: effectiveStormScale,
+        stormPower: effectiveStormPower,
+        stormStrength: effectiveStormStrength,
+        stormColorStrength: effectiveStormColorStrength,
       }
     )
 
