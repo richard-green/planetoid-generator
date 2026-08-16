@@ -1,4 +1,5 @@
 <script lang="ts">
+  import GasGiantView from './pages/GasGiantView.svelte'
   import PlanetoidView from './pages/PlanetoidView.svelte'
   import type { Component } from 'svelte'
 
@@ -8,7 +9,10 @@
     component: Component
   }
 
-  const routes: Route[] = [{ name: 'Planetoids', path: '/planetoids', component: PlanetoidView }]
+  const routes: Route[] = [
+    { name: 'Planetoids', path: '/planetoids', component: PlanetoidView },
+    { name: 'Gas And Ice Giants', path: '/giants', component: GasGiantView },
+  ]
 
   const fallbackPath = routes[0]?.path ?? '/'
   let currentPath = $state<string>(normalizePath(window.location.pathname))

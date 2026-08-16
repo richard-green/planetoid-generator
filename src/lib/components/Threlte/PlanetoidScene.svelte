@@ -5,12 +5,12 @@
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import Planetoid from './Objects/Planetoid.svelte'
-  import type { PlanetoidPaletteName } from './Objects/PlanetoidPalettes'
+  import type { AnyPaletteName } from './Objects/AllPalettes'
 
   export type PlanetoidViewMode = 'mesh' | 'bump' | 'texture' | 'ray'
 
   type Props = {
-    palette?: PlanetoidPaletteName
+    palette?: AnyPaletteName
     surfaceTint?: string
     colorScale?: number
     tintShadowFloor?: number

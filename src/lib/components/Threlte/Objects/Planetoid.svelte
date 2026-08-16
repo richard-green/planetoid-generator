@@ -16,7 +16,7 @@
   } from 'three'
   import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
   import { onDestroy } from 'svelte'
-  import { PlanetoidPalettes, type PlanetoidPaletteName } from './PlanetoidPalettes'
+  import { AllPalettes, type AnyPaletteName } from './AllPalettes'
   import { MaxValues, MinValues } from './PlanetoidSettings'
   import {
     createPlanetoidBumpTexture,
@@ -29,7 +29,7 @@
 
   type Props = {
     viewMode?: 'mesh' | 'bump' | 'texture' | 'ray'
-    palette?: PlanetoidPaletteName
+    palette?: AnyPaletteName
     surfaceTint?: string
     colorScale?: number
     tintShadowFloor?: number
@@ -533,7 +533,7 @@
     if (!renderer) return
 
     const shape = shapeParameters
-    const planetoidPalette = PlanetoidPalettes[palette]
+    const planetoidPalette = AllPalettes[palette]
     const textureScale = colorScale
     const currentCraterCount = craterCount
     const currentCraterColorStrength = craterColorStrength
@@ -680,7 +680,7 @@
       return
     }
 
-    const planetoidPalette = PlanetoidPalettes[palette]
+    const planetoidPalette = AllPalettes[palette]
     const gradientWidth = Math.max(64, colorTextureSize * 2)
     const gradientHeight = Math.max(8, Math.floor(colorTextureSize * 0.2))
 

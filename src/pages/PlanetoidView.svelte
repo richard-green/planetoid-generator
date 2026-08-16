@@ -1262,22 +1262,25 @@
 <div class="page">
   <h1 class="page-title">
     <span>Planetoid Generator</span>
-    <a
-      class="page-title-github-link"
-      href="https://github.com/richard-green/planetoid-generator"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Open GitHub repository"
-      title="View source on GitHub"
-    >
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-        <path
-          fill="currentColor"
-          d="M12 0.5c-6.35 0-11.5 5.15-11.5 11.5 0 5.08 3.29 9.39 7.86 10.91 0.58 0.11 0.79-0.25 0.79-0.56 0-0.28-0.01-1.02-0.02-2-3.2 0.7-3.88-1.54-3.88-1.54-0.52-1.33-1.28-1.68-1.28-1.68-1.04-0.71 0.08-0.7 0.08-0.7 1.15 0.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33 0.96 0.1-0.74 0.4-1.25 0.73-1.54-2.55-0.29-5.24-1.27-5.24-5.65 0-1.25 0.45-2.28 1.18-3.08-0.12-0.29-0.51-1.46 0.11-3.05 0 0 0.97-0.31 3.17 1.18 0.92-0.26 1.9-0.38 2.88-0.38 0.98 0 1.96 0.13 2.88 0.38 2.2-1.49 3.17-1.18 3.17-1.18 0.63 1.59 0.23 2.76 0.11 3.05 0.73 0.8 1.18 1.83 1.18 3.08 0 4.39-2.69 5.36-5.25 5.64 0.41 0.35 0.77 1.04 0.77 2.1 0 1.52-0.01 2.74-0.01 3.11 0 0.31 0.21 0.68 0.8 0.56 4.56-1.53 7.85-5.84 7.85-10.91 0-6.35-5.15-11.5-11.5-11.5z"
-        ></path>
-      </svg>
-      <span class="sr-only">GitHub repository</span>
-    </a>
+    <div class="page-title-actions">
+      <a class="page-title-link" href="/giants">Gas and Ice Giants</a>
+      <a
+        class="page-title-github-link"
+        href="https://github.com/richard-green/planetoid-generator"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Open GitHub repository"
+        title="View source on GitHub"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path
+            fill="currentColor"
+            d="M12 0.5c-6.35 0-11.5 5.15-11.5 11.5 0 5.08 3.29 9.39 7.86 10.91 0.58 0.11 0.79-0.25 0.79-0.56 0-0.28-0.01-1.02-0.02-2-3.2 0.7-3.88-1.54-3.88-1.54-0.52-1.33-1.28-1.68-1.28-1.68-1.04-0.71 0.08-0.7 0.08-0.7 1.15 0.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33 0.96 0.1-0.74 0.4-1.25 0.73-1.54-2.55-0.29-5.24-1.27-5.24-5.65 0-1.25 0.45-2.28 1.18-3.08-0.12-0.29-0.51-1.46 0.11-3.05 0 0 0.97-0.31 3.17 1.18 0.92-0.26 1.9-0.38 2.88-0.38 0.98 0 1.96 0.13 2.88 0.38 2.2-1.49 3.17-1.18 3.17-1.18 0.63 1.59 0.23 2.76 0.11 3.05 0.73 0.8 1.18 1.83 1.18 3.08 0 4.39-2.69 5.36-5.25 5.64 0.41 0.35 0.77 1.04 0.77 2.1 0 1.52-0.01 2.74-0.01 3.11 0 0.31 0.21 0.68 0.8 0.56 4.56-1.53 7.85-5.84 7.85-10.91 0-6.35-5.15-11.5-11.5-11.5z"
+          ></path>
+        </svg>
+        <span class="sr-only">GitHub repository</span>
+      </a>
+    </div>
   </h1>
 
   <section class="threlte-view">
@@ -1845,6 +1848,38 @@
     backdrop-filter: blur(4px);
   }
 
+  .page-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .page-title-link {
+    border: 1px solid rgba(176, 208, 239, 0.45);
+    border-radius: 999px;
+    color: #eaf3ff;
+    background: rgba(5, 14, 30, 0.55);
+    padding: 0.4rem 0.8rem;
+    text-decoration: none;
+    font-size: 0.72rem;
+    letter-spacing: 0.07em;
+    transition:
+      transform 120ms ease,
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .page-title-link:hover {
+    transform: translateY(-1px);
+    border-color: rgba(222, 238, 255, 0.85);
+    background: rgba(10, 24, 49, 0.82);
+  }
+
+  .page-title-link:focus-visible {
+    outline: 2px solid #6cb3ff;
+    outline-offset: 2px;
+  }
+
   .page-title-github-link {
     width: 2rem;
     height: 2rem;
@@ -2330,6 +2365,17 @@
     .canvas-shell {
       width: min(100%, calc(100vh - 2rem));
       justify-self: center;
+    }
+
+    .page-title {
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      padding: 0.95rem 1rem;
+    }
+
+    .page-title-actions {
+      width: 100%;
+      justify-content: flex-end;
     }
   }
 </style>
