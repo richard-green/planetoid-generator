@@ -339,6 +339,7 @@
   let wasRidgesEnabled = $state(true)
   let wasRiftsEnabled = $state(true)
   let presetsMenuOpen = $state(false)
+  let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
   let presetsManagerOpen = $state(false)
   let userPresets = $state<PlanetoidPreset[]>([])
 
@@ -782,6 +783,16 @@
     presetsManagerOpen = true
   }
 
+  function onWindowPointerDown(event: PointerEvent) {
+    if (!presetsMenuOpen || !presetsMenuElement) return
+
+    const target = event.target
+    if (!(target instanceof Node)) return
+    if (presetsMenuElement.contains(target)) return
+
+    closePresetsMenu()
+  }
+
   function applyPreset(preset: PlanetoidPreset) {
     applyPlanetoidSettings(preset.settings)
   }
@@ -1128,6 +1139,8 @@
   }
 </script>
 
+<svelte:window onpointerdown={onWindowPointerDown} />
+
 <div class="page">
   <h1 class="page-title">
     <span>Planetoid Generator</span>
@@ -1216,7 +1229,7 @@
           <div class="export-actions">
             <button
               type="button"
-              class="square-action"
+              class="action"
               onmouseenter={(event) => showActionPopover(event, 'Download the render as PNG.')}
               onmouseleave={hideActionPopover}
               onfocus={(event) => showActionPopover(event, 'Download the render as PNG.')}
@@ -1229,7 +1242,7 @@
             </button>
             <button
               type="button"
-              class="square-action"
+              class="action"
               onmouseenter={(event) =>
                 showActionPopover(event, 'Download the generated texture color map.')}
               onmouseleave={hideActionPopover}
@@ -1244,7 +1257,7 @@
             </button>
             <button
               type="button"
-              class="square-action"
+              class="action"
               onmouseenter={(event) => showActionPopover(event, 'Download the generated bump map.')}
               onmouseleave={hideActionPopover}
               onfocus={(event) => showActionPopover(event, 'Download the generated bump map.')}
@@ -1256,9 +1269,9 @@
               BMP
             </button>
           </div>
-          <details class="preset-menu" bind:open={presetsMenuOpen}>
-            <summary class="square-action preset-menu-trigger" aria-label="Preset actions">
-              PRE
+          <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
+            <summary class="action preset-menu-trigger" aria-label="Preset actions">
+              PRESETS
             </summary>
             <div class="preset-menu-dropdown" role="menu" aria-label="Preset actions menu">
               <button
@@ -1825,10 +1838,8 @@
     gap: 0.55rem;
   }
 
-  .square-action {
-    width: 3rem;
-    height: 3rem;
-    padding: 0;
+  .action {
+    padding: 0.5rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1854,7 +1865,7 @@
   }
 
   .preset-menu-trigger {
-    background: rgb(70, 126, 236);
+    background: rgb(80, 130, 230);
     color: #eef4ff;
   }
 
@@ -1879,6 +1890,16 @@
     padding: 0.5rem 0.6rem;
     border-radius: 8px;
     font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .preset-menu-item:hover {
+    background: rgba(70, 126, 236, 0.24);
+  }
+
+  .preset-menu-item:focus-visible {
+    outline: 2px solid #6cb3ff;
+    outline-offset: 1px;
   }
 
   .preset-manager-backdrop {

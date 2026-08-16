@@ -65,10 +65,10 @@
     background: #f3f7fb;
     color: #0f172a;
     font-family:
+      Segoe UI,
       Inter,
       system-ui,
       -apple-system,
-      Segoe UI,
       Roboto,
       Helvetica,
       Arial,
