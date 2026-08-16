@@ -821,7 +821,6 @@
   }
 
   function deleteUserPreset(presetId: string) {
-    const preset = userPresets.find((entry) => entry.id === presetId)
     userPresets = userPresets.filter((entry) => entry.id !== presetId)
   }
 
@@ -1363,7 +1362,7 @@
         </label>
         <label class="compact-number-row">
           <span>Seed</span>
-          <input type="number" min={0} max={999999} step={'1'} bind:value={planetoid.seed} />
+          <input type="number" min={0} max={999999} step="1" bind:value={planetoid.seed} />
         </label>
       </fieldset>
 

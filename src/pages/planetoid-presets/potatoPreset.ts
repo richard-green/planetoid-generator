@@ -1,9 +1,11 @@
+import { DefaultPlanetoidSettings } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const potatoPreset: PlanetoidPreset = {
   id: 'builtin-potato',
   name: 'Potato',
   settings: {
+    ...DefaultPlanetoidSettings,
     palette: 'sulfuricGlass',
     surfaceTint: '#d8ecff',
     colorScale: 1,

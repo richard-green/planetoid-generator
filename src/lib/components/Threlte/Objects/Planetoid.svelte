@@ -25,6 +25,7 @@
     createPlanetoidRayMaskTexture,
     disposeGeneratedTexture,
   } from './PlanetoidGpuTextures'
+  import { SvelteMap } from 'svelte/reactivity'
 
   type Props = {
     viewMode?: 'mesh' | 'bump' | 'texture' | 'ray'
@@ -300,7 +301,7 @@
   let disposableGeometry: BufferGeometry = initialGeometry
 
   function buildNormalWeldGroups(sourcePositions: Float32Array) {
-    const groups = new Map<string, number[]>()
+    const groups = new SvelteMap<string, number[]>()
 
     for (let i = 0; i < sourcePositions.length; i += 3) {
       const vertexIndex = i / 3
