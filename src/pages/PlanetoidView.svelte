@@ -1129,7 +1129,25 @@
 </script>
 
 <div class="page">
-  <h1 class="page-title">Planetoid Generator</h1>
+  <h1 class="page-title">
+    <span>Planetoid Generator</span>
+    <a
+      class="page-title-github-link"
+      href="https://github.com/richard-green/planetoid-generator"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Open GitHub repository"
+      title="View source on GitHub"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path
+          fill="currentColor"
+          d="M12 0.5c-6.35 0-11.5 5.15-11.5 11.5 0 5.08 3.29 9.39 7.86 10.91 0.58 0.11 0.79-0.25 0.79-0.56 0-0.28-0.01-1.02-0.02-2-3.2 0.7-3.88-1.54-3.88-1.54-0.52-1.33-1.28-1.68-1.28-1.68-1.04-0.71 0.08-0.7 0.08-0.7 1.15 0.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33 0.96 0.1-0.74 0.4-1.25 0.73-1.54-2.55-0.29-5.24-1.27-5.24-5.65 0-1.25 0.45-2.28 1.18-3.08-0.12-0.29-0.51-1.46 0.11-3.05 0 0 0.97-0.31 3.17 1.18 0.92-0.26 1.9-0.38 2.88-0.38 0.98 0 1.96 0.13 2.88 0.38 2.2-1.49 3.17-1.18 3.17-1.18 0.63 1.59 0.23 2.76 0.11 3.05 0.73 0.8 1.18 1.83 1.18 3.08 0 4.39-2.69 5.36-5.25 5.64 0.41 0.35 0.77 1.04 0.77 2.1 0 1.52-0.01 2.74-0.01 3.11 0 0.31 0.21 0.68 0.8 0.56 4.56-1.53 7.85-5.84 7.85-10.91 0-6.35-5.15-11.5-11.5-11.5z"
+        ></path>
+      </svg>
+      <span class="sr-only">GitHub repository</span>
+    </a>
+  </h1>
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
@@ -1638,15 +1656,18 @@
 
 <style>
   .page {
-    scrollbar-color: #0e8cb2 #09181e;
-    scrollbar-width: thin;
-    scrollbar-gutter: stable;
     min-height: 100%;
+    display: grid;
+    grid-template-rows: auto 1fr;
   }
 
   .page-title {
     margin: 0;
     padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
     color: #f2f8ff;
     font-size: clamp(1.35rem, 2.1vw, 2rem);
     font-weight: 760;
@@ -1655,18 +1676,63 @@
     text-transform: uppercase;
     border-top: 1px solid rgba(176, 208, 239, 0.35);
     border-bottom: 1px solid rgba(176, 208, 239, 0.26);
-    background: linear-gradient(120deg, rgb(23, 68, 119), rgb(16, 33, 67)), rgba(6, 13, 28, 0.72);
+    background: linear-gradient(120deg, #174477, #102143), rgba(6, 13, 28, 0.72);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.06),
       0 8px 26px rgba(0, 0, 0, 0.35);
     backdrop-filter: blur(4px);
   }
 
+  .page-title-github-link {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(176, 208, 239, 0.45);
+    border-radius: 999px;
+    color: #eaf3ff;
+    background: rgba(5, 14, 30, 0.55);
+    transition:
+      transform 120ms ease,
+      border-color 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .page-title-github-link:hover {
+    transform: translateY(-1px);
+    border-color: rgba(222, 238, 255, 0.85);
+    background: rgba(10, 24, 49, 0.82);
+  }
+
+  .page-title-github-link:focus-visible {
+    outline: 2px solid #6cb3ff;
+    outline-offset: 2px;
+  }
+
+  .page-title-github-link svg {
+    width: 1.2rem;
+    height: 1.2rem;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .threlte-view {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 1rem;
-    min-height: 100%;
+    min-height: 0;
     padding: 1rem;
     background:
       radial-gradient(circle at top, rgba(18, 58, 103, 0.718), transparent 80%),

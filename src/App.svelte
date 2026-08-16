@@ -8,9 +8,7 @@
     component: Component
   }
 
-  const routes: Route[] = [
-    { name: 'Planetoids', path: '/planetoids', component: PlanetoidView },
-  ]
+  const routes: Route[] = [{ name: 'Planetoids', path: '/planetoids', component: PlanetoidView }]
 
   const fallbackPath = routes[0]?.path ?? '/'
   let currentPath = $state<string>(normalizePath(window.location.pathname))
@@ -47,9 +45,7 @@
   handlePopState()
 </script>
 
-<svelte:window
-  onpopstate={handlePopState}
-/>
+<svelte:window onpopstate={handlePopState} />
 
 <div class="app-shell">
   <main>
@@ -82,12 +78,15 @@
   .app-shell {
     height: 100dvh;
     display: grid;
-    grid-template-rows: auto 1fr;
+    grid-template-rows: 1fr;
   }
 
   main {
     min-height: 0;
-    overflow-y: auto;
     overflow-x: hidden;
+    overflow-y: scroll;
+    scrollbar-color: #174477 #020712;
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
   }
 </style>
