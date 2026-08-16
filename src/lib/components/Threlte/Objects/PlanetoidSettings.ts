@@ -3,6 +3,7 @@ import type { PlanetoidPaletteName } from './PlanetoidPalettes'
 export type PlanetoidSettings = {
   autoRotate: boolean
   showDebugMeshes: boolean
+  enableCraters: boolean
   enableRidges: boolean
   enableRifts: boolean
   enableVolcanoes: boolean
@@ -89,6 +90,7 @@ export type PlanetoidRangeKey = keyof PlanetoidRangeValues
 export const DefaultPlanetoidSettings: PlanetoidSettings = {
   autoRotate: false,
   showDebugMeshes: false,
+  enableCraters: true,
   enableRidges: false,
   enableRifts: false,
   enableVolcanoes: false,
@@ -258,8 +260,3 @@ export const MaxValues: PlanetoidRangeValues = {
   smallScale: 2,
   triangleDetail: 20,
 }
-
-
-
-
-

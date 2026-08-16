@@ -24,6 +24,7 @@
     | 'surfaceTint'
     | 'autoRotate'
     | 'showDebugMeshes'
+    | 'enableCraters'
     | 'enableRidges'
     | 'enableRifts'
     | 'enableVolcanoes'
@@ -581,6 +582,11 @@
           )
         : DEFAULT_PLANETOID_SETTINGS.craterRayLengthPower
 
+    const enableCraters =
+      typeof raw.enableCraters === 'boolean'
+        ? raw.enableCraters
+        : craterCount > 0 || craterStrength > 0 || craterColorStrength > 0 || craterRayStrength > 0
+
     const ridgeStrength =
       typeof raw.ridgeStrength === 'number'
         ? clamp(raw.ridgeStrength, MinValues.ridgeStrength, MaxValues.ridgeStrength)
@@ -690,6 +696,7 @@
       craterRayDensity,
       craterRaySharpness,
       craterRayLengthPower,
+      enableCraters,
       enableRidges,
       enableRifts,
       enableVolcanoes,
@@ -746,7 +753,7 @@
 
   function applyPlanetoidSettings(settings: PlanetoidSettings) {
     planetoid = sanitizePlanetoidSettings(settings)
-    cratersEnabled = planetoid.craterCount > 0 || planetoid.craterStrength > 0
+    cratersEnabled = planetoid.enableCraters
     volcanoesEnabled = planetoid.enableVolcanoes && planetoid.volcanoCount > 0
     ridgesEnabled = planetoid.ridgeStrength > 0
     riftsEnabled = planetoid.riftStrength > 0
@@ -775,7 +782,10 @@
     const nextPreset: PlanetoidPreset = {
       id: createPresetId(),
       name,
-      settings: sanitizePlanetoidSettings(planetoid),
+      settings: sanitizePlanetoidSettings({
+        ...planetoid,
+        enableCraters: effectiveCratersEnabled,
+      }),
     }
 
     userPresets = [nextPreset, ...userPresets]
@@ -922,11 +932,7 @@
       ridgeSectionOpen = restoredUiState.ridgeSectionOpen
       riftSectionOpen = restoredUiState.riftSectionOpen
     } else {
-      cratersEnabled =
-        planetoid.craterCount > 0 ||
-        planetoid.craterStrength > 0 ||
-        planetoid.craterColorStrength > 0 ||
-        planetoid.craterRayStrength > 0
+      cratersEnabled = planetoid.enableCraters
       volcanoesEnabled =
         planetoid.enableVolcanoes ||
         planetoid.volcanoCount > 0 ||
@@ -1195,9 +1201,10 @@
           smallScale={planetoid.smallScale}
           triangleDetail={planetoid.triangleDetail}
           bumpScale={planetoid.bumpScale}
-          craterCount={effectiveCratersEnabled ? planetoid.craterCount : 0}
-          craterStrength={effectiveCratersEnabled ? planetoid.craterStrength : 0}
-          craterColorStrength={effectiveCratersEnabled ? planetoid.craterColorStrength : 0}
+          craterCount={planetoid.craterCount}
+          craterStrength={planetoid.craterStrength}
+          craterColorStrength={planetoid.craterColorStrength}
+          enableCraters={effectiveCratersEnabled}
           enableVolcanoes={effectiveVolcanoesEnabled}
           volcanoCount={effectiveVolcanoesEnabled ? planetoid.volcanoCount : 0}
           volcanoScale={planetoid.volcanoScale}
@@ -1205,8 +1212,8 @@
           volcanoColorStrength={effectiveVolcanoesEnabled ? planetoid.volcanoColorStrength : 0}
           ridgeColorWeight={planetoid.ridgeColorWeight}
           riftColorWeight={planetoid.riftColorWeight}
-          craterRayStrength={effectiveCratersEnabled ? planetoid.craterRayStrength : 0}
-          craterRayVisibility={effectiveCratersEnabled ? planetoid.craterRayVisibility : 0}
+          craterRayStrength={planetoid.craterRayStrength}
+          craterRayVisibility={planetoid.craterRayVisibility}
           craterRayDensity={planetoid.craterRayDensity}
           craterRaySharpness={planetoid.craterRaySharpness}
           craterRayLengthPower={planetoid.craterRayLengthPower}

@@ -22,6 +22,7 @@ type NoiseOffset = { x: number; y: number; z: number }
 type PaletteColor = { r: number; g: number; b: number }
 
 type BumpTextureOptions = {
+  enableCraters?: boolean
   craterCount?: number
   craterStrength?: number
   enableVolcanoes?: boolean
@@ -59,6 +60,7 @@ type ColourTextureOptions = {
   riftSharpness?: number
   ridgesRiftsBlend?: number
   debugMidline?: boolean
+  enableCraters?: boolean
   craterCount?: number
   craterColorStrength?: number
   enableVolcanoes?: boolean
@@ -100,6 +102,7 @@ const fragmentShader = `
   uniform float uTintShadowFloor;
   uniform float uSwirliness;
   uniform float uTextureScale;
+  uniform int uEnableCraters;
   uniform int uCraterCount;
   uniform float uCraterStrength;
   uniform float uCraterColorStrength;
@@ -700,8 +703,8 @@ const fragmentShader = `
       dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
     );
 
-    float craterHeight = accumulateCraterHeight(uv);
-    float craterColorWarp = accumulateCraterColorWarp(uv);
+    float craterHeight = (uEnableCraters == 1) ? accumulateCraterHeight(uv) : 0.0;
+    float craterColorWarp = (uEnableCraters == 1) ? accumulateCraterColorWarp(uv) : 0.0;
     float volcanoHeight = (uEnableVolcanoes == 1) ? accumulateVolcanoHeight(uv) : 0.0;
     vec2 volcanoColorSignals = (uEnableVolcanoes == 1)
       ? accumulateVolcanoColorSignals(uv)
@@ -715,7 +718,7 @@ const fragmentShader = `
         (uEnableRifts == 1) ? baseRidgeRiftSignals.y : 0.0
       );
     }
-    float craterRayMask = accumulateCraterRayMaskAA(uv);
+    float craterRayMask = (uEnableCraters == 1) ? accumulateCraterRayMaskAA(uv) : 0.0;
 
     bool debugEquator = (uDebugMidline == 1) && isDebugEquatorPixel(y);
     bool debugMeridian0 = (uDebugMidline == 1) && (x < 0.5 || x > (uResolution.x - 1.5));
@@ -865,6 +868,7 @@ const material = new ShaderMaterial({
     uTintShadowFloor: new Uniform(0.18),
     uSwirliness: new Uniform(1),
     uTextureScale: new Uniform(1),
+    uEnableCraters: new Uniform(1),
     uCraterCount: new Uniform(22),
     uCraterStrength: new Uniform(0.32),
     uCraterColorStrength: new Uniform(0.3),
@@ -973,6 +977,7 @@ function renderTexture(
     tintShadowFloor?: number
     swirliness?: number
     textureScale?: number
+    enableCraters?: boolean
     craterCount?: number
     craterStrength?: number
     craterColorStrength?: number
@@ -1010,6 +1015,7 @@ function renderTexture(
   material.uniforms.uTintShadowFloor.value = toClampedNumber(options.tintShadowFloor, 0.18, 0, 0.8)
   material.uniforms.uSwirliness.value = toClampedNumber(options.swirliness, 1, 0, 2)
   material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
+  material.uniforms.uEnableCraters.value = (options.enableCraters ?? true) ? 1 : 0
   material.uniforms.uCraterCount.value = Math.min(96, toNonNegativeInt(options.craterCount, 22))
   material.uniforms.uCraterStrength.value = toClampedNumber(options.craterStrength, 0.32, 0, 1.5)
   material.uniforms.uCraterColorStrength.value = toClampedNumber(
@@ -1130,6 +1136,7 @@ export function createPlanetoidColourTexture(
     tintShadowFloor: options.tintShadowFloor,
     swirliness: options.swirliness,
     textureScale,
+    enableCraters: options.enableCraters,
     craterCount: options.craterCount,
     craterColorStrength: options.craterColorStrength,
     enableVolcanoes: options.enableVolcanoes,
@@ -1174,6 +1181,7 @@ export function createPlanetoidBumpTexture(
   const width = height * 2
 
   const texture = renderTexture(renderer, 1, width, height, noiseOffset, {
+    enableCraters: options.enableCraters,
     craterCount: options.craterCount,
     craterStrength: options.craterStrength,
     enableVolcanoes: options.enableVolcanoes,
@@ -1250,4 +1258,3 @@ export function createPlanetoidPaletteGradientTexture(
 
   return texture
 }
-

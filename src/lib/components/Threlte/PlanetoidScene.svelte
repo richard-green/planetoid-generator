@@ -20,6 +20,7 @@
     mediumScale?: number
     smallScale?: number
     bumpScale?: number
+    enableCraters?: boolean
     craterCount?: number
     craterStrength?: number
     craterColorStrength?: number
@@ -66,6 +67,7 @@
     mediumScale = 0.1,
     smallScale = 0.15,
     bumpScale = 2,
+    enableCraters = true,
     craterCount = 20,
     craterStrength = 5,
     craterColorStrength = 0.95,
@@ -235,6 +237,7 @@
   {mediumScale}
   {smallScale}
   {bumpScale}
+  {enableCraters}
   {craterCount}
   {craterStrength}
   {craterColorStrength}

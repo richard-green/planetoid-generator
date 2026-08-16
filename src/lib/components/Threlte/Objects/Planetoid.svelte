@@ -38,6 +38,7 @@
     mediumScale?: number
     smallScale?: number
     bumpScale?: number
+    enableCraters?: boolean
     craterCount?: number
     craterStrength?: number
     craterColorStrength?: number
@@ -84,6 +85,7 @@
     mediumScale = 0.1,
     smallScale = 0.15,
     bumpScale = 0.82,
+    enableCraters = true,
     craterCount = 50,
     craterStrength = 5,
     craterColorStrength = 1.25,
@@ -532,6 +534,7 @@
     const textureScale = colorScale
     const currentCraterCount = craterCount
     const currentCraterColorStrength = craterColorStrength
+    const currentEnableCraters = enableCraters
     const volcanoesEnabled = enableVolcanoes
     const currentVolcanoCount = volcanoCount
     const currentVolcanoScale = volcanoScale
@@ -569,6 +572,7 @@
         swirliness: currentSwirliness,
         craterCount: currentCraterCount,
         craterColorStrength: currentCraterColorStrength,
+        enableCraters: currentEnableCraters,
         enableVolcanoes: volcanoesEnabled,
         volcanoCount: currentVolcanoCount,
         volcanoScale: currentVolcanoScale,
@@ -722,6 +726,7 @@
     const shape = shapeParameters
     const textureSize = bumpTextureSize
     const currentBumpScale = bumpScale
+    const currentEnableCraters = enableCraters
     const currentCraterCount = craterCount
     const currentCraterStrength = craterStrength
     const volcanoesEnabled = enableVolcanoes
@@ -743,6 +748,7 @@
     const bumpTexture = createPlanetoidBumpTexture(renderer, shape.noiseOffset, textureSize, {
       craterCount: currentCraterCount,
       craterStrength: currentCraterStrength,
+      enableCraters: currentEnableCraters,
       enableVolcanoes: volcanoesEnabled,
       volcanoCount: currentVolcanoCount,
       volcanoScale: currentVolcanoScale,
