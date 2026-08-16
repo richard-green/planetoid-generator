@@ -1,6 +1,16 @@
-# svelte-test
+# Planetoid Generator
 
-Simple Svelte app with a lightweight client-side router and a Satellite view page.
+Single-page app for generating planetoid and asteroid artwork directly in the browser.
+
+The app is built with Svelte + Vite and renders with THRELTE/Three.js. It generates procedural results and lets you export different render outputs, including texture and bump map imagery.
+
+## What this project does
+
+- Interactive browser UI for procedural planetoid generation
+- Tunable controls for color, geometry, craters, ridges, rifts, volcanoes, and material properties
+- Multiple view modes for output workflows (including texture and bump views)
+- Presets and seed-based generation for repeatable results
+- Scriptable batch generation using Playwright
 
 ## Requirements
 
@@ -13,29 +23,61 @@ Simple Svelte app with a lightweight client-side router and a Satellite view pag
 npm install
 ```
 
-## Run in development
+## Run the app (dev)
 
 ```bash
 npm run dev
 ```
 
-## Build
+Open the planetoid page at:
+
+- `http://127.0.0.1:5173/planetoids`
+
+## Production build
 
 ```bash
 npm run build
 ```
 
-## Routing
+## Scripted auto-generation (Playwright)
 
-The app uses a small pathname-based router in `src/App.svelte`.
+This repo includes a Playwright-driven generator script that controls the SPA in a browser and captures output images.
 
-Available route parameters (paths):
+### Run one batch directly
 
-- `/satellite` → Satellite View page
+```bash
+npm run auto-generate-planetoids -- --count 10 --start-seed 1 --step 1 --view-mode texture
+```
 
-Unknown paths are redirected to `/satellite`.
+Common options:
+
+- `--view-mode mesh|bump|texture|ray`
+- `--palette <name>`
+- `--surface-tint <hex>`
+- `--output-dir <path>`
+- `--base-url <url>` (defaults to `http://127.0.0.1:5173/planetoids`)
+
+### Use the PowerShell batch helper
+
+```powershell
+./regenerate-planetoids.ps1
+```
+
+This helper runs multiple generation batches with different palette/settings profiles.
+
+## Example outputs
+
+Generated examples from `public/generated`:
+
+![Generated planetoid example 1](public/generated/generated-planetoid-20260816-123153.png)
+
+![Generated planetoid example 2](public/generated/generated-planetoid-20260816-132812.png)
+
+![Generated planetoid example 3](public/generated/generated-planetoid-20260816-132923.png)
+
+![Generated planetoid example 4](public/generated/generated-planetoid-20260816-132946.png)
 
 ## Notes
 
-- Global `error` and `unhandledrejection` listeners are mounted once in `App.svelte`.
-- `Toaster` is mounted once in `App.svelte` to avoid duplicate toasts.
+- Auto-generation expects the app to be reachable at the configured `--base-url`.
+- Default output directory for the script is `public/generated/planetoid`.
