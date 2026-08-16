@@ -1263,7 +1263,7 @@
   <h1 class="page-title">
     <span>Planetoid Generator</span>
     <div class="page-title-actions">
-      <a class="page-title-link" href="/giants">Gas and Ice Giants</a>
+      <a class="page-title-link" href="#/giants">Gas and Ice Giants</a>
       <a
         class="page-title-github-link"
         href="https://github.com/richard-green/planetoid-generator"

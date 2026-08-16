@@ -15,7 +15,7 @@
   ]
 
   const fallbackPath = routes[0]?.path ?? '/'
-  let currentPath = $state<string>(normalizePath(window.location.pathname))
+  let currentPath = $state<string>(normalizePath(getHashPath(window.location.hash)))
 
   let activeRoute = $derived(
     routes.find((route) => route.path === currentPath) ??
@@ -23,33 +23,75 @@
   )
 
   function normalizePath(pathname: string): string {
-    if (!pathname || pathname === '/') {
+    if (!pathname || pathname === '/' || pathname === '#/') {
       return fallbackPath
     }
 
     return pathname.endsWith('/') && pathname.length > 1 ? pathname.slice(0, -1) : pathname
   }
 
+  function getHashPath(hashValue: string): string {
+    if (!hashValue || hashValue === '#') {
+      return fallbackPath
+    }
+
+    const trimmed = hashValue.startsWith('#') ? hashValue.slice(1) : hashValue
+    if (!trimmed) {
+      return fallbackPath
+    }
+
+    const path = trimmed.startsWith('/') ? trimmed : `/${trimmed}`
+    return normalizePath(path)
+  }
+
+  function setHashPath(path: string, replace = false): void {
+    const normalized = normalizePath(path)
+    const targetHash = `#${normalized}`
+
+    if (window.location.hash === targetHash) {
+      return
+    }
+
+    if (replace) {
+      const base = `${window.location.pathname}${window.location.search}`
+      window.history.replaceState({}, '', `${base}${targetHash}`)
+      return
+    }
+
+    window.location.hash = normalized
+  }
+
   function isRoutePath(path: string): boolean {
     return routes.some((route) => route.path === path)
   }
 
-  function handlePopState(): void {
-    const normalized = normalizePath(window.location.pathname)
+  function handleHashChange(): void {
+    const normalized = getHashPath(window.location.hash)
 
     if (isRoutePath(normalized)) {
       currentPath = normalized
       return
     }
 
-    window.history.replaceState({}, '', fallbackPath)
+    setHashPath(fallbackPath, true)
     currentPath = fallbackPath
   }
 
-  handlePopState()
+  function migrateLegacyPathRoute(): void {
+    const normalizedPathname = normalizePath(window.location.pathname)
+
+    if (window.location.hash || !isRoutePath(normalizedPathname)) {
+      return
+    }
+
+    setHashPath(normalizedPathname, true)
+  }
+
+  migrateLegacyPathRoute()
+  handleHashChange()
 </script>
 
-<svelte:window onpopstate={handlePopState} />
+<svelte:window onhashchange={handleHashChange} />
 
 <div class="app-shell">
   <main>
