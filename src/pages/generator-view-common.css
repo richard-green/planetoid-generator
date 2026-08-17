@@ -113,6 +113,8 @@
   border-radius: 18px;
   overflow: hidden;
   background: #01040b;
+  position: sticky;
+  top: 10px;
 }
 
 .canvas-shell :global(canvas) {
