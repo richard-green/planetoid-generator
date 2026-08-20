@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { marked } from 'marked'
+  import SvelteMarkdown from '@humanspeak/svelte-markdown'
   import GasGiantView from './pages/GasGiantView.svelte'
   import PlanetoidView from './pages/PlanetoidView.svelte'
   import welcomeMarkdown from './welcome.md?raw'
@@ -19,7 +19,7 @@
   const fallbackPath = routes[0]?.path ?? '/'
   const WELCOME_SEEN_STORAGE_KEY = 'planetoid-generator-welcome-seen-v1'
 
-  const welcomeHtml = marked.parse(welcomeMarkdown)
+  let welcomeDialogElement: HTMLDialogElement | undefined = $state(undefined)
   let showWelcomeDialog = $state(false)
   let welcomeStateInitialized = $state(false)
   let currentPath = $state<string>(normalizePath(getHashPath(window.location.hash)))
@@ -112,27 +112,44 @@
     }
   }
 
-  function onWelcomeDialogBackdropClick(event: MouseEvent): void {
-    if (event.currentTarget !== event.target) {
-      return
-    }
-
+  function onWelcomeDialogCancel(event: Event): void {
+    event.preventDefault()
     closeWelcomeDialog()
   }
 
-  function onWelcomeDialogBackdropKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      closeWelcomeDialog()
+  function onWelcomeDialogClick(event: MouseEvent): void {
+    if (!welcomeDialogElement) {
       return
     }
 
-    if (event.key === 'Enter' || event.key === ' ') {
-      if (event.currentTarget === event.target) {
-        event.preventDefault()
-        closeWelcomeDialog()
-      }
+    const dialogRect = welcomeDialogElement.getBoundingClientRect()
+    const clickedOutsideDialog =
+      event.clientX < dialogRect.left ||
+      event.clientX > dialogRect.right ||
+      event.clientY < dialogRect.top ||
+      event.clientY > dialogRect.bottom
+
+    if (clickedOutsideDialog) {
+      closeWelcomeDialog()
     }
   }
+
+  $effect(() => {
+    if (!welcomeDialogElement) {
+      return
+    }
+
+    if (showWelcomeDialog) {
+      if (!welcomeDialogElement.open) {
+        welcomeDialogElement.showModal()
+      }
+      return
+    }
+
+    if (welcomeDialogElement.open) {
+      welcomeDialogElement.close()
+    }
+  })
 
   $effect(() => {
     if (welcomeStateInitialized) {
@@ -164,32 +181,30 @@
   </main>
 </div>
 
-{#if showWelcomeDialog}
-  <div
-    class="welcome-dialog-backdrop"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="welcome-dialog-title"
-    tabindex="-1"
-    onclick={onWelcomeDialogBackdropClick}
-    onkeydown={onWelcomeDialogBackdropKeydown}
-  >
-    <section class="welcome-dialog-panel">
-      <header class="welcome-dialog-header">
-        <h2 id="welcome-dialog-title">Welcome</h2>
-        <button
-          type="button"
-          class="welcome-dialog-close"
-          onclick={() => closeWelcomeDialog()}
-          aria-label="Close welcome message"
-        >
-          Close
-        </button>
-      </header>
-      <div class="welcome-dialog-content">{@html welcomeHtml}</div>
-    </section>
-  </div>
-{/if}
+<dialog
+  class="welcome-dialog"
+  bind:this={welcomeDialogElement}
+  aria-labelledby="welcome-dialog-title"
+  oncancel={onWelcomeDialogCancel}
+  onclick={onWelcomeDialogClick}
+>
+  <section class="welcome-dialog-panel">
+    <header class="welcome-dialog-header">
+      <h2 id="welcome-dialog-title">Welcome</h2>
+      <button
+        type="button"
+        class="welcome-dialog-close"
+        onclick={() => closeWelcomeDialog()}
+        aria-label="Close welcome message"
+      >
+        Close
+      </button>
+    </header>
+    <div class="welcome-dialog-content">
+      <SvelteMarkdown source={welcomeMarkdown} />
+    </div>
+  </section>
+</dialog>
 
 <style>
   :global(body, html, #app) {
@@ -226,18 +241,21 @@
     scrollbar-gutter: stable;
   }
 
-  .welcome-dialog-backdrop {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 1rem;
+  .welcome-dialog {
+    width: min(680px, calc(100% - 2rem));
+    max-height: min(86vh, 760px);
+    padding: 0;
+    border: none;
+    background: transparent;
+    overflow: visible;
+  }
+
+  .welcome-dialog::backdrop {
     background: rgba(2, 8, 20, 0.72);
-    z-index: 1100;
   }
 
   .welcome-dialog-panel {
-    width: min(680px, 100%);
+    width: 100%;
     max-height: min(86vh, 760px);
     overflow: auto;
     border: 1px solid rgba(142, 180, 221, 0.5);

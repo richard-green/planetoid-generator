@@ -33,10 +33,10 @@
     "vite": "^6.3.5"
   },
   "dependencies": {
+    "@humanspeak/svelte-markdown": "^1.8.7",
     "@threlte/core": "^8.2.0",
     "@threlte/extras": "^9.6.1",
     "@types/three": "^0.181.0",
-    "marked": "^18.0.10",
     "three": "^0.181.0",
     "uuid": "^13.0.0",
     "zod": "^4.4.3"
