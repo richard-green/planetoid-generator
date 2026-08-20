@@ -20,6 +20,8 @@
   } from '../lib/components/Threlte/Objects/GasGiantSettings'
   import { BUILTIN_GAS_GIANT_PRESETS, type GasGiantPreset } from './gas-giant-presets'
 
+  const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
+
   type GasGiantViewSettings = GasGiantSettings
   type GasGiantUiState = {
     sceneSectionOpen: boolean
@@ -712,6 +714,15 @@
           ></path>
         </svg>
       </a>
+      <button
+        type="button"
+        class="page-title-help-button"
+        onclick={onOpenWelcome}
+        aria-label="Open welcome message"
+        title="Open welcome message"
+      >
+        ?
+      </button>
     </div>
   </h1>
 

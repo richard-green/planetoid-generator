@@ -93,6 +93,38 @@
   height: 1.2rem;
 }
 
+.page-title-help-button {
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(176, 208, 239, 0.45);
+  border-radius: 999px;
+  color: #eaf3ff;
+  background: rgba(5, 14, 30, 0.55);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.page-title-help-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(222, 238, 255, 0.85);
+  background: rgba(10, 24, 49, 0.82);
+}
+
+.page-title-help-button:focus-visible {
+  outline: 2px solid #6cb3ff;
+  outline-offset: 2px;
+}
+
 .threlte-view {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;

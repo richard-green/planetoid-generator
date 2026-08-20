@@ -20,6 +20,8 @@
   } from '../lib/components/Threlte/Objects/PlanetoidSettings'
   import { BUILTIN_PRESETS, type PlanetoidPreset } from './planetoid-presets'
 
+  const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
+
   type NumericControlKey = Exclude<
     keyof PlanetoidSettings,
     | 'palette'
@@ -1280,6 +1282,15 @@
         </svg>
         <span class="sr-only">GitHub repository</span>
       </a>
+      <button
+        type="button"
+        class="page-title-help-button"
+        onclick={onOpenWelcome}
+        aria-label="Open welcome message"
+        title="Open welcome message"
+      >
+        ?
+      </button>
     </div>
   </h1>
 
