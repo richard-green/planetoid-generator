@@ -212,7 +212,6 @@
 <T.PerspectiveCamera makeDefault position={[0, 0, 7]}>
   <OrbitControls
     bind:ref={controlsRef}
-    {camera}
     enableRotate={viewMode === 'mesh'}
     enableZoom={true}
     enablePan={viewMode !== 'mesh'}

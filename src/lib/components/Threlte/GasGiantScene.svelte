@@ -38,7 +38,7 @@
     downloadBumpMapPng: (fileName?: string) => Promise<boolean>
   }
   let gasGiantRef: GasGiantExports | undefined = $state(undefined)
-  const { camera, scene } = useThrelte()
+  const { scene } = useThrelte()
 
   interactivity()
 
@@ -70,7 +70,6 @@
 <T.PerspectiveCamera makeDefault position={[0, 2, 7]}>
   <OrbitControls
     bind:ref={controlsRef}
-    {camera}
     enableRotate={true}
     enableZoom={true}
     enablePan={false}
