@@ -279,7 +279,12 @@
       MinValues.triangleDetail,
       Math.min(MaxValues.triangleDetail, Math.round(detail))
     )
-    const rawGeometry = new IcosahedronGeometry(2, clampedDetail).toNonIndexed()
+    const indexedGeometry = new IcosahedronGeometry(2, clampedDetail)
+    const rawGeometry = indexedGeometry.index ? indexedGeometry.toNonIndexed() : indexedGeometry
+
+    if (indexedGeometry !== rawGeometry) {
+      indexedGeometry.dispose()
+    }
 
     applySphericalUVs(rawGeometry)
 

@@ -1,7 +1,6 @@
 import {
   ClampToEdgeWrapping,
   LinearFilter,
-  LinearMipmapLinearFilter,
   MathUtils,
   Mesh,
   NoColorSpace,
@@ -13,6 +12,7 @@ import {
   Uniform,
   Vector2,
   Vector3,
+  Vector4,
   WebGLRenderTarget,
   type Texture,
   type WebGLRenderer,
@@ -555,14 +555,25 @@ function renderTexture(
 
   renderTarget.texture.wrapS = RepeatWrapping
   renderTarget.texture.wrapT = ClampToEdgeWrapping
-  renderTarget.texture.minFilter = LinearMipmapLinearFilter
+  renderTarget.texture.minFilter = LinearFilter
   renderTarget.texture.magFilter = LinearFilter
-  renderTarget.texture.generateMipmaps = true
+  renderTarget.texture.generateMipmaps = false
 
   const previousTarget = renderer.getRenderTarget()
+  const previousViewport = renderer.getViewport(new Vector4())
+  const previousScissor = renderer.getScissor(new Vector4())
+  const previousScissorTest = renderer.getScissorTest()
+
   renderer.setRenderTarget(renderTarget)
+  renderer.setViewport(0, 0, width, height)
+  renderer.setScissor(0, 0, width, height)
+  renderer.setScissorTest(false)
+  renderer.clear()
   renderer.render(scene, camera)
   renderer.setRenderTarget(previousTarget)
+  renderer.setViewport(previousViewport)
+  renderer.setScissor(previousScissor)
+  renderer.setScissorTest(previousScissorTest)
 
   const texture = renderTarget.texture
   texture.needsUpdate = true

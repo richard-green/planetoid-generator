@@ -729,6 +729,7 @@
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
       <Canvas
+        dpr={1}
         createRenderer={(canvas) =>
           new WebGLRenderer({
             canvas,
