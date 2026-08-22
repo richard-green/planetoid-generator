@@ -8,7 +8,7 @@ function Invoke-PlanetoidBatch {
         [double]$ColorScale = 1,
         [Nullable[double]]$TintShadowFloor = $null,
         [Nullable[double]]$Swirliness = $null,
-        [double]$BumpScale = 4,
+        [double]$BumpScale = 1,
         [Nullable[int]]$CraterCount = $null,
         [Nullable[double]]$CraterStrength = $null,
         [Nullable[double]]$CraterColor = $null,

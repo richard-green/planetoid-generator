@@ -50,7 +50,6 @@
     metalness?: number
     autoRotate?: boolean
     showDebugMeshes?: boolean
-    enableLimbBumpFix?: boolean
     viewMode?: PlanetoidViewMode
     triangleDetail?: number
     bumpTextureSize?: number
@@ -67,7 +66,7 @@
     largeScale = 0.32,
     mediumScale = 0.1,
     smallScale = 0.15,
-    bumpScale = 2,
+    bumpScale = 1,
     enableCraters = true,
     craterCount = 20,
     craterStrength = 5,
@@ -98,7 +97,6 @@
     metalness = 0.02,
     autoRotate = false,
     showDebugMeshes = true,
-    enableLimbBumpFix = true,
     viewMode = 'mesh',
     triangleDetail = 5,
     bumpTextureSize = 800,
@@ -268,7 +266,6 @@
   {metalness}
   {autoRotate}
   {showDebugMeshes}
-  {enableLimbBumpFix}
   {viewMode}
   {triangleDetail}
   {bumpTextureSize}

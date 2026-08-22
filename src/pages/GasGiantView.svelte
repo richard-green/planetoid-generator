@@ -837,20 +837,14 @@
             </div>
           </details>
         </div>
-        <details class="control-section" bind:open={sceneSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>View</span>
-          </summary>
-          <label class="toggle-row">
-            <span>{GasGiantUiLabels.autoRotate}</span>
-            <input type="checkbox" bind:checked={autoRotate} />
-          </label>
-          <label class="compact-number-row">
-            <span>{GasGiantUiLabels.seed}</span>
-            <input type="number" min={0} max={999999} step="1" bind:value={seed} />
-          </label>
-        </details>
+        <label class="toggle-row">
+          <span>{GasGiantUiLabels.autoRotate}</span>
+          <input type="checkbox" bind:checked={autoRotate} />
+        </label>
+        <label class="compact-number-row">
+          <span>{GasGiantUiLabels.seed}</span>
+          <input type="number" min={0} max={999999} step="1" bind:value={seed} />
+        </label>
       </fieldset>
 
       <fieldset>
@@ -892,6 +886,27 @@
           </div>
         </details>
 
+        <details class="control-section" bind:open={textureResolutionSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Texture resolution</span>
+          </summary>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Bump texture height</span>
+              <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
+            </label>
+            <label class="compact-number-row">
+              <span>Color texture height</span>
+              <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
+            </label>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Features</legend>
+
         <details class="control-section" bind:open={cloudSettingsSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
@@ -913,26 +928,6 @@
           </div>
         </details>
 
-        <details class="control-section" bind:open={textureResolutionSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Texture resolution</span>
-          </summary>
-          <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Bump texture height</span>
-              <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
-            </label>
-            <label class="compact-number-row">
-              <span>Color texture height</span>
-              <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
-            </label>
-          </div>
-        </details>
-      </fieldset>
-
-      <fieldset>
-        <legend>Features</legend>
         <details class="control-section" bind:open={stormSectionOpen}>
           <summary
             class="summary-with-toggle"
