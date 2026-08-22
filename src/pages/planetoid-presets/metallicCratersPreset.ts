@@ -12,7 +12,7 @@ export const metallicCratersPreset: PlanetoidPreset = {
     craterStrength: 6.8,
     craterColorStrength: 1.4,
     craterRayStrength: 2.6,
-    roughness: 0.38,
-    metalness: 0.72,
+    roughness: 0.5,
+    metalness: 0.7,
   },
 }

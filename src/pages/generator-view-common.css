@@ -147,7 +147,6 @@
   background: #01040b;
   position: sticky;
   top: 10px;
-  z-index: 9999;
 }
 
 .canvas-shell canvas {
@@ -522,7 +521,7 @@ input[type='color'] {
   .canvas-shell {
     width: min(100%, calc(100vh - 2rem));
     justify-self: center;
-    z-index: 9999;
+    z-index: 500;
   }
 
   .page-title {

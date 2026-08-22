@@ -758,9 +758,9 @@
   function applyPlanetoidSettings(settings: PlanetoidSettings) {
     planetoid = sanitizePlanetoidSettings(settings)
     cratersEnabled = planetoid.enableCraters
-    volcanoesEnabled = planetoid.enableVolcanoes && planetoid.volcanoCount > 0
-    ridgesEnabled = planetoid.ridgeStrength > 0
-    riftsEnabled = planetoid.riftStrength > 0
+    volcanoesEnabled = planetoid.enableVolcanoes
+    ridgesEnabled = planetoid.enableRidges
+    riftsEnabled = planetoid.enableRifts
   }
 
   function resetSceneToDefaults() {
@@ -789,6 +789,9 @@
       settings: sanitizePlanetoidSettings({
         ...planetoid,
         enableCraters: effectiveCratersEnabled,
+        enableRidges: effectiveRidgesEnabled,
+        enableRifts: effectiveRiftsEnabled,
+        enableVolcanoes: effectiveVolcanoesEnabled,
       }),
     }
 
@@ -1032,13 +1035,9 @@
       riftSectionOpen = restoredUiState.riftSectionOpen
     } else {
       cratersEnabled = planetoid.enableCraters
-      volcanoesEnabled =
-        planetoid.enableVolcanoes ||
-        planetoid.volcanoCount > 0 ||
-        planetoid.volcanoStrength > 0 ||
-        planetoid.volcanoColorStrength > 0
-      ridgesEnabled = planetoid.ridgeStrength > 0
-      riftsEnabled = planetoid.riftStrength > 0
+      volcanoesEnabled = planetoid.enableVolcanoes
+      ridgesEnabled = planetoid.enableRidges
+      riftsEnabled = planetoid.enableRifts
     }
 
     wasCratersEnabled = cratersEnabled
