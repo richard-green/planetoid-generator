@@ -148,6 +148,14 @@
     undefined
   )
   let color = $derived(new Color('#ffffff'))
+  const initialGeometry = createIcosphere(5)
+  let geometry = $state<BufferGeometry>(initialGeometry)
+  let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
+  let normalWeldGroups = $state<number[][]>(
+    buildNormalWeldGroups(copyPositionArray(initialGeometry))
+  )
+  let disposableGeometry: BufferGeometry = initialGeometry
+  let massCentre = $state(new Vector3())
 
   const { camera, size, renderer } = useThrelte()
 
@@ -299,14 +307,6 @@
     return Float32Array.from(source.attributes.position.array as ArrayLike<number>)
   }
 
-  const initialGeometry = createIcosphere(5)
-  let geometry = $state<BufferGeometry>(initialGeometry)
-  let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
-  let normalWeldGroups = $state<number[][]>(
-    buildNormalWeldGroups(copyPositionArray(initialGeometry))
-  )
-  let disposableGeometry: BufferGeometry = initialGeometry
-
   function buildNormalWeldGroups(sourcePositions: Float32Array) {
     const groups = new SvelteMap<string, number[]>()
 
@@ -426,6 +426,29 @@
     return value / total
   }
 
+  function centreOfMass(targetGeometry: BufferGeometry): Vector3 {
+    const position = targetGeometry.attributes.position
+    const vertex = new Vector3()
+    let minX: number = 0
+    let minY: number = 0
+    let minZ: number = 0
+    let maxX: number = 0
+    let maxY: number = 0
+    let maxZ: number = 0
+
+    for (let i = 0; i < position.count; i++) {
+      vertex.fromBufferAttribute(position, i)
+      minX = Math.min(vertex.x, minX)
+      minY = Math.min(vertex.y, minY)
+      minZ = Math.min(vertex.z, minZ)
+      maxX = Math.max(vertex.x, maxX)
+      maxY = Math.max(vertex.y, maxY)
+      maxZ = Math.max(vertex.z, maxZ)
+    }
+
+    return new Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
+  }
+
   function deformGeometry(
     targetGeometry: BufferGeometry,
     sourcePositions: Float32Array,
@@ -532,6 +555,8 @@
       broadScale,
       fineScale
     )
+
+    massCentre = centreOfMass(geometry)
   })
 
   $effect(() => {
@@ -854,10 +879,16 @@
   })
 
   useTask((delta) => {
-    if (!autoRotate || !mesh) return
+    if (mesh) {
+      mesh.position.x = -massCentre.x
+      mesh.position.y = -massCentre.y
+      mesh.position.z = -massCentre.z
 
-    mesh.rotation.y += delta * 0.2
-    mesh.rotation.x += delta * 0.12
+      if (autoRotate) {
+        mesh.rotation.y += delta * 0.2
+        mesh.rotation.x += delta * 0.12
+      }
+    }
   })
 
   const debugScale = 0.5

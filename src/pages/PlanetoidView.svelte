@@ -1456,7 +1456,7 @@
           <div class="view-mode-group" role="radiogroup" aria-label="Scene view mode">
             <label class="radio-row">
               <input type="radio" name="scene-view-mode" value="mesh" bind:group={sceneViewMode} />
-              <span>Mesh</span>
+              <span>3D</span>
             </label>
             <label class="radio-row">
               <input type="radio" name="scene-view-mode" value="bump" bind:group={sceneViewMode} />

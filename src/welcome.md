@@ -1,23 +1,26 @@
 # Welcome to Planetoid Generator
 
-Create procedural worlds in your browser with two tools:
+Create procedural worlds in your browser with these tools:
 
-- **Planetoid Generator** for rocky, cratered, volcanic, and ridged planets
-- **Gas and Ice Giant Generator** for banded atmospheres and storm systems
+- **Planetoid Generator** for rocky, icy, cratered, and volcanic, planets or asteroids
+- **Gas and Ice Giant Generator** for gaseous planets with complex atmospheres and storm systems
 
 ## Quick Start
 
-1. Pick a palette, add planetoid features, and tweak settings in the right-side panel.
-2. Change the seed value to create many more variants of the same settings.
-3. Save a snapshot with **PNG**.
-4. Export maps with **TEX** and **BMP**.
-5. Save your favorite combinations as presets.
+1. Choose either planetoid/asteroid or gas/ice giant creation in the top nav.
+2. Choose a preset from the menu, or customise all the properties for your chosen world.
+3. Pick a palette, add planetary features, and tweak settings in the settings panels.
+4. Change the seed value to create new variants of your planet.
+5. Export a transparent snapshot of the planet with **PNG**.
+6. Export texture maps with **TEX** and **BMP**.
+7. Save your favorite combinations as presets.
 
 ## Tips
 
-- Use **PRESETS** to reset, save, and manage reusable setups.
-- Switch between generators using the header link.
+- Use **PRESETS** to reset, load, save, and manage reusable setups.
 - You can reopen this message any time from the **?** help button beside GitHub.
-- If you clone the repo locally, you can use the cli-tools `auto-generate-planetoids` and `auto-generate-gas-giants` to script many images!
+- In the GitHub repo there are cli-tools to automatically generate snapshots.
+
+---
 
 Happy planet crafting!
