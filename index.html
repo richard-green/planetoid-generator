@@ -5,9 +5,173 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="./mars.png" />
     <title>Planetoid Generator</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        font-family:
+          Segoe UI,
+          Inter,
+          system-ui,
+          -apple-system,
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+      }
+
+      #app {
+        min-height: 100dvh;
+      }
+
+      .boot-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background-image:
+          radial-gradient(1200px 700px at 110% -15%, rgba(58, 117, 195, 0.45), transparent 60%),
+          radial-gradient(900px 500px at -5% 110%, rgba(117, 160, 199, 0.32), transparent 64%),
+          linear-gradient(165deg, rgba(3, 7, 18, 0.84) 0%, rgba(7, 16, 31, 0.88) 45%, rgba(4, 8, 21, 0.92) 100%),
+          url('/hero.jpg');
+        background-size: auto, auto, auto, cover;
+        background-position: center, center, center, center;
+        background-repeat: no-repeat;
+        color: #eff7ff;
+        opacity: 1;
+        visibility: visible;
+        transition:
+          opacity 260ms ease,
+          visibility 260ms ease;
+      }
+
+      .boot-screen.is-hidden {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .boot-hero {
+        width: min(760px, calc(100vw - 2.4rem));
+        padding: clamp(1.1rem, 2.4vw, 2rem);
+        border: 1px solid rgba(153, 191, 231, 0.35);
+        border-radius: 18px;
+        background: rgba(5, 12, 26, 0.78);
+        box-shadow:
+          0 18px 48px rgba(0, 0, 0, 0.45),
+          inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        backdrop-filter: blur(2px);
+      }
+
+      .boot-kicker {
+        margin: 0 0 0.5rem;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        font-weight: 700;
+        font-size: 0.72rem;
+        color: #9fc9f5;
+      }
+
+      .boot-title {
+        margin: 0;
+        font-size: clamp(1.45rem, 4.1vw, 2.55rem);
+        line-height: 1.08;
+        letter-spacing: 0.02em;
+      }
+
+      .boot-subtitle {
+        margin: 0.65rem 0 1rem;
+        max-width: 56ch;
+        color: #d7e7f7;
+        font-size: clamp(0.95rem, 2.1vw, 1.08rem);
+      }
+
+      .boot-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.72rem;
+        padding: 0.52rem 0.82rem;
+        border: 1px solid rgba(157, 194, 231, 0.3);
+        border-radius: 999px;
+        background: rgba(6, 17, 35, 0.85);
+        color: #ebf4ff;
+        font-size: 0.9rem;
+      }
+
+      .boot-spinner {
+        width: 0.95rem;
+        height: 0.95rem;
+        border-radius: 999px;
+        border: 2px solid rgba(122, 177, 233, 0.35);
+        border-top-color: #b5dcff;
+        animation: boot-spin 820ms linear infinite;
+      }
+
+      @keyframes boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-screen" class="boot-screen" aria-live="polite" role="status">
+      <section class="boot-hero" aria-label="Loading application">
+        <p class="boot-kicker">Procedural World Studio</p>
+        <h1 class="boot-title">Planetoid Generator</h1>
+        <p class="boot-subtitle">
+          Forging terrain maps, crater fields, and atmospheric palettes.
+        </p>
+        <div class="boot-status">
+          <span class="boot-spinner" aria-hidden="true"></span>
+          Preparing renderer and controls...
+        </div>
+      </section>
+    </div>
     <div id="app"></div>
+
+    <script>
+      ;(() => {
+        const bootScreen = document.getElementById('boot-screen')
+        const appRoot = document.getElementById('app')
+        if (!bootScreen || !appRoot) return
+
+        let hidden = false
+
+        const hideBootScreen = () => {
+          if (hidden) return
+          hidden = true
+          bootScreen.classList.add('is-hidden')
+          window.setTimeout(() => bootScreen.remove(), 300)
+        }
+
+        if (appRoot.childElementCount > 0) {
+          hideBootScreen()
+          return
+        }
+
+        const observer = new MutationObserver(() => {
+          if (appRoot.childElementCount > 0) {
+            observer.disconnect()
+            hideBootScreen()
+          }
+        })
+
+        observer.observe(appRoot, { childList: true })
+
+        window.addEventListener('error', hideBootScreen, { once: true })
+      })()
+    </script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
