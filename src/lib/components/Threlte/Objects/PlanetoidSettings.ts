@@ -8,6 +8,8 @@ import {
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
 
+export type PlanetoidViewMode = 'mesh' | 'bump' | 'texture' | 'ray'
+
 export type PlanetoidSettings = {
   autoRotate: boolean
   showDebugMeshes: boolean
@@ -541,23 +543,24 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
 
 export const PlanetoidUiLabels = {
   scene: 'Scene',
-  texture: 'Texture',
-  material: 'Material',
-  features: 'Features',
-  geometry: 'Geometry',
   viewMode: 'View mode',
-  colorSettings: 'Color settings',
-  textureResolution: 'Texture resolution',
-  properties: 'Properties',
-  seed: 'Seed',
-  palette: 'Palette',
-  surfaceTint: 'Surface tint',
   autoRotate: 'Auto-rotate',
   showDebugMeshes: 'Show debug meshes',
+  seed: 'Seed',
+  texture: 'Texture',
+  colorSettings: 'Color settings',
+  palette: 'Palette',
+  surfaceTint: 'Surface tint',
+  textureResolution: 'Texture resolution',
+  material: 'Material',
+  properties: 'Properties',
+  features: 'Features',
   craters: 'Craters',
+  volcanoes: 'Volcanoes',
   ridges: 'Ridges',
   rifts: 'Rifts',
-  volcanoes: 'Volcanoes',
+  geometry: 'Geometry',
+  deformation: 'Deformation',
 } as const
 
 export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {

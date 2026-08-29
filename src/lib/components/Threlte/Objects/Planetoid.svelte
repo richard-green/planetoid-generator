@@ -17,7 +17,7 @@
   import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
   import { onDestroy } from 'svelte'
   import { AllPalettes, type AnyPaletteName } from './AllPalettes'
-  import { MaxValues, MinValues } from './PlanetoidSettings'
+  import { MaxValues, MinValues, type PlanetoidViewMode } from './PlanetoidSettings'
   import {
     createPlanetoidBumpTexture,
     createPlanetoidColorTexture,
@@ -28,7 +28,7 @@
   import { SvelteMap } from 'svelte/reactivity'
 
   type Props = {
-    viewMode?: 'mesh' | 'bump' | 'texture' | 'ray'
+    viewMode?: PlanetoidViewMode
     palette?: AnyPaletteName
     surfaceTint?: string
     colorScale?: number

@@ -5,11 +5,9 @@
   import '../styles/common.css'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
-  import type { PlanetoidViewMode } from '../lib/components/Threlte/PlanetoidScene.svelte'
   import {
     PlanetoidPalettes,
     PlanetoidPaletteNames,
-    type PlanetoidPaletteName,
   } from '../lib/components/Threlte/Objects/PlanetoidPalettes'
   import {
     DefaultValues,
@@ -22,6 +20,7 @@
     PlanetoidUiLabels,
     sanitizePlanetoidSettings,
     type PlanetoidSettings,
+    type PlanetoidViewMode,
   } from '../lib/components/Threlte/Objects/PlanetoidSettings'
   import { BUILTIN_PRESETS, type PlanetoidPreset } from '../presets/Planetoids'
 
@@ -1186,7 +1185,7 @@
         <details class="control-section" bind:open={geometryPropertiesSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{PlanetoidUiLabels.properties}</span>
+            <span>{PlanetoidUiLabels.deformation}</span>
           </summary>
           <div class="control-grid">
             {#each geometryControls as control (control)}

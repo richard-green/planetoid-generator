@@ -223,31 +223,23 @@ function buildLocators(page: Page): ScriptLocators {
     ) as Record<PlanetoidRangeKey, Locator>,
     sectionToggles: {
       cratersEnabled: page
-        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.craters))
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.craters))
         .first(),
       ridgesEnabled: page
-        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.ridges))
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.ridges))
         .first(),
       riftsEnabled: page
-        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.rifts))
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.rifts))
         .first(),
       volcanoesEnabled: page
-        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.sections.volcanoes))
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.volcanoes))
         .first(),
     },
     sectionSummaries: {
-      craters: page
-        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.craters))
-        .first(),
-      ridges: page
-        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.ridges))
-        .first(),
-      rifts: page
-        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.rifts))
-        .first(),
-      volcanoes: page
-        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.sections.volcanoes))
-        .first(),
+      craters: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.craters)).first(),
+      ridges: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.ridges)).first(),
+      rifts: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.rifts)).first(),
+      volcanoes: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.volcanoes)).first(),
     },
     canvas: page.locator(selectors.canvas),
   }

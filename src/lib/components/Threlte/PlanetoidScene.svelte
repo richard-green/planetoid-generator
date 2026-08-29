@@ -6,11 +6,10 @@
   import { onDestroy } from 'svelte'
   import Planetoid from './Objects/Planetoid.svelte'
   import type { AnyPaletteName } from './Objects/AllPalettes'
-  import { DefaultValues } from './Objects/PlanetoidSettings'
-
-  export type PlanetoidViewMode = 'mesh' | 'bump' | 'texture' | 'ray'
+  import { DefaultValues, type PlanetoidViewMode } from './Objects/PlanetoidSettings'
 
   type Props = {
+    viewMode?: PlanetoidViewMode
     palette?: AnyPaletteName
     surfaceTint?: string
     colorScale?: number
@@ -51,13 +50,13 @@
     metalness?: number
     autoRotate?: boolean
     showDebugMeshes?: boolean
-    viewMode?: PlanetoidViewMode
     triangleDetail?: number
     bumpTextureSize?: number
     colorTextureSize?: number
   }
 
   let {
+    viewMode = 'mesh',
     palette = DefaultValues.palette,
     surfaceTint = DefaultValues.surfaceTint,
     colorScale = DefaultValues.colorScale,
@@ -98,7 +97,6 @@
     metalness = DefaultValues.metalness,
     autoRotate = DefaultValues.autoRotate,
     showDebugMeshes = DefaultValues.showDebugMeshes,
-    viewMode = 'mesh',
     triangleDetail = DefaultValues.triangleDetail,
     bumpTextureSize = DefaultValues.bumpTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
