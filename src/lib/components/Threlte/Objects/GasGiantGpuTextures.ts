@@ -220,7 +220,7 @@ const fragmentShader = `
   vec2 cloudBandSignals(vec2 uv, vec3 remappedPos, vec3 seed) {
     float chaosControl = clamp(uCloudChaos, 0.0, 2.0);
     float chaosNorm = chaosControl * 0.5;
-    float bandCount = clamp(uBandCount, 2.0, 28.0);
+    float bandCount = clamp(uBandCount, 1.0, 28.0);
     float lowWarp = fractalNoise(remappedPos * 2.6 + seed * 0.19 + vec3(17.3, 9.7, 33.1));
     float midWarp = fractalNoise(remappedPos * 6.4 + seed * 0.43 + vec3(5.1, 29.3, 11.7));
     float shear = sin((uv.x * TAU * 2.0) + seed.y * 0.0023 + uv.y * PI * 1.7) * mix(0.02, 0.14, chaosNorm);

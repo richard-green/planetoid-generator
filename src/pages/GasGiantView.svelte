@@ -14,9 +14,11 @@
     DefaultGasGiantSettings,
     GasGiantCliFlagByRangeKey,
     GasGiantCliToggleFlags,
+    GasGiantRangeLabels,
     GasGiantUiLabels,
     MaxValues,
     MinValues,
+    sanitizeGasGiantSettings,
     type GasGiantRangeKey,
     type GasGiantSettings,
   } from '../lib/components/Threlte/Objects/GasGiantSettings'
@@ -101,10 +103,6 @@
 
   const effectiveStormsEnabled = $derived(stormsEnabled)
 
-  function clamp(value: number, min: number, max: number) {
-    return Math.min(Math.max(value, min), max)
-  }
-
   function getTimestamp() {
     const now = new Date()
     const yyyy = String(now.getFullYear())
@@ -121,112 +119,6 @@
     return new Promise<void>((resolve) => {
       requestAnimationFrame(() => resolve())
     })
-  }
-
-  function sanitizeGasGiantSettings(input: unknown): GasGiantViewSettings {
-    const raw =
-      typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {}
-
-    const sanitizedPalette = GasGiantPaletteNames.includes(raw.palette as GasGiantPaletteName)
-      ? (raw.palette as GasGiantPaletteName)
-      : DEFAULT_GAS_GIANT_SETTINGS.palette
-
-    const sanitizedSurfaceTint =
-      typeof raw.surfaceTint === 'string' &&
-      /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(raw.surfaceTint)
-        ? raw.surfaceTint
-        : DEFAULT_GAS_GIANT_SETTINGS.surfaceTint
-
-    return {
-      seed:
-        typeof raw.seed === 'number'
-          ? Math.round(clamp(raw.seed, MinValues.seed, MaxValues.seed))
-          : DEFAULT_GAS_GIANT_SETTINGS.seed,
-      autoRotate:
-        typeof raw.autoRotate === 'boolean'
-          ? raw.autoRotate
-          : DEFAULT_GAS_GIANT_SETTINGS.autoRotate,
-      palette: sanitizedPalette,
-      surfaceTint: sanitizedSurfaceTint,
-      colorScale:
-        typeof raw.colorScale === 'number'
-          ? clamp(raw.colorScale, MinValues.colorScale, MaxValues.colorScale)
-          : DEFAULT_GAS_GIANT_SETTINGS.colorScale,
-      tintShadowFloor:
-        typeof raw.tintShadowFloor === 'number'
-          ? clamp(raw.tintShadowFloor, MinValues.tintShadowFloor, MaxValues.tintShadowFloor)
-          : DEFAULT_GAS_GIANT_SETTINGS.tintShadowFloor,
-      cloudBandCount:
-        typeof raw.cloudBandCount === 'number'
-          ? Math.round(
-              clamp(raw.cloudBandCount, MinValues.cloudBandCount, MaxValues.cloudBandCount)
-            )
-          : DEFAULT_GAS_GIANT_SETTINGS.cloudBandCount,
-      cloudBandSharpness:
-        typeof raw.cloudBandSharpness === 'number'
-          ? clamp(
-              raw.cloudBandSharpness,
-              MinValues.cloudBandSharpness,
-              MaxValues.cloudBandSharpness
-            )
-          : DEFAULT_GAS_GIANT_SETTINGS.cloudBandSharpness,
-      cloudChaos:
-        typeof raw.cloudChaos === 'number'
-          ? clamp(raw.cloudChaos, MinValues.cloudChaos, MaxValues.cloudChaos)
-          : DEFAULT_GAS_GIANT_SETTINGS.cloudChaos,
-      enableStorms:
-        typeof raw.enableStorms === 'boolean'
-          ? raw.enableStorms
-          : DEFAULT_GAS_GIANT_SETTINGS.enableStorms,
-      stormCount:
-        typeof raw.stormCount === 'number'
-          ? Math.round(clamp(raw.stormCount, MinValues.stormCount, MaxValues.stormCount))
-          : DEFAULT_GAS_GIANT_SETTINGS.stormCount,
-      stormScale:
-        typeof raw.stormScale === 'number'
-          ? clamp(raw.stormScale, MinValues.stormScale, MaxValues.stormScale)
-          : DEFAULT_GAS_GIANT_SETTINGS.stormScale,
-      stormPower:
-        typeof raw.stormPower === 'number'
-          ? clamp(raw.stormPower, MinValues.stormPower, MaxValues.stormPower)
-          : DEFAULT_GAS_GIANT_SETTINGS.stormPower,
-      stormStrength:
-        typeof raw.stormStrength === 'number'
-          ? clamp(raw.stormStrength, MinValues.stormStrength, MaxValues.stormStrength)
-          : DEFAULT_GAS_GIANT_SETTINGS.stormStrength,
-      stormColorStrength:
-        typeof raw.stormColorStrength === 'number'
-          ? clamp(
-              raw.stormColorStrength,
-              MinValues.stormColorStrength,
-              MaxValues.stormColorStrength
-            )
-          : DEFAULT_GAS_GIANT_SETTINGS.stormColorStrength,
-      bumpScale:
-        typeof raw.bumpScale === 'number'
-          ? clamp(raw.bumpScale, MinValues.bumpScale, MaxValues.bumpScale)
-          : DEFAULT_GAS_GIANT_SETTINGS.bumpScale,
-      roughness:
-        typeof raw.roughness === 'number'
-          ? clamp(raw.roughness, MinValues.roughness, MaxValues.roughness)
-          : DEFAULT_GAS_GIANT_SETTINGS.roughness,
-      metalness:
-        typeof raw.metalness === 'number'
-          ? clamp(raw.metalness, MinValues.metalness, MaxValues.metalness)
-          : DEFAULT_GAS_GIANT_SETTINGS.metalness,
-      bumpTextureSize:
-        typeof raw.bumpTextureSize === 'number'
-          ? Math.round(
-              clamp(raw.bumpTextureSize, MinValues.bumpTextureSize, MaxValues.bumpTextureSize)
-            )
-          : DEFAULT_GAS_GIANT_SETTINGS.bumpTextureSize,
-      colorTextureSize:
-        typeof raw.colorTextureSize === 'number'
-          ? Math.round(
-              clamp(raw.colorTextureSize, MinValues.colorTextureSize, MaxValues.colorTextureSize)
-            )
-          : DEFAULT_GAS_GIANT_SETTINGS.colorTextureSize,
-    }
   }
 
   function sanitizePresetName(input: unknown) {
@@ -738,7 +630,7 @@
 
     <div class="controls">
       <fieldset>
-        <legend>Scene</legend>
+        <legend>{GasGiantUiLabels.scene}</legend>
         <div class="save-actions" aria-label="Save and export actions">
           <div class="export-actions">
             <button
@@ -819,11 +711,11 @@
       </fieldset>
 
       <fieldset>
-        <legend>Texture</legend>
+        <legend>{GasGiantUiLabels.texture}</legend>
         <details class="control-section" bind:open={colorSettingsSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Color settings</span>
+            <span>{GasGiantUiLabels.colorSettings}</span>
           </summary>
           <label>
             {GasGiantUiLabels.palette}
@@ -847,11 +739,11 @@
           </label>
           <div class="control-grid">
             <label class="compact-number-row">
-              <span>Palette influence</span>
+              <span>{GasGiantRangeLabels.colorScale}</span>
               <input type="number" min={0} max={2} step="0.05" bind:value={colorScale} />
             </label>
             <label class="compact-number-row">
-              <span>Tint shadow floor</span>
+              <span>{GasGiantRangeLabels.tintShadowFloor}</span>
               <input type="number" min={0} max={0.9} step="0.01" bind:value={tintShadowFloor} />
             </label>
           </div>
@@ -860,7 +752,7 @@
         <details class="control-section" bind:open={textureResolutionSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Texture resolution</span>
+            <span>{GasGiantUiLabels.textureResolution}</span>
           </summary>
           <div class="control-grid">
             <label class="compact-number-row">
@@ -885,15 +777,21 @@
           </summary>
           <div class="control-grid">
             <label class="compact-number-row">
-              <span>Cloud band count</span>
-              <input type="number" min={2} max={28} step="1" bind:value={cloudBandCount} />
+              <span>{GasGiantRangeLabels.cloudBandCount}</span>
+              <input
+                type="number"
+                min={MinValues.cloudBandCount}
+                max={MaxValues.cloudBandCount}
+                step="1"
+                bind:value={cloudBandCount}
+              />
             </label>
             <label class="compact-number-row">
-              <span>Band sharpness</span>
+              <span>{GasGiantRangeLabels.cloudBandSharpness}</span>
               <input type="number" min={0} max={1} step="0.01" bind:value={cloudBandSharpness} />
             </label>
             <label class="compact-number-row">
-              <span>Cloud chaos</span>
+              <span>{GasGiantRangeLabels.cloudChaos}</span>
               <input type="number" min={0} max={2} step="0.01" bind:value={cloudChaos} />
             </label>
           </div>
