@@ -128,6 +128,9 @@ const fragmentShader = `
   const int MAX_VOLCANOES = 80;
   const float PI = 3.141592653589793;
   const float TAU = 6.283185307179586;
+  // Blend factor for layering each new crater over existing crater height.
+  // 0.75 means intersections keep 75% of the new crater and 25% of prior terrain.
+  const float CRATER_NEW_HEIGHT_WEIGHT = 0.75;
 
   float hash11(float p) {
     return fract(sin(p * 127.1) * 43758.5453123);
@@ -287,8 +290,12 @@ const fragmentShader = `
     centerUv = vec2(u, v);
     radius = mix(minRadius, maxRadius, normalizedRadius);
 
-    float ageSample = hash12(vec2(fi * 8.93, uSeed.z * 0.001 + 97.0));
-    age = pow(ageSample, 1.35);
+    float countMinusOne = max(1.0, float(uCraterCount - 1));
+    float chronology = fi / countMinusOne;
+    float ageJitter = (hash12(vec2(fi * 8.93, uSeed.z * 0.001 + 97.0)) - 0.5) * 0.16;
+
+    // Older craters are laid first in index order and are generally more eroded.
+    age = clamp(1.0 - chronology + ageJitter, 0.0, 1.0);
   }
 
   float craterNormalizedDistance(vec2 uv, vec2 craterUv, float craterRadius, float craterAge) {
@@ -361,8 +368,13 @@ const fragmentShader = `
     return rimFlank + interiorProfile + floorMicro;
   }
 
-  float accumulateCraterHeight(vec2 uv) {
-    float craterHeight = 0.0;
+  float craterCompositeMask(float t) {
+    // Full influence in bowl/rim, easing off across the outer flank.
+    return 1.0 - smoothstep(1.12, 1.38, t);
+  }
+
+  float accumulateCraterComposite(vec2 uv) {
+    float composedHeight = 0.0;
 
     for (int i = 0; i < MAX_CRATERS; i++) {
       if (i >= uCraterCount) break;
@@ -373,35 +385,27 @@ const fragmentShader = `
       buildCrater(i, craterUv, craterRadius, craterAge);
 
       float t = craterNormalizedDistance(uv, craterUv, craterRadius, craterAge);
-      craterHeight += craterShape(t, craterAge);
+      if (t >= 1.38) continue;
+
+      float profile = craterShape(t, craterAge);
+      float applyMask = craterCompositeMask(t);
+      float localBlend = applyMask * CRATER_NEW_HEIGHT_WEIGHT;
+
+      composedHeight = mix(composedHeight, profile, localBlend);
     }
 
+    return composedHeight;
+  }
+
+  float accumulateCraterHeight(vec2 uv) {
+    float craterHeight = accumulateCraterComposite(uv);
     return clamp(craterHeight, -1.25, 0.35);
   }
 
   float accumulateCraterColorWarp(vec2 uv) {
-    float craterWarp = 0.0;
-
-    for (int i = 0; i < MAX_CRATERS; i++) {
-      if (i >= uCraterCount) break;
-
-      vec2 craterUv;
-      float craterRadius;
-      float craterAge;
-      buildCrater(i, craterUv, craterRadius, craterAge);
-
-      float t = craterNormalizedDistance(uv, craterUv, craterRadius, craterAge);
-      if (t >= 1.35) continue;
-
-      // Use the same signed crater profile as displacement so crater-center color
-      // tracks the normal-map crater interior/rim behavior.
-      float profile = craterShape(t, craterAge);
-      float interiorGain = mix(1.2, 1.05, craterAge);
-      float rimGain = mix(0.9, 0.78, craterAge);
-      float signedGain = profile < 0.0 ? interiorGain : rimGain;
-
-      craterWarp += profile * signedGain;
-    }
+    float composedProfile = accumulateCraterComposite(uv);
+    float signedGain = composedProfile < 0.0 ? 1.15 : 0.84;
+    float craterWarp = composedProfile * signedGain;
 
     return clamp(craterWarp, -1.0, 0.8);
   }
