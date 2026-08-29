@@ -881,8 +881,7 @@
       mesh.position.z = -massCentre.z
 
       if (autoRotate) {
-        mesh.rotation.y += delta * 0.2
-        mesh.rotation.x += delta * 0.12
+        mesh.rotation.y += delta * 0.18
       }
     }
   })

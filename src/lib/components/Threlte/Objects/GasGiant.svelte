@@ -232,7 +232,6 @@
   useTask((delta) => {
     if (!autoRotate || !mesh) return
     mesh.rotation.y += delta * 0.18
-    // mesh.rotation.x += delta * 0.06
   })
 
   onDestroy(() => {
