@@ -813,7 +813,7 @@
 
     <div class="controls">
       <fieldset>
-        <legend>Scene</legend>
+        <legend>{PlanetoidUiLabels.scene}</legend>
         <div class="save-actions" aria-label="Save and export actions">
           <div class="export-actions">
             <button
@@ -904,7 +904,7 @@
         <details class="control-section" bind:open={viewModeSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>View mode</span>
+            <span>{PlanetoidUiLabels.viewMode}</span>
           </summary>
           <div class="view-mode-group" role="radiogroup" aria-label="Scene view mode">
             <label class="radio-row">
@@ -943,11 +943,11 @@
           />
         </label>
         <label class="compact-number-row">
-          <span>Seed</span>
+          <span>{PlanetoidRangeLabels.seed}</span>
           <input
             type="number"
-            min={0}
-            max={999999}
+            min={MinValues.seed}
+            max={MaxValues.seed}
             step={StepValues.seed}
             bind:value={planetoid.seed}
           />
@@ -955,11 +955,11 @@
       </fieldset>
 
       <fieldset>
-        <legend>Texture</legend>
+        <legend>{PlanetoidUiLabels.texture}</legend>
         <details class="control-section" bind:open={colorSettingsSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Color settings</span>
+            <span>{PlanetoidUiLabels.colorSettings}</span>
           </summary>
           <label>
             {PlanetoidUiLabels.palette}
@@ -999,7 +999,7 @@
         <details class="control-section" bind:open={textureResolutionSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Texture resolution</span>
+            <span>{PlanetoidUiLabels.textureResolution}</span>
           </summary>
           <div class="control-grid">
             {#each textureResolutionControls as control (control)}
@@ -1019,11 +1019,11 @@
       </fieldset>
 
       <fieldset>
-        <legend>Material</legend>
+        <legend>{PlanetoidUiLabels.material}</legend>
         <details class="control-section" bind:open={materialPropertiesSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Properties</span>
+            <span>{PlanetoidUiLabels.properties}</span>
           </summary>
           <div class="control-grid">
             {#each materialControls as control (control)}
@@ -1043,7 +1043,7 @@
       </fieldset>
 
       <fieldset>
-        <legend>Features</legend>
+        <legend>{PlanetoidUiLabels.features}</legend>
         <details class="control-section" bind:open={craterSectionOpen}>
           <summary
             class="summary-with-toggle"
@@ -1051,7 +1051,7 @@
           >
             <span class="summary-main">
               <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.sections.craters}</span>
+              <span>{PlanetoidUiLabels.craters}</span>
             </span>
             <label class="summary-toggle">
               <input
@@ -1085,7 +1085,7 @@
           >
             <span class="summary-main">
               <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.sections.volcanoes}</span>
+              <span>{PlanetoidUiLabels.volcanoes}</span>
             </span>
             <label class="summary-toggle">
               <input
@@ -1119,7 +1119,7 @@
           >
             <span class="summary-main">
               <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.sections.ridges}</span>
+              <span>{PlanetoidUiLabels.ridges}</span>
             </span>
             <label class="summary-toggle">
               <input
@@ -1153,7 +1153,7 @@
           >
             <span class="summary-main">
               <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.sections.rifts}</span>
+              <span>{PlanetoidUiLabels.rifts}</span>
             </span>
             <label class="summary-toggle">
               <input
@@ -1182,11 +1182,11 @@
       </fieldset>
 
       <fieldset>
-        <legend>Geometry</legend>
+        <legend>{PlanetoidUiLabels.geometry}</legend>
         <details class="control-section" bind:open={geometryPropertiesSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Properties</span>
+            <span>{PlanetoidUiLabels.properties}</span>
           </summary>
           <div class="control-grid">
             {#each geometryControls as control (control)}

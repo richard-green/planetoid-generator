@@ -540,17 +540,24 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
 }
 
 export const PlanetoidUiLabels = {
+  scene: 'Scene',
+  texture: 'Texture',
+  material: 'Material',
+  features: 'Features',
+  geometry: 'Geometry',
+  viewMode: 'View mode',
+  colorSettings: 'Color settings',
+  textureResolution: 'Texture resolution',
+  properties: 'Properties',
   seed: 'Seed',
   palette: 'Palette',
   surfaceTint: 'Surface tint',
   autoRotate: 'Auto-rotate',
   showDebugMeshes: 'Show debug meshes',
-  sections: {
-    craters: 'Craters',
-    ridges: 'Ridges',
-    rifts: 'Rifts',
-    volcanoes: 'Volcanoes',
-  },
+  craters: 'Craters',
+  ridges: 'Ridges',
+  rifts: 'Rifts',
+  volcanoes: 'Volcanoes',
 } as const
 
 export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {

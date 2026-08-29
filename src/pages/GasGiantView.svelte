@@ -731,12 +731,12 @@
       </fieldset>
 
       <fieldset>
-        <legend>Features</legend>
+        <legend>{GasGiantUiLabels.features}</legend>
 
         <details class="control-section" bind:open={cloudSettingsSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Cloud bands</span>
+            <span>{GasGiantUiLabels.cloudBands}</span>
           </summary>
           <div class="control-grid">
             {#each cloudControls as control (control)}
@@ -761,7 +761,7 @@
           >
             <span class="summary-main">
               <span class="summary-chevron" aria-hidden="true"></span>
-              <span>Storm systems</span>
+              <span>{GasGiantUiLabels.stormSystems}</span>
             </span>
             <label class="summary-toggle">
               <input
@@ -790,11 +790,11 @@
       </fieldset>
 
       <fieldset>
-        <legend>Material</legend>
+        <legend>{GasGiantUiLabels.material}</legend>
         <details class="control-section" bind:open={materialPropertiesSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Properties</span>
+            <span>{GasGiantUiLabels.properties}</span>
           </summary>
           <div class="control-grid">
             {#each materialControls as control (control)}
