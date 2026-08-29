@@ -1,10 +1,13 @@
-import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import {
+  DefaultValues,
+  toPlanetoidPresetSettings,
+} from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const potatoPreset: PlanetoidPreset = {
   id: 'builtin-potato',
   name: 'Potato',
-  settings: {
+  settings: toPlanetoidPresetSettings({
     ...DefaultValues,
     palette: 'sulfuricGlass',
     surfaceTint: '#d8ecff',
@@ -37,8 +40,6 @@ export const potatoPreset: PlanetoidPreset = {
     riftWidth: 0.05,
     riftSharpness: 2,
     ridgesRiftsBlend: 0.5,
-    bumpTextureSize: 1024,
-    colorTextureSize: 1024,
     largeScale: 0.9,
     mediumScale: 0,
     smallScale: 0,
@@ -46,7 +47,5 @@ export const potatoPreset: PlanetoidPreset = {
     bumpScale: 1,
     roughness: 0.8,
     metalness: 0.5,
-    autoRotate: false,
-    showDebugMeshes: false,
-  },
+  }),
 }

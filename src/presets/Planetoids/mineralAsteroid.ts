@@ -4,12 +4,12 @@ import {
 } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
-export const iceworldPreset: PlanetoidPreset = {
-  id: 'builtin-iceworld',
-  name: 'Iceworld',
+export const mineralAsteroidPreset: PlanetoidPreset = {
+  id: 'builtin-mineral-asteroid',
+  name: 'Mineral asteroid',
   settings: toPlanetoidPresetSettings({
     ...DefaultValues,
-    palette: 'icy',
+    palette: 'mineralVeins',
     surfaceTint: '#cf9b7d',
     colorScale: 0.92,
     tintShadowFloor: 0.18,
@@ -28,7 +28,7 @@ export const iceworldPreset: PlanetoidPreset = {
     craterRayDensity: 0.3,
     craterRaySharpness: 0.5,
     craterRayLengthPower: 1,
-    enableCraters: false,
+    enableCraters: true,
     enableVolcanoes: false,
     enableRidges: true,
     enableRifts: true,
@@ -36,7 +36,7 @@ export const iceworldPreset: PlanetoidPreset = {
     ridgeFrequency: 2.5,
     ridgeSharpness: 4,
     riftStrength: 1,
-    riftFrequency: 0.8,
+    riftFrequency: 2,
     riftWidth: 0.24,
     riftSharpness: 1.75,
     ridgesRiftsBlend: 0.5,
@@ -47,7 +47,7 @@ export const iceworldPreset: PlanetoidPreset = {
     smallFrequency: 4.3,
     triangleDetail: 40,
     bumpScale: 2,
-    roughness: 0.1,
-    metalness: 0.6,
+    roughness: 0.75,
+    metalness: 0.4,
   }),
 }

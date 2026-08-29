@@ -1,10 +1,13 @@
-import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import {
+  DefaultValues,
+  toPlanetoidPresetSettings,
+} from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const metallicCratersPreset: PlanetoidPreset = {
   id: 'builtin-metallic-craters',
   name: 'Metallic Craters',
-  settings: {
+  settings: toPlanetoidPresetSettings({
     ...DefaultValues,
     palette: 'mineralVeins',
     surfaceTint: '#b8b4ad',
@@ -14,5 +17,5 @@ export const metallicCratersPreset: PlanetoidPreset = {
     craterRayStrength: 2.6,
     roughness: 0.5,
     metalness: 0.7,
-  },
+  }),
 }

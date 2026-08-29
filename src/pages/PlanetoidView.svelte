@@ -13,13 +13,16 @@
     DefaultValues,
     MaxValues,
     MinValues,
+    mergePlanetoidPresetSettings,
     PlanetoidCliFlagByRangeKey,
     PlanetoidCliToggleFlags,
     PlanetoidRangeLabels,
+    sanitizePlanetoidPresetSettings,
     StepValues,
     PlanetoidUiLabels,
     sanitizePlanetoidSettings,
     type PlanetoidSettings,
+    toPlanetoidPresetSettings,
     type PlanetoidViewMode,
   } from '../lib/components/Threlte/Objects/PlanetoidSettings'
   import { BUILTIN_PRESETS, type PlanetoidPreset } from '../presets/Planetoids'
@@ -244,7 +247,7 @@
     return {
       id,
       name,
-      settings: sanitizePlanetoidSettings(raw.settings),
+      settings: sanitizePlanetoidPresetSettings(raw.settings),
     }
   }
 
@@ -279,13 +282,15 @@
     const nextPreset: PlanetoidPreset = {
       id: createPresetId(),
       name,
-      settings: sanitizePlanetoidSettings({
-        ...planetoid,
-        enableCraters: effectiveCratersEnabled,
-        enableRidges: effectiveRidgesEnabled,
-        enableRifts: effectiveRiftsEnabled,
-        enableVolcanoes: effectiveVolcanoesEnabled,
-      }),
+      settings: toPlanetoidPresetSettings(
+        sanitizePlanetoidSettings({
+          ...planetoid,
+          enableCraters: effectiveCratersEnabled,
+          enableRidges: effectiveRidgesEnabled,
+          enableRifts: effectiveRiftsEnabled,
+          enableVolcanoes: effectiveVolcanoesEnabled,
+        })
+      ),
     }
 
     userPresets = [nextPreset, ...userPresets]
@@ -379,14 +384,17 @@
   }
 
   async function exportPresetToCli(preset: PlanetoidPreset) {
-    const command = buildCliCommandFromPreset(preset.settings, sceneViewMode, {
+    const mergedPresetSettings = mergePlanetoidPresetSettings(planetoid, preset.settings)
+
+    const command = buildCliCommandFromPreset(mergedPresetSettings, sceneViewMode, {
       cratersEnabled:
-        preset.settings.enableCraters ||
-        preset.settings.craterCount > 0 ||
-        preset.settings.craterStrength > 0,
-      ridgesEnabled: preset.settings.enableRidges || preset.settings.ridgeStrength > 0,
-      riftsEnabled: preset.settings.enableRifts || preset.settings.riftStrength > 0,
-      volcanoesEnabled: preset.settings.enableVolcanoes || preset.settings.volcanoCount > 0,
+        mergedPresetSettings.enableCraters ||
+        mergedPresetSettings.craterCount > 0 ||
+        mergedPresetSettings.craterStrength > 0,
+      ridgesEnabled: mergedPresetSettings.enableRidges || mergedPresetSettings.ridgeStrength > 0,
+      riftsEnabled: mergedPresetSettings.enableRifts || mergedPresetSettings.riftStrength > 0,
+      volcanoesEnabled:
+        mergedPresetSettings.enableVolcanoes || mergedPresetSettings.volcanoCount > 0,
     })
 
     const copied = await copyTextToClipboard(command)
@@ -408,7 +416,7 @@
   }
 
   function applyPreset(preset: PlanetoidPreset) {
-    applyPlanetoidSettings(preset.settings)
+    applyPlanetoidSettings(mergePlanetoidPresetSettings(planetoid, preset.settings))
   }
 
   function applyPresetAndCloseManager(preset: PlanetoidPreset) {

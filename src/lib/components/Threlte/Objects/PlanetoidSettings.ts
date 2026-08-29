@@ -10,6 +10,9 @@ import {
 
 export type PlanetoidViewMode = 'mesh' | 'bump' | 'texture' | 'ray'
 
+export type PlanetoidPresetExcludedKey =
+  'seed' | 'autoRotate' | 'showDebugMeshes' | 'bumpTextureSize' | 'colorTextureSize'
+
 export type PlanetoidSettings = {
   autoRotate: boolean
   showDebugMeshes: boolean
@@ -56,6 +59,15 @@ export type PlanetoidSettings = {
   mediumFrequency: number
   smallFrequency: number
   triangleDetail: number
+}
+
+export type PlanetoidPresetSettings = Omit<PlanetoidSettings, PlanetoidPresetExcludedKey>
+
+export type PlanetoidViewSettings = Pick<
+  PlanetoidSettings,
+  'autoRotate' | 'showDebugMeshes' | 'bumpTextureSize' | 'colorTextureSize'
+> & {
+  viewMode: PlanetoidViewMode
 }
 
 export type PlanetoidRangeValues = Pick<
@@ -525,6 +537,34 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     autoRotate,
     showDebugMeshes,
   }
+}
+
+export function toPlanetoidPresetSettings(settings: PlanetoidSettings): PlanetoidPresetSettings {
+  const {
+    seed: _seed,
+    autoRotate: _autoRotate,
+    showDebugMeshes: _showDebugMeshes,
+    bumpTextureSize: _bumpTextureSize,
+    colorTextureSize: _colorTextureSize,
+    ...presetSettings
+  } = settings
+
+  return presetSettings
+}
+
+export function sanitizePlanetoidPresetSettings(input: unknown): PlanetoidPresetSettings {
+  const settings = sanitizePlanetoidSettings(input)
+  return toPlanetoidPresetSettings(settings)
+}
+
+export function mergePlanetoidPresetSettings(
+  currentSettings: PlanetoidSettings,
+  presetSettings: PlanetoidPresetSettings
+): PlanetoidSettings {
+  return sanitizePlanetoidSettings({
+    ...currentSettings,
+    ...presetSettings,
+  })
 }
 
 export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {

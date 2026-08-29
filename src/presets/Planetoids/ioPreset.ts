@@ -1,10 +1,13 @@
-import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import {
+  DefaultValues,
+  toPlanetoidPresetSettings,
+} from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const ioPreset: PlanetoidPreset = {
   id: 'builtin-io',
   name: 'Io',
-  settings: {
+  settings: toPlanetoidPresetSettings({
     ...DefaultValues,
     palette: 'io',
     surfaceTint: '#c4b9a2',
@@ -37,8 +40,6 @@ export const ioPreset: PlanetoidPreset = {
     riftWidth: 0.05,
     riftSharpness: 2,
     ridgesRiftsBlend: 0.5,
-    bumpTextureSize: 1024,
-    colorTextureSize: 1024,
     largeScale: 0,
     mediumScale: 0,
     smallScale: 0,
@@ -46,5 +47,5 @@ export const ioPreset: PlanetoidPreset = {
     bumpScale: 0.5,
     roughness: 0.8,
     metalness: 0.5,
-  },
+  }),
 }

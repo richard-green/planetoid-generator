@@ -1,10 +1,13 @@
-import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import {
+  DefaultValues,
+  toPlanetoidPresetSettings,
+} from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const marsPreset: PlanetoidPreset = {
   id: 'builtin-mars',
   name: 'Mars',
-  settings: {
+  settings: toPlanetoidPresetSettings({
     ...DefaultValues,
     palette: 'martian',
     surfaceTint: '#c4b9a2',
@@ -37,9 +40,6 @@ export const marsPreset: PlanetoidPreset = {
     riftWidth: 0.05,
     riftSharpness: 2,
     ridgesRiftsBlend: 0.5,
-    bumpTextureSize: 1024,
-    colorTextureSize: 1024,
-    seed: 1,
     largeScale: 0,
     mediumScale: 0,
     smallScale: 0,
@@ -47,5 +47,5 @@ export const marsPreset: PlanetoidPreset = {
     bumpScale: 1,
     roughness: 0.8,
     metalness: 0.5,
-  },
+  }),
 }
