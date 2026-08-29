@@ -30,7 +30,7 @@ export const marsPreset: PlanetoidPreset = {
     enableRifts: true,
     enableVolcanoes: false,
     ridgeStrength: 0.8,
-    ridgeScale: 8,
+    ridgeFrequency: 8,
     ridgeSharpness: 2,
     riftStrength: 0.4,
     riftFrequency: 1.5,

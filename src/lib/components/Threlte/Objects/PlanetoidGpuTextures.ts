@@ -33,7 +33,7 @@ type BumpTextureOptions = {
   enableRidges?: boolean
   enableRifts?: boolean
   ridgeStrength?: number
-  ridgeScale?: number
+  ridgeFrequency?: number
   ridgeSharpness?: number
   riftStrength?: number
   riftFrequency?: number
@@ -52,7 +52,7 @@ type ColorTextureOptions = {
   enableRidges?: boolean
   enableRifts?: boolean
   ridgeStrength?: number
-  ridgeScale?: number
+  ridgeFrequency?: number
   ridgeSharpness?: number
   riftStrength?: number
   riftFrequency?: number
@@ -121,7 +121,7 @@ const fragmentShader = `
   uniform int uEnableRidges;
   uniform int uEnableRifts;
   uniform float uRidgeStrength;
-  uniform float uRidgeScale;
+  uniform float uRidgeFrequency;
   uniform float uRidgeSharpness;
   uniform float uRiftStrength;
   uniform float uRiftFrequency;
@@ -173,10 +173,10 @@ const fragmentShader = `
   }
 
   vec2 ridgeRiftSignals(vec3 p, vec3 seed) {
-    float ridgeScale = max(0.1, uRidgeScale);
+    float ridgeFrequency = max(0.1, uRidgeFrequency);
     float riftFrequency = max(0.1, uRiftFrequency);
 
-    float ridgeNoise = fractalNoise(p * ridgeScale + seed * 0.91 + vec3(17.7, 53.2, 91.4));
+    float ridgeNoise = fractalNoise(p * ridgeFrequency + seed * 0.91 + vec3(17.7, 53.2, 91.4));
     float ridgeRaw = 1.0 - abs(ridgeNoise);
     // Higher ridge sharpness should produce narrower, crisper ridge crests.
     float ridgeSharp = pow(
@@ -887,7 +887,7 @@ const material = new ShaderMaterial({
     uEnableRidges: new Uniform(0),
     uEnableRifts: new Uniform(0),
     uRidgeStrength: new Uniform(0.5),
-    uRidgeScale: new Uniform(2.2),
+    uRidgeFrequency: new Uniform(2.2),
     uRidgeSharpness: new Uniform(1.6),
     uRiftStrength: new Uniform(0.4),
     uRiftFrequency: new Uniform(3.4),
@@ -996,7 +996,7 @@ function renderTexture(
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
-    ridgeScale?: number
+    ridgeFrequency?: number
     ridgeSharpness?: number
     riftStrength?: number
     riftFrequency?: number
@@ -1069,7 +1069,7 @@ function renderTexture(
   material.uniforms.uEnableRidges.value = options.enableRidges ? 1 : 0
   material.uniforms.uEnableRifts.value = options.enableRifts ? 1 : 0
   material.uniforms.uRidgeStrength.value = toClampedNumber(options.ridgeStrength, 0.5, 0.0, 2.0)
-  material.uniforms.uRidgeScale.value = toClampedNumber(options.ridgeScale, 2.2, 0.5, 8.0)
+  material.uniforms.uRidgeFrequency.value = toClampedNumber(options.ridgeFrequency, 2.2, 0.5, 8.0)
   material.uniforms.uRidgeSharpness.value = toClampedNumber(options.ridgeSharpness, 1.6, 0.5, 4.0)
   material.uniforms.uRiftStrength.value = toClampedNumber(options.riftStrength, 0.4, 0.0, 2.0)
   material.uniforms.uRiftFrequency.value = toClampedNumber(options.riftFrequency, 3.4, 0.5, 12.0)
@@ -1160,7 +1160,7 @@ export function createPlanetoidColorTexture(
     enableRidges: options.enableRidges,
     enableRifts: options.enableRifts,
     ridgeStrength: options.ridgeStrength,
-    ridgeScale: options.ridgeScale,
+    ridgeFrequency: options.ridgeFrequency,
     ridgeSharpness: options.ridgeSharpness,
     riftStrength: options.riftStrength,
     riftFrequency: options.riftFrequency,
@@ -1203,7 +1203,7 @@ export function createPlanetoidBumpTexture(
     enableRidges: options.enableRidges,
     enableRifts: options.enableRifts,
     ridgeStrength: options.ridgeStrength,
-    ridgeScale: options.ridgeScale,
+    ridgeFrequency: options.ridgeFrequency,
     ridgeSharpness: options.ridgeSharpness,
     riftStrength: options.riftStrength,
     riftFrequency: options.riftFrequency,

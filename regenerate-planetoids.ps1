@@ -18,7 +18,7 @@ function Invoke-PlanetoidBatch {
         [Nullable[double]]$RaySharpness = $null,
         [Nullable[double]]$RayLengthPower = $null,
         [Nullable[double]]$RidgeStrength = $null,
-        [Nullable[double]]$RidgeScale = $null,
+        [Nullable[double]]$RidgeFrequency = $null,
         [Nullable[double]]$RidgeSharpness = $null,
         [Nullable[double]]$RidgeColorWeight = $null,
         [Nullable[double]]$RiftStrength = $null,
@@ -85,7 +85,7 @@ function Invoke-PlanetoidBatch {
     if ($RaySharpness -ne $null) { $cliArgs += @('--ray-sharpness', $RaySharpness) }
     if ($RayLengthPower -ne $null) { $cliArgs += @('--ray-length-power', $RayLengthPower) }
     if ($RidgeStrength -ne $null) { $cliArgs += @('--ridge-strength', $RidgeStrength) }
-    if ($RidgeScale -ne $null) { $cliArgs += @('--ridge-scale', $RidgeScale) }
+    if ($RidgeFrequency -ne $null) { $cliArgs += @('--ridge-frequency', $RidgeFrequency) }
     if ($RidgeSharpness -ne $null) { $cliArgs += @('--ridge-sharpness', $RidgeSharpness) }
     if ($RidgeColorWeight -ne $null) { $cliArgs += @('--ridge-color-weight', $RidgeColorWeight) }
     if ($RiftStrength -ne $null) { $cliArgs += @('--rift-strength', $RiftStrength) }

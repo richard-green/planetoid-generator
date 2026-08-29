@@ -13,7 +13,7 @@ export const volcanicRiftPreset: PlanetoidPreset = {
     volcanoStrength: 2.2,
     volcanoColorStrength: 1.7,
     ridgeStrength: 0.9,
-    ridgeScale: 3.1,
+    ridgeFrequency: 3.1,
     ridgeSharpness: 2.8,
     riftStrength: 1.0,
     riftFrequency: 5.2,

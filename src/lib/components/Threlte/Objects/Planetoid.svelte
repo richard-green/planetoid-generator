@@ -60,7 +60,7 @@
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
-    ridgeScale?: number
+    ridgeFrequency?: number
     ridgeSharpness?: number
     riftStrength?: number
     riftFrequency?: number
@@ -109,7 +109,7 @@
     enableRidges = DefaultValues.enableRidges,
     enableRifts = DefaultValues.enableRifts,
     ridgeStrength = DefaultValues.ridgeStrength,
-    ridgeScale = DefaultValues.ridgeScale,
+    ridgeFrequency = DefaultValues.ridgeFrequency,
     ridgeSharpness = DefaultValues.ridgeSharpness,
     riftStrength = DefaultValues.riftStrength,
     riftFrequency = DefaultValues.riftFrequency,
@@ -581,7 +581,7 @@
     const ridgesEnabled = enableRidges
     const riftsEnabled = enableRifts
     const currentRidgeStrength = ridgeStrength
-    const currentRidgeScale = ridgeScale
+    const currentRidgeFrequency = ridgeFrequency
     const currentRidgeSharpness = ridgeSharpness
     const currentRiftStrength = riftStrength
     const currentRiftFrequency = riftFrequency
@@ -619,7 +619,7 @@
         enableRidges: ridgesEnabled,
         enableRifts: riftsEnabled,
         ridgeStrength: currentRidgeStrength,
-        ridgeScale: currentRidgeScale,
+        ridgeFrequency: currentRidgeFrequency,
         ridgeSharpness: currentRidgeSharpness,
         riftStrength: currentRiftStrength,
         riftFrequency: currentRiftFrequency,
@@ -772,7 +772,7 @@
     const ridgesEnabled = enableRidges
     const riftsEnabled = enableRifts
     const currentRidgeStrength = ridgeStrength
-    const currentRidgeScale = ridgeScale
+    const currentRidgeFrequency = ridgeFrequency
     const currentRidgeSharpness = ridgeSharpness
     const currentRiftStrength = riftStrength
     const currentRiftFrequency = riftFrequency
@@ -792,7 +792,7 @@
       enableRidges: ridgesEnabled,
       enableRifts: riftsEnabled,
       ridgeStrength: currentRidgeStrength,
-      ridgeScale: currentRidgeScale,
+      ridgeFrequency: currentRidgeFrequency,
       ridgeSharpness: currentRidgeSharpness,
       riftStrength: currentRiftStrength,
       riftFrequency: currentRiftFrequency,

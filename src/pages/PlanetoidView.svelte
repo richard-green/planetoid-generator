@@ -86,7 +86,7 @@
     'craterRaySharpness',
     'craterRayLengthPower',
     'ridgeStrength',
-    'ridgeScale',
+    'ridgeFrequency',
     'ridgeSharpness',
     'ridgeColorWeight',
     'riftStrength',
@@ -167,7 +167,7 @@
   ]
   const ridgeControlKeys: NumericControlKey[] = [
     'ridgeStrength',
-    'ridgeScale',
+    'ridgeFrequency',
     'ridgeSharpness',
     'ridgeColorWeight',
     'ridgesRiftsBlend',
@@ -796,7 +796,7 @@
           enableRidges={effectiveRidgesEnabled}
           enableRifts={effectiveRiftsEnabled}
           ridgeStrength={effectiveRidgesEnabled ? planetoid.ridgeStrength : 0}
-          ridgeScale={planetoid.ridgeScale}
+          ridgeFrequency={planetoid.ridgeFrequency}
           ridgeSharpness={planetoid.ridgeSharpness}
           riftStrength={effectiveRiftsEnabled ? planetoid.riftStrength : 0}
           riftFrequency={planetoid.riftFrequency}

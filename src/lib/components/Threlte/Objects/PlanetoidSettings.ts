@@ -38,7 +38,7 @@ export type PlanetoidSettings = {
   craterRaySharpness: number
   craterRayLengthPower: number
   ridgeStrength: number
-  ridgeScale: number
+  ridgeFrequency: number
   ridgeSharpness: number
   riftStrength: number
   riftFrequency: number
@@ -79,7 +79,7 @@ export type PlanetoidRangeValues = Pick<
   | 'craterRaySharpness'
   | 'craterRayLengthPower'
   | 'ridgeStrength'
-  | 'ridgeScale'
+  | 'ridgeFrequency'
   | 'ridgeSharpness'
   | 'riftStrength'
   | 'riftFrequency'
@@ -127,7 +127,7 @@ export const DefaultValues: PlanetoidSettings = {
   craterRaySharpness: 1,
   craterRayLengthPower: 2.8,
   ridgeStrength: 2,
-  ridgeScale: 2.5,
+  ridgeFrequency: 2.5,
   ridgeSharpness: 2.5,
   ridgeColorWeight: 0.1,
   ridgesRiftsBlend: 0.5,
@@ -169,7 +169,7 @@ export const MinValues: PlanetoidRangeValues = {
   craterRaySharpness: 0.5,
   craterRayLengthPower: 1,
   ridgeStrength: 0,
-  ridgeScale: 0.5,
+  ridgeFrequency: 0.5,
   ridgeSharpness: 0.5,
   riftStrength: 0,
   riftFrequency: 0.5,
@@ -209,7 +209,7 @@ export const MaxValues: PlanetoidRangeValues = {
   craterRaySharpness: 4,
   craterRayLengthPower: 5,
   ridgeStrength: 2,
-  ridgeScale: 8,
+  ridgeFrequency: 8,
   ridgeSharpness: 4,
   riftStrength: 2,
   riftFrequency: 12,
@@ -249,7 +249,7 @@ export const StepValues: PlanetoidRangeValues = {
   craterRaySharpness: 0.05,
   craterRayLengthPower: 0.1,
   ridgeStrength: 0.05,
-  ridgeScale: 0.1,
+  ridgeFrequency: 0.1,
   ridgeSharpness: 0.05,
   riftStrength: 0.05,
   riftFrequency: 0.1,
@@ -368,10 +368,10 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     min: MinValues.ridgeStrength,
     max: MaxValues.ridgeStrength,
   },
-  ridgeScale: {
-    defaultValue: DefaultValues.ridgeScale,
-    min: MinValues.ridgeScale,
-    max: MaxValues.ridgeScale,
+  ridgeFrequency: {
+    defaultValue: DefaultValues.ridgeFrequency,
+    min: MinValues.ridgeFrequency,
+    max: MaxValues.ridgeFrequency,
   },
   ridgeSharpness: {
     defaultValue: DefaultValues.ridgeSharpness,
@@ -503,7 +503,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     enableRidges,
     enableRifts,
     ridgeStrength: numeric.ridgeStrength,
-    ridgeScale: numeric.ridgeScale,
+    ridgeFrequency: numeric.ridgeFrequency,
     ridgeSharpness: numeric.ridgeSharpness,
     riftStrength: numeric.riftStrength,
     riftFrequency: numeric.riftFrequency,
@@ -547,7 +547,7 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   craterRaySharpness: 'Ray sharpness',
   craterRayLengthPower: 'Ray length power',
   ridgeStrength: 'Ridge strength',
-  ridgeScale: 'Ridge scale',
+  ridgeFrequency: 'Ridge frequency',
   ridgeSharpness: 'Ridge sharpness',
   riftStrength: 'Rift strength',
   riftFrequency: 'Rift frequency',
@@ -609,7 +609,7 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   craterRaySharpness: '--ray-sharpness',
   craterRayLengthPower: '--ray-length-power',
   ridgeStrength: '--ridge-strength',
-  ridgeScale: '--ridge-scale',
+  ridgeFrequency: '--ridge-frequency',
   ridgeSharpness: '--ridge-sharpness',
   riftStrength: '--rift-strength',
   riftFrequency: '--rift-frequency',

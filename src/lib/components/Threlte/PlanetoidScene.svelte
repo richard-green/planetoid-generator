@@ -41,7 +41,7 @@
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
-    ridgeScale?: number
+    ridgeFrequency?: number
     ridgeSharpness?: number
     riftStrength?: number
     riftFrequency?: number
@@ -90,7 +90,7 @@
     enableRidges = DefaultValues.enableRidges,
     enableRifts = DefaultValues.enableRifts,
     ridgeStrength = DefaultValues.ridgeStrength,
-    ridgeScale = DefaultValues.ridgeScale,
+    ridgeFrequency = DefaultValues.ridgeFrequency,
     ridgeSharpness = DefaultValues.ridgeSharpness,
     riftStrength = DefaultValues.riftStrength,
     riftFrequency = DefaultValues.riftFrequency,
@@ -263,7 +263,7 @@
   {enableRidges}
   {enableRifts}
   {ridgeStrength}
-  {ridgeScale}
+  {ridgeFrequency}
   {ridgeSharpness}
   {riftStrength}
   {riftFrequency}
