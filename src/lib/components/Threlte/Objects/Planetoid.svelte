@@ -20,7 +20,7 @@
   import { MaxValues, MinValues } from './PlanetoidSettings'
   import {
     createPlanetoidBumpTexture,
-    createPlanetoidColourTexture,
+    createPlanetoidColorTexture,
     createPlanetoidPaletteGradientTexture,
     createPlanetoidRayMaskTexture,
     disposeGeneratedTexture,
@@ -126,17 +126,17 @@
   let material = $state<MeshStandardMaterial | undefined>(undefined)
   let mapPreviewMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let bumpDebugMesh = $state<Mesh | undefined>(undefined)
-  let colourDebugMesh = $state<Mesh | undefined>(undefined)
+  let colorDebugMesh = $state<Mesh | undefined>(undefined)
   let paletteDebugMesh = $state<Mesh | undefined>(undefined)
   let rayDebugMesh = $state<Mesh | undefined>(undefined)
   let bumpDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let colourDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
+  let colorDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let paletteDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let rayDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let bumpDebugTexture = $state<ReturnType<typeof createPlanetoidBumpTexture> | undefined>(
     undefined
   )
-  let colourDebugTexture = $state<ReturnType<typeof createPlanetoidColourTexture> | undefined>(
+  let colorDebugTexture = $state<ReturnType<typeof createPlanetoidColorTexture> | undefined>(
     undefined
   )
   let paletteDebugTexture = $state<
@@ -220,7 +220,7 @@
   }
 
   export async function downloadTextureMapPng(fileName = 'planetoid-texture-map.png') {
-    const colorMap = (material?.map as Texture | null | undefined) ?? colourDebugTexture
+    const colorMap = (material?.map as Texture | null | undefined) ?? colorDebugTexture
     return downloadRenderTexture(colorMap, fileName)
   }
 
@@ -591,7 +591,7 @@
     const currentTintShadowFloor = tintShadowFloor
     const currentSwirliness = swirliness
 
-    const colourTexture = createPlanetoidColourTexture(
+    const colorTexture = createPlanetoidColorTexture(
       renderer,
       shape.noiseOffset,
       planetoidPalette,
@@ -629,21 +629,21 @@
       }
     )
 
-    colourDebugTexture = colourTexture
+    colorDebugTexture = colorTexture
     if (material) {
-      material.map = colourTexture
+      material.map = colorTexture
       material.needsUpdate = true
     }
-    if (colourDebugMaterial) {
-      colourDebugMaterial.map = colourTexture
-      colourDebugMaterial.needsUpdate = true
+    if (colorDebugMaterial) {
+      colorDebugMaterial.map = colorTexture
+      colorDebugMaterial.needsUpdate = true
     }
 
     return () => {
-      if (colourDebugTexture === colourTexture) {
-        colourDebugTexture = undefined
+      if (colorDebugTexture === colorTexture) {
+        colorDebugTexture = undefined
       }
-      disposeGeneratedTexture(colourTexture)
+      disposeGeneratedTexture(colorTexture)
     }
   })
 
@@ -741,7 +741,7 @@
         bumpDebugTexture ?? (material?.bumpMap as Texture | null | undefined) ?? null
     } else if (viewMode === 'texture') {
       mapPreviewMaterial.map =
-        colourDebugTexture ?? (material?.map as Texture | null | undefined) ?? null
+        colorDebugTexture ?? (material?.map as Texture | null | undefined) ?? null
     } else if (viewMode === 'ray') {
       mapPreviewMaterial.map = rayDebugTexture ?? null
     } else {
@@ -817,13 +817,7 @@
   })
 
   useTask(() => {
-    if (
-      !showDebugMeshes ||
-      !bumpDebugMesh ||
-      !colourDebugMesh ||
-      !paletteDebugMesh ||
-      !rayDebugMesh
-    )
+    if (!showDebugMeshes || !bumpDebugMesh || !colorDebugMesh || !paletteDebugMesh || !rayDebugMesh)
       return
 
     const perspectiveCamera = $camera as PerspectiveCamera
@@ -850,7 +844,7 @@
       .add(right.clone().multiplyScalar(leftX))
       .add(up.clone().multiplyScalar(topY))
 
-    colourDebugMesh.position
+    colorDebugMesh.position
       .copy(center)
       .add(right.clone().multiplyScalar(rightX))
       .add(up.clone().multiplyScalar(topY))
@@ -866,7 +860,7 @@
       .add(up.clone().multiplyScalar(bottomY))
 
     bumpDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
-    colourDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
+    colorDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     paletteDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     rayDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
   })
@@ -914,11 +908,11 @@
     />
   </T.Mesh>
 
-  <T.Mesh bind:ref={colourDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
+  <T.Mesh bind:ref={colorDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
     <T.PlaneGeometry args={[1, 1]} />
     <T.MeshBasicMaterial
-      bind:ref={colourDebugMaterial}
-      map={colourDebugTexture}
+      bind:ref={colorDebugMaterial}
+      map={colorDebugTexture}
       toneMapped={false}
       depthTest={false}
       depthWrite={false}

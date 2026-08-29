@@ -75,7 +75,7 @@
     enablePan={false}
     zoomToCursor={false}
     minDistance={4}
-    maxDistance={20}
+    maxDistance={10}
     zoomSpeed={1.2}
     enableDamping={true}
     dampingFactor={0.2}

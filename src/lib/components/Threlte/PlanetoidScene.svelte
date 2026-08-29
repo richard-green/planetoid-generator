@@ -194,7 +194,7 @@
     controlsRef.enablePan = !isMeshMode
     controlsRef.screenSpacePanning = true
     controlsRef.minDistance = isMeshMode ? 4 : 0.5
-    controlsRef.maxDistance = isMeshMode ? 20 : 8
+    controlsRef.maxDistance = isMeshMode ? 10 : 8
     controlsRef.zoomToCursor = !isMeshMode
     controlsRef.mouseButtons.LEFT = isMeshMode ? MOUSE.ROTATE : MOUSE.PAN
     controlsRef.mouseButtons.RIGHT = isMeshMode ? MOUSE.ROTATE : MOUSE.PAN

@@ -592,7 +592,7 @@ export function disposeGeneratedTexture(texture: Texture) {
   texture.dispose()
 }
 
-export function createGasGiantColourTexture(
+export function createGasGiantColorTexture(
   renderer: WebGLRenderer,
   noiseOffset: NoiseOffset,
   palette: Palette,

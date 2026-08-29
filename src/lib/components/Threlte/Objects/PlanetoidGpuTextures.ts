@@ -43,7 +43,7 @@ type BumpTextureOptions = {
   debugMidline?: boolean
 }
 
-type ColourTextureOptions = {
+type ColorTextureOptions = {
   surfaceTint?: string
   tintShadowFloor?: number
   swirliness?: number
@@ -76,7 +76,7 @@ type ColourTextureOptions = {
 }
 
 type RayDebugOptions = Pick<
-  ColourTextureOptions,
+  ColorTextureOptions,
   'craterRayDensity' | 'craterRaySharpness' | 'craterRayLengthPower'
 >
 
@@ -776,15 +776,15 @@ const fragmentShader = `
       return;
     }
 
-    float colourLarge = fractalNoise(remappedPos * 2.0 + seed);
-    float colourMedium = fractalNoise(remappedPos * 6.0 + seed);
-    float colourFine = fractalNoise(remappedPos * 40.0 + seed);
+    float colorLarge = fractalNoise(remappedPos * 2.0 + seed);
+    float colorMedium = fractalNoise(remappedPos * 6.0 + seed);
+    float colorFine = fractalNoise(remappedPos * 40.0 + seed);
 
     float polarHighFrequencyScale = mix(0.18, 1.0, equatorFactor);
     float value =
-      colourLarge * 0.55 +
-      colourMedium * 0.3 * polarHighFrequencyScale +
-      colourFine * 0.15 * polarHighFrequencyScale +
+      colorLarge * 0.55 +
+      colorMedium * 0.3 * polarHighFrequencyScale +
+      colorFine * 0.15 * polarHighFrequencyScale +
       craterColorWarp * uCraterColorStrength +
       volcanoColorWarp * 0.7 +
       ridgeRiftColorSignals.x * (uRidgeColorWeight * 0.85) -
@@ -1131,13 +1131,13 @@ export function disposeGeneratedTexture(texture: Texture) {
   texture.dispose()
 }
 
-export function createPlanetoidColourTexture(
+export function createPlanetoidColorTexture(
   renderer: WebGLRenderer,
   noiseOffset: NoiseOffset,
   planetoidPalette: PaletteColor[],
   textureScale: number,
   textureHeight: number,
-  options: ColourTextureOptions = {}
+  options: ColorTextureOptions = {}
 ) {
   const height = Math.max(2, Math.floor(textureHeight))
   const width = height * 2

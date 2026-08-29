@@ -13,7 +13,7 @@
   import { DefaultGasGiantSettings, type GasGiantSettings } from './GasGiantSettings'
   import {
     createGasGiantBumpTexture,
-    createGasGiantColourTexture,
+    createGasGiantColorTexture,
     disposeGeneratedTexture,
   } from './GasGiantGpuTextures'
 
@@ -44,7 +44,7 @@
 
   let mesh = $state<Mesh | undefined>(undefined)
   let material = $state<MeshStandardMaterial | undefined>(undefined)
-  let colourTexture = $state<ReturnType<typeof createGasGiantColourTexture> | undefined>(undefined)
+  let colorTexture = $state<ReturnType<typeof createGasGiantColorTexture> | undefined>(undefined)
   let bumpTexture = $state<ReturnType<typeof createGasGiantBumpTexture> | undefined>(undefined)
   let color = $derived(new Color('#ffffff'))
 
@@ -115,7 +115,7 @@
   }
 
   export async function downloadTextureMapPng(fileName = 'gas-giant-texture-map.png') {
-    const colorMap = (material?.map as Texture | null | undefined) ?? colourTexture
+    const colorMap = (material?.map as Texture | null | undefined) ?? colorTexture
     return downloadRenderTexture(colorMap, fileName)
   }
 
@@ -154,7 +154,7 @@
     const effectiveStormStrength = enableStorms ? stormStrength : 0
     const effectiveStormColorStrength = enableStorms ? stormColorStrength : 0
 
-    const nextTexture = createGasGiantColourTexture(
+    const nextTexture = createGasGiantColorTexture(
       renderer,
       noiseOffset,
       paletteData,
@@ -174,13 +174,13 @@
       }
     )
 
-    colourTexture = nextTexture
+    colorTexture = nextTexture
     material.map = nextTexture
     material.needsUpdate = true
 
     return () => {
-      if (colourTexture === nextTexture) {
-        colourTexture = undefined
+      if (colorTexture === nextTexture) {
+        colorTexture = undefined
       }
       disposeGeneratedTexture(nextTexture)
     }

@@ -92,33 +92,6 @@ export const DefaultGasGiantSettings: GasGiantSettings = {
   colorTextureSize: 1024,
 }
 
-export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
-  seed: 'Seed',
-  colorScale: 'Palette influence',
-  tintShadowFloor: 'Tint shadow floor',
-  cloudBandCount: 'Cloud band count',
-  cloudBandSharpness: 'Band sharpness',
-  cloudChaos: 'Cloud chaos',
-  stormCount: 'Storm count',
-  stormScale: 'Storm scale',
-  stormPower: 'Storm falloff power',
-  stormStrength: 'Storm strength',
-  stormColorStrength: 'Storm color strength',
-  bumpScale: 'Bump scale',
-  roughness: 'Roughness',
-  metalness: 'Metalness',
-  bumpTextureSize: 'Bump texture height',
-  colorTextureSize: 'Color texture height',
-}
-
-export const GasGiantUiLabels = {
-  seed: 'Seed',
-  palette: 'Palette',
-  surfaceTint: 'Surface tint',
-  autoRotate: 'Auto-rotate',
-  enableStorms: 'Enable storm systems',
-} as const
-
 export const MinValues: GasGiantRangeValues = {
   seed: 0,
   colorScale: 0,
@@ -139,7 +112,7 @@ export const MinValues: GasGiantRangeValues = {
 }
 
 export const MaxValues: GasGiantRangeValues = {
-  seed: 999999,
+  seed: 1000000000,
   colorScale: 2,
   tintShadowFloor: 0.9,
   cloudBandCount: 28,
@@ -153,6 +126,33 @@ export const MaxValues: GasGiantRangeValues = {
   bumpScale: 10,
   roughness: 1,
   metalness: 1,
-  bumpTextureSize: 2048,
-  colorTextureSize: 2048,
+  bumpTextureSize: 4096,
+  colorTextureSize: 4096,
 }
+
+export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
+  seed: 'Seed',
+  colorScale: 'Palette influence',
+  tintShadowFloor: 'Tint shadow floor',
+  cloudBandCount: 'Cloud band count',
+  cloudBandSharpness: 'Band sharpness',
+  cloudChaos: 'Cloud chaos',
+  stormCount: 'Storm count',
+  stormScale: 'Storm scale',
+  stormPower: 'Storm falloff power',
+  stormStrength: 'Storm strength',
+  stormColorStrength: 'Storm color strength',
+  bumpScale: 'Bump scale',
+  roughness: 'Roughness',
+  metalness: 'Metalness',
+  bumpTextureSize: 'Bump texture size',
+  colorTextureSize: 'Color texture size',
+}
+
+export const GasGiantUiLabels = {
+  seed: 'Seed',
+  palette: 'Palette',
+  surfaceTint: 'Surface tint',
+  autoRotate: 'Auto-rotate',
+  enableStorms: 'Enable storm systems',
+} as const

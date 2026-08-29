@@ -17,7 +17,7 @@ type BumpTextureOptions = {
   debugMidline?: boolean
 }
 
-type ColourTextureOptions = {
+type ColorTextureOptions = {
   debugMidline?: boolean
   craterCount?: number
   craterColorStrength?: number
@@ -460,12 +460,12 @@ export function createPlanetoidBumpTexture(
   return texture
 }
 
-export function createPlanetoidColourTexture(
+export function createPlanetoidColorTexture(
   noiseOffset: NoiseOffset,
   planetoidPalette: PaletteColor[],
   textureScale: number,
   textureHeight: number,
-  options: ColourTextureOptions = {}
+  options: ColorTextureOptions = {}
 ) {
   const height = Math.max(2, Math.floor(textureHeight))
   const width = height * 2
@@ -533,11 +533,11 @@ export function createPlanetoidColourTexture(
         fine * 0.15 * polarHighFrequencyScale +
         craterColorWarp * craterColorStrength
 
-      const colour = mapToPalette(value, planetoidPalette)
+      const color = mapToPalette(value, planetoidPalette)
 
-      const accentR = MathUtils.clamp(127.5 + (colour.r - 127.5) * textureContrast, 0, 255)
-      const accentG = MathUtils.clamp(127.5 + (colour.g - 127.5) * textureContrast, 0, 255)
-      const accentB = MathUtils.clamp(127.5 + (colour.b - 127.5) * textureContrast, 0, 255)
+      const accentR = MathUtils.clamp(127.5 + (color.r - 127.5) * textureContrast, 0, 255)
+      const accentG = MathUtils.clamp(127.5 + (color.g - 127.5) * textureContrast, 0, 255)
+      const accentB = MathUtils.clamp(127.5 + (color.b - 127.5) * textureContrast, 0, 255)
 
       // White map pixels preserve the base surface tint; texture dominance
       // controls how much of the procedural palette is layered on top.
@@ -615,7 +615,7 @@ export function createPlanetoidRayMaskTexture(
   textureHeight: number,
   craterCount = 22,
   options: Pick<
-    ColourTextureOptions,
+    ColorTextureOptions,
     'craterRayDensity' | 'craterRaySharpness' | 'craterRayLengthPower'
   > = {}
 ) {

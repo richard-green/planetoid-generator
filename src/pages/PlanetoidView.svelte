@@ -17,6 +17,7 @@
     MinValues,
     PlanetoidCliFlagByRangeKey,
     PlanetoidCliToggleFlags,
+    PlanetoidRangeLabels,
     PlanetoidUiLabels,
     type PlanetoidSettings,
   } from '../lib/components/Threlte/Objects/PlanetoidSettings'
@@ -67,217 +68,186 @@
   const DEFAULT_PLANETOID_SETTINGS: PlanetoidSettings = { ...DefaultPlanetoidSettings }
 
   const textureControls: Array<{
-    label: string
     key: NumericControlKey
     min?: number
     max?: number
     step: string
   }> = [
     {
-      label: 'Color scale',
       key: 'colorScale',
       min: MinValues.colorScale,
       max: MaxValues.colorScale,
       step: '0.1',
     },
     {
-      label: 'Tint shadow floor',
       key: 'tintShadowFloor',
       min: MinValues.tintShadowFloor,
       max: MaxValues.tintShadowFloor,
       step: '0.01',
     },
     {
-      label: 'Swirliness',
       key: 'swirliness',
       min: MinValues.swirliness,
       max: MaxValues.swirliness,
       step: '0.05',
     },
     {
-      label: 'Bump scale',
       key: 'bumpScale',
       min: MinValues.bumpScale,
       max: MaxValues.bumpScale,
       step: '0.1',
     },
     {
-      label: 'Crater count',
       key: 'craterCount',
       min: MinValues.craterCount,
       max: MaxValues.craterCount,
       step: '1',
     },
     {
-      label: 'Crater strength',
       key: 'craterStrength',
       min: MinValues.craterStrength,
       max: MaxValues.craterStrength,
       step: '0.1',
     },
     {
-      label: 'Crater color',
       key: 'craterColorStrength',
       min: MinValues.craterColorStrength,
       max: MaxValues.craterColorStrength,
       step: '0.05',
     },
     {
-      label: 'Volcano count',
       key: 'volcanoCount',
       min: MinValues.volcanoCount,
       max: MaxValues.volcanoCount,
       step: '1',
     },
     {
-      label: 'Volcano scale',
       key: 'volcanoScale',
       min: MinValues.volcanoScale,
       max: MaxValues.volcanoScale,
       step: '0.05',
     },
     {
-      label: 'Volcano strength',
       key: 'volcanoStrength',
       min: MinValues.volcanoStrength,
       max: MaxValues.volcanoStrength,
       step: '0.05',
     },
     {
-      label: 'Volcano color',
       key: 'volcanoColorStrength',
       min: MinValues.volcanoColorStrength,
       max: MaxValues.volcanoColorStrength,
       step: '0.05',
     },
     {
-      label: 'Crater rays',
       key: 'craterRayStrength',
       min: MinValues.craterRayStrength,
       max: MaxValues.craterRayStrength,
       step: '0.05',
     },
     {
-      label: 'Ray visibility',
       key: 'craterRayVisibility',
       min: MinValues.craterRayVisibility,
       max: MaxValues.craterRayVisibility,
       step: '0.05',
     },
     {
-      label: 'Ray density',
       key: 'craterRayDensity',
       min: MinValues.craterRayDensity,
       max: MaxValues.craterRayDensity,
       step: '0.05',
     },
     {
-      label: 'Ray sharpness',
       key: 'craterRaySharpness',
       min: MinValues.craterRaySharpness,
       max: MaxValues.craterRaySharpness,
       step: '0.05',
     },
     {
-      label: 'Ray length power',
       key: 'craterRayLengthPower',
       min: MinValues.craterRayLengthPower,
       max: MaxValues.craterRayLengthPower,
       step: '0.1',
     },
     {
-      label: 'Ridge strength',
       key: 'ridgeStrength',
       min: MinValues.ridgeStrength,
       max: MaxValues.ridgeStrength,
       step: '0.05',
     },
     {
-      label: 'Ridge scale',
       key: 'ridgeScale',
       min: MinValues.ridgeScale,
       max: MaxValues.ridgeScale,
       step: '0.1',
     },
     {
-      label: 'Ridge sharpness',
       key: 'ridgeSharpness',
       min: MinValues.ridgeSharpness,
       max: MaxValues.ridgeSharpness,
       step: '0.05',
     },
     {
-      label: 'Ridge color weight',
       key: 'ridgeColorWeight',
       min: MinValues.ridgeColorWeight,
       max: MaxValues.ridgeColorWeight,
       step: '0.05',
     },
     {
-      label: 'Rift strength',
       key: 'riftStrength',
       min: MinValues.riftStrength,
       max: MaxValues.riftStrength,
       step: '0.05',
     },
     {
-      label: 'Rift scale',
       key: 'riftScale',
       min: MinValues.riftScale,
       max: MaxValues.riftScale,
       step: '0.1',
     },
     {
-      label: 'Rift width',
       key: 'riftWidth',
       min: MinValues.riftWidth,
       max: MaxValues.riftWidth,
       step: '0.01',
     },
     {
-      label: 'Rift sharpness',
       key: 'riftSharpness',
       min: MinValues.riftSharpness,
       max: MaxValues.riftSharpness,
       step: '0.05',
     },
     {
-      label: 'Rift color weight',
       key: 'riftColorWeight',
       min: MinValues.riftColorWeight,
       max: MaxValues.riftColorWeight,
       step: '0.05',
     },
     {
-      label: 'Ridges/rifts blend',
       key: 'ridgesRiftsBlend',
       min: MinValues.ridgesRiftsBlend,
       max: MaxValues.ridgesRiftsBlend,
       step: '0.05',
     },
     {
-      label: 'Bump tex height',
       key: 'bumpTextureSize',
       min: MinValues.bumpTextureSize,
       max: MaxValues.bumpTextureSize,
       step: '1',
     },
     {
-      label: 'Color tex height',
       key: 'colorTextureSize',
       min: MinValues.colorTextureSize,
       max: MaxValues.colorTextureSize,
       step: '1',
     },
     {
-      label: 'Roughness',
       key: 'roughness',
       min: MinValues.roughness,
       max: MaxValues.roughness,
       step: '0.1',
     },
     {
-      label: 'Metalness',
       key: 'metalness',
       min: MinValues.metalness,
       max: MaxValues.metalness,
@@ -1473,7 +1443,7 @@
             <span>Color settings</span>
           </summary>
           <label>
-            Palette
+            {PlanetoidUiLabels.palette}
             <select bind:value={planetoid.palette}>
               {#each PlanetoidPaletteNames as option (option)}
                 <option value={option}>{option}</option>
@@ -1487,7 +1457,7 @@
           ></div>
           <label class="extra-pad">
             <span class="label-row">
-              <span>Surface tint</span>
+              <span>{PlanetoidUiLabels.surfaceTint}</span>
               <span class="label-value">{planetoid.surfaceTint.toUpperCase()}</span>
             </span>
             <input type="color" bind:value={planetoid.surfaceTint} />
@@ -1495,7 +1465,7 @@
           <div class="control-grid">
             {#each colorControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
@@ -1515,7 +1485,7 @@
           <div class="control-grid">
             {#each textureResolutionControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
@@ -1539,7 +1509,7 @@
           <div class="control-grid">
             {#each materialControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
@@ -1575,7 +1545,7 @@
           <div class="control-grid">
             {#each craterControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
@@ -1609,7 +1579,7 @@
           <div class="control-grid">
             {#each volcanoControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
@@ -1643,7 +1613,7 @@
           <div class="control-grid">
             {#each ridgeControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
@@ -1677,7 +1647,7 @@
           <div class="control-grid">
             {#each riftControls as control (control.key)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control.key]}</span>
                 <input
                   type="number"
                   min={control.min}
