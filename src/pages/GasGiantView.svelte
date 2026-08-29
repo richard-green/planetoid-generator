@@ -137,16 +137,6 @@
         ? raw.surfaceTint
         : DEFAULT_GAS_GIANT_SETTINGS.surfaceTint
 
-    const legacyCloudFiligreeStrength =
-      typeof raw.cloudFiligreeStrength === 'number' ? raw.cloudFiligreeStrength : undefined
-
-    const legacyStormsEnabled =
-      typeof raw.enableStorms === 'boolean'
-        ? raw.enableStorms
-        : typeof raw.stormCount === 'number'
-          ? raw.stormCount > 0
-          : DEFAULT_GAS_GIANT_SETTINGS.enableStorms
-
     return {
       seed:
         typeof raw.seed === 'number'
@@ -183,10 +173,11 @@
       cloudChaos:
         typeof raw.cloudChaos === 'number'
           ? clamp(raw.cloudChaos, MinValues.cloudChaos, MaxValues.cloudChaos)
-          : typeof legacyCloudFiligreeStrength === 'number'
-            ? clamp(legacyCloudFiligreeStrength, MinValues.cloudChaos, MaxValues.cloudChaos)
-            : DEFAULT_GAS_GIANT_SETTINGS.cloudChaos,
-      enableStorms: legacyStormsEnabled,
+          : DEFAULT_GAS_GIANT_SETTINGS.cloudChaos,
+      enableStorms:
+        typeof raw.enableStorms === 'boolean'
+          ? raw.enableStorms
+          : DEFAULT_GAS_GIANT_SETTINGS.enableStorms,
       stormCount:
         typeof raw.stormCount === 'number'
           ? Math.round(clamp(raw.stormCount, MinValues.stormCount, MaxValues.stormCount))

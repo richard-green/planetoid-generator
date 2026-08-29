@@ -422,16 +422,15 @@
         ? raw.showDebugMeshes
         : DEFAULT_PLANETOID_SETTINGS.showDebugMeshes
 
-    const legacyEnableRidgesRifts =
-      typeof raw.enableRidgesRifts === 'boolean'
-        ? raw.enableRidgesRifts
-        : DEFAULT_PLANETOID_SETTINGS.enableRidges || DEFAULT_PLANETOID_SETTINGS.enableRifts
-
     const enableRidges =
-      typeof raw.enableRidges === 'boolean' ? raw.enableRidges : legacyEnableRidgesRifts
+      typeof raw.enableRidges === 'boolean'
+        ? raw.enableRidges
+        : DEFAULT_PLANETOID_SETTINGS.enableRidges
 
     const enableRifts =
-      typeof raw.enableRifts === 'boolean' ? raw.enableRifts : legacyEnableRidgesRifts
+      typeof raw.enableRifts === 'boolean'
+        ? raw.enableRifts
+        : DEFAULT_PLANETOID_SETTINGS.enableRifts
 
     const enableVolcanoes =
       typeof raw.enableVolcanoes === 'boolean'
@@ -511,26 +510,15 @@
           )
         : DEFAULT_PLANETOID_SETTINGS.volcanoColorStrength
 
-    const ridgeRiftColorWeightLegacy =
-      typeof raw.ridgeRiftColorWeight === 'number' ? raw.ridgeRiftColorWeight : undefined
-
     const ridgeColorWeight =
       typeof raw.ridgeColorWeight === 'number'
         ? clamp(raw.ridgeColorWeight, MinValues.ridgeColorWeight, MaxValues.ridgeColorWeight)
-        : typeof ridgeRiftColorWeightLegacy === 'number'
-          ? clamp(
-              ridgeRiftColorWeightLegacy,
-              MinValues.ridgeColorWeight,
-              MaxValues.ridgeColorWeight
-            )
-          : DEFAULT_PLANETOID_SETTINGS.ridgeColorWeight
+        : DEFAULT_PLANETOID_SETTINGS.ridgeColorWeight
 
     const riftColorWeight =
       typeof raw.riftColorWeight === 'number'
         ? clamp(raw.riftColorWeight, MinValues.riftColorWeight, MaxValues.riftColorWeight)
-        : typeof ridgeRiftColorWeightLegacy === 'number'
-          ? clamp(ridgeRiftColorWeightLegacy, MinValues.riftColorWeight, MaxValues.riftColorWeight)
-          : DEFAULT_PLANETOID_SETTINGS.riftColorWeight
+        : DEFAULT_PLANETOID_SETTINGS.riftColorWeight
 
     const craterRayStrength =
       typeof raw.craterRayStrength === 'number'

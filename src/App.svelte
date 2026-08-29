@@ -84,16 +84,6 @@
     currentPath = fallbackPath
   }
 
-  function migrateLegacyPathRoute(): void {
-    const normalizedPathname = normalizePath(window.location.pathname)
-
-    if (window.location.hash || !isRoutePath(normalizedPathname)) {
-      return
-    }
-
-    setHashPath(normalizedPathname, true)
-  }
-
   function openWelcomeDialog(): void {
     showWelcomeDialog = true
   }
@@ -167,7 +157,6 @@
     }
   })
 
-  migrateLegacyPathRoute()
   handleHashChange()
 </script>
 
