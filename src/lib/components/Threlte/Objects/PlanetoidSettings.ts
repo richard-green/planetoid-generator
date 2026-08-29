@@ -207,7 +207,7 @@ export const MinValues: PlanetoidRangeValues = {
 
 export const MaxValues: PlanetoidRangeValues = {
   seed: 1000000000,
-  colorScale: 1,
+  colorScale: 2,
   tintShadowFloor: 0.8,
   swirliness: 2,
   craterCount: 120,

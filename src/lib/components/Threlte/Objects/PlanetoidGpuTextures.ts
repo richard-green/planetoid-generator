@@ -343,36 +343,37 @@ const fragmentShader = `
   }
 
   float craterShape(float t, float craterAge) {
-    if (t >= 1.25) return 0.0;
-
     float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
     float sharpness01 = clamp((localRimSharpness - 0.5) / 7.5, 0.0, 1.0);
 
-    float outerShoulder = exp(-pow((t - 1.1) / 0.2, 2.0)) * mix(0.07, 0.035, craterAge);
+    float rimPeak = mix(0.2, 0.1, craterAge);
 
-    float rimWidth = 0.1 / max(0.001, localRimSharpness);
-    float rim = exp(-pow((t - 1.02) / rimWidth, 2.0)) * mix(0.25, 0.12, craterAge);
+    // Outward flank from the rim: drops quickly, then eases into terrain with zero slope.
+    float exteriorWidth = mix(0.32, 0.22, sharpness01);
+    float exteriorProgress = clamp((t - 1.0) / max(1e-4, exteriorWidth), 0.0, 1.0);
+    float exteriorExponent = mix(2.2, 1.45, sharpness01);
+    float exteriorFalloff = pow(1.0 - exteriorProgress, exteriorExponent);
 
     float bowlDepth = mix(0.6, 0.42, craterAge);
     float floorRadius = mix(0.62, 0.7, craterAge);
     float floorBlend = 0.06;
     float floorMask = 1.0 - smoothstep(floorRadius - floorBlend, floorRadius, t);
-    float flatFloor = -bowlDepth * floorMask;
 
-    float descentOuter = 0.98;
-    float descentWidth = mix(0.22, 0.08, sharpness01);
-    float descentInner = descentOuter - descentWidth;
-    float descentProgress = 1.0 - smoothstep(descentInner, descentOuter, t);
-    float wallExponent = mix(1.5, 2.9, sharpness01);
-    float descentWall =
-      -bowlDepth * pow(clamp(descentProgress, 0.0, 1.0), wallExponent) * (1.0 - floorMask);
+    // Inward flank from the rim: same fast drop then easing, but reaches plateau sooner.
+    float inwardProgress = clamp((t - floorRadius) / max(1e-4, 1.0 - floorRadius), 0.0, 1.0);
+    float inwardExponent = mix(2.9, 1.95, sharpness01);
+    float inwardFalloff = pow(inwardProgress, inwardExponent);
+
+    float isExterior = step(1.0, t);
+    float rimFlank = mix(rimPeak * inwardFalloff, rimPeak * exteriorFalloff, isExterior);
+    float interiorProfile = -bowlDepth * (1.0 - inwardFalloff);
 
     float floorMicro =
       fractalNoise(vec3(t * 13.0 + craterAge * 4.0, t * 9.0 + craterAge * 2.0, craterAge * 11.0))
       * 0.015
       * floorMask;
 
-    return outerShoulder + rim + flatFloor + descentWall + floorMicro;
+    return rimFlank + interiorProfile + floorMicro;
   }
 
   float accumulateCraterHeight(vec2 uv) {
@@ -410,22 +411,29 @@ const fragmentShader = `
       float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
       float sharpness01 = clamp((localRimSharpness - 0.5) / 7.5, 0.0, 1.0);
 
+      float rimPeak = mix(0.2, 0.1, craterAge);
+
+      float exteriorWidth = mix(0.32, 0.22, sharpness01);
+      float exteriorProgress = clamp((t - 1.0) / max(1e-4, exteriorWidth), 0.0, 1.0);
+      float exteriorExponent = mix(2.2, 1.45, sharpness01);
+      float exteriorFalloff = pow(1.0 - exteriorProgress, exteriorExponent);
+
       float floorRadius = mix(0.62, 0.7, craterAge);
-      float floorMask = 1.0 - smoothstep(floorRadius - 0.06, floorRadius, t);
-      float bowlDarken = -mix(0.4, 0.24, craterAge) * floorMask;
+      float floorBlend = 0.06;
+      float floorMask = 1.0 - smoothstep(floorRadius - floorBlend, floorRadius, t);
 
-      float descentOuter = 0.98;
-      float descentWidth = mix(0.22, 0.08, sharpness01);
-      float descentInner = descentOuter - descentWidth;
-      float descentProgress = 1.0 - smoothstep(descentInner, descentOuter, t);
-      float wallDarken = -mix(0.2, 0.12, craterAge) * pow(clamp(descentProgress, 0.0, 1.0), 1.6) * (1.0 - floorMask);
+      float inwardProgress = clamp((t - floorRadius) / max(1e-4, 1.0 - floorRadius), 0.0, 1.0);
+      float inwardExponent = mix(2.9, 1.95, sharpness01);
+      float inwardFalloff = pow(inwardProgress, inwardExponent);
 
-      float rimLightenWidth = 0.1 / max(0.001, localRimSharpness);
-      float rimLighten = exp(-pow((t - 1.02) / rimLightenWidth, 2.0)) * mix(0.24, 0.1, craterAge);
-      float outerShoulderLighten = exp(-pow((t - 1.1) / 0.2, 2.0)) * mix(0.08, 0.04, craterAge);
-      float ejectaLighten = exp(-pow((t - 1.2) / 0.16, 2.0)) * 0.1;
+      float isExterior = step(1.0, t);
+      float rimFlank = mix(rimPeak * inwardFalloff, rimPeak * exteriorFalloff, isExterior);
 
-      craterWarp += bowlDarken + wallDarken + rimLighten + outerShoulderLighten + ejectaLighten;
+      float bowlDarken = -mix(0.28, 0.16, craterAge) * floorMask;
+      float wallDarken = -mix(0.22, 0.13, craterAge) * (1.0 - inwardFalloff);
+      float rimLighten = rimFlank * mix(0.8, 0.68, craterAge);
+
+      craterWarp += bowlDarken + wallDarken + rimLighten;
     }
 
     return clamp(craterWarp, -1.0, 0.8);
