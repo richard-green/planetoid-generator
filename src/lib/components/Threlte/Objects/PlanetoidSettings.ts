@@ -8,7 +8,7 @@ import {
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
 
-export type PlanetoidViewMode = 'mesh' | 'normal' | 'texture' | 'ray'
+export type PlanetoidViewMode = 'mesh' | 'normal' | 'texture'
 
 export type PlanetoidPresetExcludedKey =
   'seed' | 'autoRotate' | 'showDebugMeshes' | 'normalTextureSize' | 'colorTextureSize'
@@ -36,11 +36,6 @@ export type PlanetoidSettings = {
   volcanoColorStrength: number
   ridgeColorWeight: number
   riftColorWeight: number
-  craterRayStrength: number
-  craterRayVisibility: number
-  craterRayDensity: number
-  craterRaySharpness: number
-  craterRayLengthPower: number
   ridgeStrength: number
   ridgeFrequency: number
   ridgeSharpness: number
@@ -87,11 +82,6 @@ export type PlanetoidRangeValues = Pick<
   | 'volcanoColorStrength'
   | 'ridgeColorWeight'
   | 'riftColorWeight'
-  | 'craterRayStrength'
-  | 'craterRayVisibility'
-  | 'craterRayDensity'
-  | 'craterRaySharpness'
-  | 'craterRayLengthPower'
   | 'ridgeStrength'
   | 'ridgeFrequency'
   | 'ridgeSharpness'
@@ -136,11 +126,6 @@ export const DefaultValues: PlanetoidSettings = {
   volcanoScale: 2,
   volcanoStrength: 2,
   volcanoColorStrength: 1.2,
-  craterRayStrength: 2,
-  craterRayVisibility: 1,
-  craterRayDensity: 1,
-  craterRaySharpness: 1,
-  craterRayLengthPower: 2.8,
   ridgeStrength: 2,
   ridgeFrequency: 2.5,
   ridgeSharpness: 2.5,
@@ -179,11 +164,6 @@ export const MinValues: PlanetoidRangeValues = {
   volcanoColorStrength: 0,
   ridgeColorWeight: 0,
   riftColorWeight: 0,
-  craterRayStrength: 0,
-  craterRayVisibility: 0,
-  craterRayDensity: 0.3,
-  craterRaySharpness: 0.5,
-  craterRayLengthPower: 1,
   ridgeStrength: 0,
   ridgeFrequency: 0.5,
   ridgeSharpness: 0.5,
@@ -220,11 +200,6 @@ export const MaxValues: PlanetoidRangeValues = {
   volcanoColorStrength: 2.5,
   ridgeColorWeight: 4,
   riftColorWeight: 4,
-  craterRayStrength: 6,
-  craterRayVisibility: 4,
-  craterRayDensity: 3,
-  craterRaySharpness: 4,
-  craterRayLengthPower: 5,
   ridgeStrength: 2,
   ridgeFrequency: 8,
   ridgeSharpness: 4,
@@ -261,11 +236,6 @@ export const StepValues: PlanetoidRangeValues = {
   volcanoColorStrength: 0.05,
   ridgeColorWeight: 0.05,
   riftColorWeight: 0.05,
-  craterRayStrength: 0.05,
-  craterRayVisibility: 0.05,
-  craterRayDensity: 0.05,
-  craterRaySharpness: 0.05,
-  craterRayLengthPower: 0.1,
   ridgeStrength: 0.05,
   ridgeFrequency: 0.1,
   ridgeSharpness: 0.05,
@@ -360,31 +330,6 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultValues.riftColorWeight,
     min: MinValues.riftColorWeight,
     max: MaxValues.riftColorWeight,
-  },
-  craterRayStrength: {
-    defaultValue: DefaultValues.craterRayStrength,
-    min: MinValues.craterRayStrength,
-    max: MaxValues.craterRayStrength,
-  },
-  craterRayVisibility: {
-    defaultValue: DefaultValues.craterRayVisibility,
-    min: MinValues.craterRayVisibility,
-    max: MaxValues.craterRayVisibility,
-  },
-  craterRayDensity: {
-    defaultValue: DefaultValues.craterRayDensity,
-    min: MinValues.craterRayDensity,
-    max: MaxValues.craterRayDensity,
-  },
-  craterRaySharpness: {
-    defaultValue: DefaultValues.craterRaySharpness,
-    min: MinValues.craterRaySharpness,
-    max: MaxValues.craterRaySharpness,
-  },
-  craterRayLengthPower: {
-    defaultValue: DefaultValues.craterRayLengthPower,
-    min: MinValues.craterRayLengthPower,
-    max: MaxValues.craterRayLengthPower,
   },
   ridgeStrength: {
     defaultValue: DefaultValues.ridgeStrength,
@@ -515,11 +460,6 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     volcanoColorStrength: numeric.volcanoColorStrength,
     ridgeColorWeight: numeric.ridgeColorWeight,
     riftColorWeight: numeric.riftColorWeight,
-    craterRayStrength: numeric.craterRayStrength,
-    craterRayVisibility: numeric.craterRayVisibility,
-    craterRayDensity: numeric.craterRayDensity,
-    craterRaySharpness: numeric.craterRaySharpness,
-    craterRayLengthPower: numeric.craterRayLengthPower,
     enableCraters,
     enableVolcanoes,
     enableRidges,
@@ -592,11 +532,6 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   volcanoColorStrength: 'Volcano color',
   ridgeColorWeight: 'Ridge color weight',
   riftColorWeight: 'Rift color weight',
-  craterRayStrength: 'Crater rays',
-  craterRayVisibility: 'Ray visibility',
-  craterRayDensity: 'Ray density',
-  craterRaySharpness: 'Ray sharpness',
-  craterRayLengthPower: 'Ray length power',
   ridgeStrength: 'Ridge strength',
   ridgeFrequency: 'Ridge frequency',
   ridgeSharpness: 'Ridge sharpness',
@@ -655,11 +590,6 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   volcanoColorStrength: '--volcano-color',
   ridgeColorWeight: '--ridge-color-weight',
   riftColorWeight: '--rift-color-weight',
-  craterRayStrength: '--crater-rays',
-  craterRayVisibility: '--ray-visibility',
-  craterRayDensity: '--ray-density',
-  craterRaySharpness: '--ray-sharpness',
-  craterRayLengthPower: '--ray-length-power',
   ridgeStrength: '--ridge-strength',
   ridgeFrequency: '--ridge-frequency',
   ridgeSharpness: '--ridge-sharpness',

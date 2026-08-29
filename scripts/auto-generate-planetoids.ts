@@ -37,7 +37,7 @@ type ScriptOptions = {
   count: number
   startSeed: number
   step: number
-  viewMode?: 'mesh' | 'normal' | 'texture' | 'ray'
+  viewMode?: 'mesh' | 'normal' | 'texture'
   palette?: string
   surfaceTint?: string
   colorScale?: number
@@ -46,11 +46,6 @@ type ScriptOptions = {
   craterCount?: number
   craterStrength?: number
   craterColorStrength?: number
-  craterRayStrength?: number
-  craterRayVisibility?: number
-  craterRayDensity?: number
-  craterRaySharpness?: number
-  craterRayLengthPower?: number
   ridgeStrength?: number
   ridgeFrequency?: number
   ridgeSharpness?: number
@@ -106,11 +101,6 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   craterCount: undefined,
   craterStrength: undefined,
   craterColorStrength: undefined,
-  craterRayStrength: undefined,
-  craterRayVisibility: undefined,
-  craterRayDensity: undefined,
-  craterRaySharpness: undefined,
-  craterRayLengthPower: undefined,
   ridgeStrength: undefined,
   ridgeFrequency: undefined,
   ridgeSharpness: undefined,
@@ -210,7 +200,6 @@ function buildLocators(page: Page): ScriptLocators {
       mesh: page.locator(selectors.sceneViewModeRadio('mesh')).first(),
       normal: page.locator(selectors.sceneViewModeRadio('normal')).first(),
       texture: page.locator(selectors.sceneViewModeRadio('texture')).first(),
-      ray: page.locator(selectors.sceneViewModeRadio('ray')).first(),
     },
     surfaceTintInput: page
       .locator(selectors.colorInputByLabel(PlanetoidUiLabels.surfaceTint))
@@ -334,8 +323,8 @@ function parseArgs(argv: string[]): ScriptOptions {
     }
 
     if (arg === '--view-mode' && next) {
-      if (next !== 'mesh' && next !== 'normal' && next !== 'texture' && next !== 'ray') {
-        throw new Error(`Invalid view-mode: ${next}. Expected one of: mesh, normal, texture, ray`)
+      if (next !== 'mesh' && next !== 'normal' && next !== 'texture') {
+        throw new Error(`Invalid view-mode: ${next}. Expected one of: mesh, normal, texture`)
       }
       options.viewMode = next
       i++
@@ -411,7 +400,7 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --count <n>             Number of images to generate (default: 1)',
           '  --seed <n>              Starting seed value (default: 1)',
           '  --step <n>              Seed increment per image (default: 1)',
-          '  --view-mode <name>      mesh | normal | texture | ray',
+          '  --view-mode <name>      mesh | normal | texture',
           '  --palette <name>        Palette name (example: oxidizedBasalt)',
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
           ...NUMERIC_HELP_LINES,
@@ -497,7 +486,52 @@ async function main() {
 
   logger.info('Planetoid auto-generator starting')
   logger.info(
-    `Options: count=${options.count}, startSeed=${options.startSeed}, step=${options.step}, viewMode=${options.viewMode ?? 'unchanged'}, palette=${options.palette ?? 'unchanged'}, surfaceTint=${options.surfaceTint ?? 'unchanged'}, colorScale=${options.colorScale ?? 'unchanged'}, tintShadowFloor=${options.tintShadowFloor ?? 'unchanged'}, swirliness=${options.swirliness ?? 'unchanged'}, craterCount=${options.craterCount ?? 'unchanged'}, craterStrength=${options.craterStrength ?? 'unchanged'}, craterColorStrength=${options.craterColorStrength ?? 'unchanged'}, craterRayStrength=${options.craterRayStrength ?? 'unchanged'}, craterRayVisibility=${options.craterRayVisibility ?? 'unchanged'}, craterRayDensity=${options.craterRayDensity ?? 'unchanged'}, craterRaySharpness=${options.craterRaySharpness ?? 'unchanged'}, craterRayLengthPower=${options.craterRayLengthPower ?? 'unchanged'}, ridgeStrength=${options.ridgeStrength ?? 'unchanged'}, ridgeFrequency=${options.ridgeFrequency ?? 'unchanged'}, ridgeSharpness=${options.ridgeSharpness ?? 'unchanged'}, ridgeColorWeight=${options.ridgeColorWeight ?? 'unchanged'}, riftStrength=${options.riftStrength ?? 'unchanged'}, riftFrequency=${options.riftFrequency ?? 'unchanged'}, riftWidth=${options.riftWidth ?? 'unchanged'}, riftSharpness=${options.riftSharpness ?? 'unchanged'}, riftColorWeight=${options.riftColorWeight ?? 'unchanged'}, ridgesRiftsBlend=${options.ridgesRiftsBlend ?? 'unchanged'}, volcanoCount=${options.volcanoCount ?? 'unchanged'}, volcanoScale=${options.volcanoScale ?? 'unchanged'}, volcanoStrength=${options.volcanoStrength ?? 'unchanged'}, volcanoColorStrength=${options.volcanoColorStrength ?? 'unchanged'}, normalTextureSize=${options.normalTextureSize ?? 'unchanged'}, colorTextureSize=${options.colorTextureSize ?? 'unchanged'}, largeScale=${options.largeScale ?? 'unchanged'}, mediumScale=${options.mediumScale ?? 'unchanged'}, smallScale=${options.smallScale ?? 'unchanged'}, normalStrength=${options.normalStrength ?? 'unchanged'}, roughness=${options.roughness ?? 'unchanged'}, metalness=${options.metalness ?? 'unchanged'}, triangleDetail=${options.triangleDetail ?? 'unchanged'}, autoRotate=${options.autoRotate ?? 'unchanged'}, showDebugMeshes=${options.showDebugMeshes ?? 'unchanged'}, cratersEnabled=${options.cratersEnabled ?? 'unchanged'}, ridgesEnabled=${options.ridgesEnabled ?? 'unchanged'}, riftsEnabled=${options.riftsEnabled ?? 'unchanged'}, volcanoesEnabled=${options.volcanoesEnabled ?? 'unchanged'}, baseUrl=${options.baseUrl}, outputDir=${options.outputDir}, frameSettleMs=${options.frameSettleMs}`
+    [
+      `count=${options.count}`,
+      `startSeed=${options.startSeed}`,
+      `step=${options.step}`,
+      `viewMode=${options.viewMode ?? 'unchanged'}`,
+      `palette=${options.palette ?? 'unchanged'}`,
+      `surfaceTint=${options.surfaceTint ?? 'unchanged'}`,
+      `colorScale=${options.colorScale ?? 'unchanged'}`,
+      `tintShadowFloor=${options.tintShadowFloor ?? 'unchanged'}`,
+      `swirliness=${options.swirliness ?? 'unchanged'}`,
+      `craterCount=${options.craterCount ?? 'unchanged'}`,
+      `craterStrength=${options.craterStrength ?? 'unchanged'}`,
+      `craterColorStrength=${options.craterColorStrength ?? 'unchanged'}`,
+      `ridgeStrength=${options.ridgeStrength ?? 'unchanged'}`,
+      `ridgeFrequency=${options.ridgeFrequency ?? 'unchanged'}`,
+      `ridgeSharpness=${options.ridgeSharpness ?? 'unchanged'}`,
+      `ridgeColorWeight=${options.ridgeColorWeight ?? 'unchanged'}`,
+      `riftStrength=${options.riftStrength ?? 'unchanged'}`,
+      `riftFrequency=${options.riftFrequency ?? 'unchanged'}`,
+      `riftWidth=${options.riftWidth ?? 'unchanged'}`,
+      `riftSharpness=${options.riftSharpness ?? 'unchanged'}`,
+      `riftColorWeight=${options.riftColorWeight ?? 'unchanged'}`,
+      `ridgesRiftsBlend=${options.ridgesRiftsBlend ?? 'unchanged'}`,
+      `volcanoCount=${options.volcanoCount ?? 'unchanged'}`,
+      `volcanoScale=${options.volcanoScale ?? 'unchanged'}`,
+      `volcanoStrength=${options.volcanoStrength ?? 'unchanged'}`,
+      `volcanoColorStrength=${options.volcanoColorStrength ?? 'unchanged'}`,
+      `normalTextureSize=${options.normalTextureSize ?? 'unchanged'}`,
+      `colorTextureSize=${options.colorTextureSize ?? 'unchanged'}`,
+      `largeScale=${options.largeScale ?? 'unchanged'}`,
+      `mediumScale=${options.mediumScale ?? 'unchanged'}`,
+      `smallScale=${options.smallScale ?? 'unchanged'}`,
+      `normalStrength=${options.normalStrength ?? 'unchanged'}`,
+      `roughness=${options.roughness ?? 'unchanged'}`,
+      `metalness=${options.metalness ?? 'unchanged'}`,
+      `triangleDetail=${options.triangleDetail ?? 'unchanged'}`,
+      `autoRotate=${options.autoRotate ?? 'unchanged'}`,
+      `showDebugMeshes=${options.showDebugMeshes ?? 'unchanged'}`,
+      `cratersEnabled=${options.cratersEnabled ?? 'unchanged'}`,
+      `ridgesEnabled=${options.ridgesEnabled ?? 'unchanged'}`,
+      `riftsEnabled=${options.riftsEnabled ?? 'unchanged'}`,
+      `volcanoesEnabled=${options.volcanoesEnabled ?? 'unchanged'}`,
+      `baseUrl=${options.baseUrl}`,
+      `outputDir=${options.outputDir}`,
+      `frameSettleMs=${options.frameSettleMs}`,
+    ].join(', ')
   )
 
   if (!isFinitePositiveInt(options.count)) {

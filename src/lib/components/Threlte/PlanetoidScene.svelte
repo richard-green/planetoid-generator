@@ -34,11 +34,6 @@
     volcanoColorStrength?: number
     ridgeColorWeight?: number
     riftColorWeight?: number
-    craterRayStrength?: number
-    craterRayVisibility?: number
-    craterRayDensity?: number
-    craterRaySharpness?: number
-    craterRayLengthPower?: number
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
@@ -84,11 +79,6 @@
     volcanoColorStrength = DefaultValues.volcanoColorStrength,
     ridgeColorWeight = DefaultValues.ridgeColorWeight,
     riftColorWeight = DefaultValues.riftColorWeight,
-    craterRayStrength = DefaultValues.craterRayStrength,
-    craterRayVisibility = DefaultValues.craterRayVisibility,
-    craterRayDensity = DefaultValues.craterRayDensity,
-    craterRaySharpness = DefaultValues.craterRaySharpness,
-    craterRayLengthPower = DefaultValues.craterRayLengthPower,
     enableRidges = DefaultValues.enableRidges,
     enableRifts = DefaultValues.enableRifts,
     ridgeStrength = DefaultValues.ridgeStrength,
@@ -258,11 +248,6 @@
   {volcanoColorStrength}
   {ridgeColorWeight}
   {riftColorWeight}
-  {craterRayStrength}
-  {craterRayVisibility}
-  {craterRayDensity}
-  {craterRaySharpness}
-  {craterRayLengthPower}
   {enableRidges}
   {enableRifts}
   {ridgeStrength}

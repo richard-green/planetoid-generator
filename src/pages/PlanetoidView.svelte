@@ -84,11 +84,6 @@
     'volcanoScale',
     'volcanoStrength',
     'volcanoColorStrength',
-    'craterRayStrength',
-    'craterRayVisibility',
-    'craterRayDensity',
-    'craterRaySharpness',
-    'craterRayLengthPower',
     'ridgeStrength',
     'ridgeFrequency',
     'ridgeSharpness',
@@ -161,11 +156,6 @@
     'craterStrength',
     'craterSharpness',
     'craterColorStrength',
-    'craterRayStrength',
-    'craterRayVisibility',
-    'craterRayDensity',
-    'craterRaySharpness',
-    'craterRayLengthPower',
   ]
   const volcanoControlKeys: NumericControlKey[] = [
     'volcanoCount',
@@ -462,8 +452,7 @@
     const isValidViewMode =
       raw.viewMode === 'mesh' ||
       raw.viewMode === 'normal' ||
-      raw.viewMode === 'texture' ||
-      raw.viewMode === 'ray'
+      raw.viewMode === 'texture'
 
     if (!isValidViewMode) return null
 
@@ -802,11 +791,6 @@
           volcanoColorStrength={effectiveVolcanoesEnabled ? planetoid.volcanoColorStrength : 0}
           ridgeColorWeight={planetoid.ridgeColorWeight}
           riftColorWeight={planetoid.riftColorWeight}
-          craterRayStrength={planetoid.craterRayStrength}
-          craterRayVisibility={planetoid.craterRayVisibility}
-          craterRayDensity={planetoid.craterRayDensity}
-          craterRaySharpness={planetoid.craterRaySharpness}
-          craterRayLengthPower={planetoid.craterRayLengthPower}
           enableRidges={effectiveRidgesEnabled}
           enableRifts={effectiveRiftsEnabled}
           ridgeStrength={effectiveRidgesEnabled ? planetoid.ridgeStrength : 0}
@@ -946,10 +930,6 @@
                 bind:group={sceneViewMode}
               />
               <span>Texture map</span>
-            </label>
-            <label class="radio-row">
-              <input type="radio" name="scene-view-mode" value="ray" bind:group={sceneViewMode} />
-              <span>Ray map</span>
             </label>
           </div>
         </details>

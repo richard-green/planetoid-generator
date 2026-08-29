@@ -71,17 +71,7 @@ type ColorTextureOptions = {
   volcanoScale?: number
   volcanoStrength?: number
   volcanoColorStrength?: number
-  craterRayStrength?: number
-  craterRayVisibility?: number
-  craterRayDensity?: number
-  craterRaySharpness?: number
-  craterRayLengthPower?: number
 }
-
-type RayDebugOptions = Pick<
-  ColorTextureOptions,
-  'craterRayDensity' | 'craterRaySharpness' | 'craterRayLengthPower'
->
 
 const MAX_PALETTE = 16
 
@@ -120,11 +110,6 @@ const fragmentShader = `
   uniform float uVolcanoColorStrength;
   uniform float uRidgeColorWeight;
   uniform float uRiftColorWeight;
-  uniform float uCraterRayStrength;
-  uniform float uCraterRayVisibility;
-  uniform float uCraterRayDensity;
-  uniform float uCraterRaySharpness;
-  uniform float uCraterRayLengthPower;
   uniform int uEnableRidges;
   uniform int uEnableRifts;
   uniform float uRidgeStrength;
@@ -612,141 +597,6 @@ const fragmentShader = `
     return vec2(lift, darken) * uVolcanoColorStrength;
   }
 
-  float accumulateCraterRayMask(vec2 uv) {
-    float rayMask = 0.0;
-
-    for (int i = 0; i < MAX_CRATERS; i++) {
-      if (i >= uCraterCount) break;
-
-      vec2 craterUv;
-      float craterRadius;
-      float craterAge;
-      buildCrater(i, craterUv, craterRadius, craterAge);
-
-      float du = uv.x - craterUv.x;
-      if (du > 0.5) du -= 1.0;
-      if (du < -0.5) du += 1.0;
-
-      float dv = uv.y - craterUv.y;
-      float rx = max(1e-5, craterRadius * 0.5);
-      float ry = max(1e-5, craterRadius);
-
-      vec2 local = vec2(du / rx, dv / ry);
-      float t = length(local);
-
-      float inner = 0.94;
-      float outer = 3.45;
-      if (t < inner || t > outer) continue;
-
-      float angle = atan(local.y, local.x);
-      float size01 = clamp((craterRadius - 0.018) / 0.06, 0.0, 1.0);
-
-      float sizeForCount = pow(size01, 1.15);
-      float baseRayCount = mix(1.0, 30.0, sizeForCount);
-      float rayCount = clamp(baseRayCount * uCraterRayDensity, 1.0, 60.0);
-
-      float phase = hash12(vec2(craterUv.x * 3.17, craterUv.y * 5.71)) * TAU;
-
-      // Break regular spoke spacing with deterministic angular warping per crater.
-      float warpA = (hash12(vec2(craterUv.x * 41.3, craterUv.y * 47.9)) - 0.5) * 0.9;
-      float warpB = (hash12(vec2(craterUv.x * 53.7, craterUv.y * 59.1)) - 0.5) * 0.5;
-      float angleWarp = angle
-        + sin(angle * 3.0 + phase * 1.7) * warpA * 0.35
-        + sin(angle * 7.0 + phase * 0.9) * warpB * 0.2;
-
-      float rayAxis = ((angleWarp + PI) / TAU) * rayCount + phase / TAU;
-      float raySlot = floor(rayAxis + 0.5);
-
-      // Jitter each ray center independently so spacing is irregular.
-      float slotJitter =
-        (hash12(vec2(craterUv.x * 71.1 + raySlot * 0.13, craterUv.y * 67.7 - raySlot * 0.17)) - 0.5)
-        * 0.7;
-      float nearest = abs(fract(rayAxis - slotJitter) - 0.5);
-      nearest = 0.5 - nearest;
-
-      float widthNoise = hash12(vec2(craterUv.x * 7.9 - raySlot * 0.53, craterUv.y * 17.2 + raySlot * 0.41));
-      float widthScale = 1.0 / sqrt(max(0.2, uCraterRaySharpness));
-      float angularWidth = mix(0.2, 0.08, size01) * mix(0.7, 1.4, widthNoise) * widthScale;
-      float angularMask = pow(
-        max(0.0, 1.0 - nearest / max(1e-4, angularWidth)),
-        1.2 + uCraterRaySharpness * 0.9
-      );
-
-      float lengthNoise = hash12(vec2(craterUv.x * 19.1 + raySlot * 0.83, craterUv.y * 23.4 - raySlot * 0.27));
-      float impactNoise = hash12(vec2(craterUv.x * 29.3 - raySlot * 0.61, craterUv.y * 31.8 + raySlot * 0.19));
-
-      float lengthScale = mix(1.2, 0.72, size01);
-      float normalizedLength = pow(lengthNoise, uCraterRayLengthPower);
-      float rayLength = mix(0.75, 2.45, normalizedLength) * lengthScale;
-
-      float rayStart = 0.98;
-      float rayEnd = rayStart + rayLength;
-
-      float entry = smoothstep(rayStart, rayStart + 0.14, t);
-      float exitMask = 1.0 - smoothstep(rayEnd, rayEnd + 0.28, t);
-      float taper = clamp(1.0 - (t - rayStart) / max(1e-4, rayEnd - rayStart), 0.0, 1.0);
-      float radialMask = entry * exitMask * pow(taper, 0.65);
-
-      float rayImpact = mix(0.4, 1.0, impactNoise);
-      float spokeContribution = angularMask * radialMask * rayImpact;
-
-      float haze = clamp(1.0 - (t - 1.0) / 2.2, 0.0, 1.0) * 0.018;
-      float craterRayBase = mix(0.04, 0.82, pow(size01, 1.35));
-      float contribution = (spokeContribution + haze) * craterRayBase;
-
-      // Later craters obscure rays from earlier ones.
-      float occlusion = 1.0;
-      for (int j = 0; j < MAX_CRATERS; j++) {
-        if (j <= i || j >= uCraterCount) continue;
-
-        vec2 laterUv;
-        float laterRadius;
-        float laterAge;
-        buildCrater(j, laterUv, laterRadius, laterAge);
-
-        float tLater = craterNormalizedDistance(uv, laterUv, laterRadius, laterAge);
-
-        // Strong suppression in crater bowl and rim regions.
-        float bowl = 1.0 - smoothstep(0.0, 0.95, tLater);
-        float rim = exp(-pow((tLater - 1.02) / 0.12, 2.0));
-        float cover = clamp(bowl * 0.95 + rim * 0.7, 0.0, 1.0);
-
-        occlusion *= (1.0 - cover);
-        if (occlusion <= 0.01) {
-          occlusion = 0.0;
-          break;
-        }
-      }
-
-      contribution *= occlusion;
-
-      if (contribution <= 0.0) {
-        contribution = 0.0;
-      }
-
-      rayMask += contribution;
-    }
-
-    if (rayMask <= 0.0) return 0.0;
-    return clamp(rayMask, 0.0, 1.0);
-  }
-
-  vec2 wrapRayUv(vec2 uv) {
-    return vec2(fract(uv.x), clamp(uv.y, 0.0, 1.0));
-  }
-
-  float accumulateCraterRayMaskAA(vec2 uv) {
-    vec2 texel = 1.0 / max(uResolution, vec2(1.0));
-    vec2 offset = texel * 0.4;
-
-    float s0 = accumulateCraterRayMask(wrapRayUv(uv + vec2(-offset.x, -offset.y)));
-    float s1 = accumulateCraterRayMask(wrapRayUv(uv + vec2(offset.x, -offset.y)));
-    float s2 = accumulateCraterRayMask(wrapRayUv(uv + vec2(-offset.x, offset.y)));
-    float s3 = accumulateCraterRayMask(wrapRayUv(uv + vec2(offset.x, offset.y)));
-
-    return 0.25 * (s0 + s1 + s2 + s3);
-  }
-
   bool isDebugEquatorPixel(float y) {
     float equatorY = round((uResolution.y - 1.0) * 0.5);
     return abs(y - equatorY) < 0.5;
@@ -879,8 +729,6 @@ const fragmentShader = `
         (uEnableRifts == 1) ? baseRidgeRiftSignals.y : 0.0
       );
     }
-    float craterRayMask = (uEnableCraters == 1) ? accumulateCraterRayMaskAA(uv) : 0.0;
-
     bool debugEquator = (uDebugMidline == 1) && isDebugEquatorPixel(y);
     bool debugMeridian0 = (uDebugMidline == 1) && (x < 0.5 || x > (uResolution.x - 1.5));
     bool debugMeridian90 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.25);
@@ -901,12 +749,6 @@ const fragmentShader = `
       vec3 encodedNormal = normal * 0.5 + 0.5;
 
       gl_FragColor = vec4(clamp(encodedNormal, 0.0, 1.0), 1.0);
-      return;
-    }
-
-    if (uMode == 2) {
-      float debugStrength = clamp(pow(craterRayMask, 0.55), 0.0, 1.0);
-      gl_FragColor = vec4(vec3(debugStrength), 1.0);
       return;
     }
 
@@ -954,18 +796,6 @@ const fragmentShader = `
     vec3 tintMapped = mix(darkTint, tintColor, normalizedValue);
 
     vec3 finalColor = mix(tintMapped, paletteColor, textureDominance);
-
-    float rayBlend = clamp(craterRayMask * (uCraterRayStrength / 4.5) * uCraterRayVisibility, 0.0, 1.0);
-    if (rayBlend > 0.0) {
-      // Shift along the same palette curve instead of overlaying a fixed warm tone.
-      float shiftedValue = clamp(value + rayBlend * 0.42, -1.0, 1.0);
-      vec3 shiftedPaletteColor = mapToPalette(shiftedValue);
-      float shiftedNormalizedValue = clamp((shiftedValue + 1.0) * 0.5, 0.0, 1.0);
-      vec3 shiftedTintMapped = mix(darkTint, tintColor, shiftedNormalizedValue);
-      vec3 shiftedColor = mix(shiftedTintMapped, shiftedPaletteColor, textureDominance);
-
-      finalColor = mix(finalColor, shiftedColor, rayBlend);
-    }
 
     float extraTextureScale = max(0.0, uTextureScale - 1.0);
     if (extraTextureScale > 0.0) {
@@ -1020,11 +850,6 @@ const material = new ShaderMaterial({
     uVolcanoColorStrength: new Uniform(0.75),
     uRidgeColorWeight: new Uniform(0.35),
     uRiftColorWeight: new Uniform(0.35),
-    uCraterRayStrength: new Uniform(2),
-    uCraterRayVisibility: new Uniform(1),
-    uCraterRayDensity: new Uniform(1),
-    uCraterRaySharpness: new Uniform(1),
-    uCraterRayLengthPower: new Uniform(2.8),
     uEnableRidges: new Uniform(0),
     uEnableRifts: new Uniform(0),
     uRidgeStrength: new Uniform(0.5),
@@ -1109,7 +934,7 @@ function setPaletteUniform(palette: PaletteColor[]) {
 
 function renderTexture(
   renderer: WebGLRenderer,
-  mode: 0 | 2 | 3 | 4,
+  mode: 0 | 3 | 4,
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
@@ -1130,11 +955,6 @@ function renderTexture(
     volcanoColorStrength?: number
     ridgeColorWeight?: number
     riftColorWeight?: number
-    craterRayStrength?: number
-    craterRayVisibility?: number
-    craterRayDensity?: number
-    craterRaySharpness?: number
-    craterRayLengthPower?: number
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
@@ -1218,36 +1038,6 @@ function renderTexture(
     DefaultValues.riftColorWeight,
     MinValues.riftColorWeight,
     MaxValues.riftColorWeight
-  )
-  material.uniforms.uCraterRayStrength.value = toClampedNumber(
-    options.craterRayStrength,
-    DefaultValues.craterRayStrength,
-    MinValues.craterRayStrength,
-    MaxValues.craterRayStrength
-  )
-  material.uniforms.uCraterRayVisibility.value = toClampedNumber(
-    options.craterRayVisibility,
-    DefaultValues.craterRayVisibility,
-    MinValues.craterRayVisibility,
-    MaxValues.craterRayVisibility
-  )
-  material.uniforms.uCraterRayDensity.value = toClampedNumber(
-    options.craterRayDensity,
-    DefaultValues.craterRayDensity,
-    MinValues.craterRayDensity,
-    MaxValues.craterRayDensity
-  )
-  material.uniforms.uCraterRaySharpness.value = toClampedNumber(
-    options.craterRaySharpness,
-    DefaultValues.craterRaySharpness,
-    MinValues.craterRaySharpness,
-    MaxValues.craterRaySharpness
-  )
-  material.uniforms.uCraterRayLengthPower.value = toClampedNumber(
-    options.craterRayLengthPower,
-    DefaultValues.craterRayLengthPower,
-    MinValues.craterRayLengthPower,
-    MaxValues.craterRayLengthPower
   )
   material.uniforms.uEnableRidges.value = options.enableRidges ? 1 : 0
   material.uniforms.uEnableRifts.value = options.enableRifts ? 1 : 0
@@ -1386,11 +1176,6 @@ export function createPlanetoidColorTexture(
     riftWidth: options.riftWidth,
     riftSharpness: options.riftSharpness,
     ridgesRiftsBlend: options.ridgesRiftsBlend,
-    craterRayStrength: options.craterRayStrength,
-    craterRayVisibility: options.craterRayVisibility,
-    craterRayDensity: options.craterRayDensity,
-    craterRaySharpness: options.craterRaySharpness,
-    craterRayLengthPower: options.craterRayLengthPower,
     debugMidline: options.debugMidline,
     palette: planetoidPalette,
   })
@@ -1431,29 +1216,6 @@ export function createPlanetoidNormalTexture(
     riftSharpness: options.riftSharpness,
     ridgesRiftsBlend: options.ridgesRiftsBlend,
     debugMidline: options.debugMidline,
-  })
-
-  texture.anisotropy = 8
-  texture.colorSpace = NoColorSpace
-
-  return texture
-}
-
-export function createPlanetoidRayMaskTexture(
-  renderer: WebGLRenderer,
-  noiseOffset: NoiseOffset,
-  textureHeight: number,
-  craterCount = 22,
-  options: RayDebugOptions = {}
-) {
-  const height = Math.max(2, Math.floor(textureHeight))
-  const width = height * 2
-
-  const texture = renderTexture(renderer, 2, width, height, noiseOffset, {
-    craterCount,
-    craterRayDensity: options.craterRayDensity,
-    craterRaySharpness: options.craterRaySharpness,
-    craterRayLengthPower: options.craterRayLengthPower,
   })
 
   texture.anisotropy = 8

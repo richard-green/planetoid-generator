@@ -23,7 +23,6 @@
     createPlanetoidColorTexture,
     createPlanetoidNormalTexture,
     createPlanetoidPaletteGradientTexture,
-    createPlanetoidRayMaskTexture,
     disposeGeneratedTexture,
   } from './PlanetoidGpuTextures'
   import { SvelteMap } from 'svelte/reactivity'
@@ -54,11 +53,6 @@
     volcanoColorStrength?: number
     ridgeColorWeight?: number
     riftColorWeight?: number
-    craterRayStrength?: number
-    craterRayVisibility?: number
-    craterRayDensity?: number
-    craterRaySharpness?: number
-    craterRayLengthPower?: number
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
@@ -104,11 +98,6 @@
     volcanoColorStrength = DefaultValues.volcanoColorStrength,
     ridgeColorWeight = DefaultValues.ridgeColorWeight,
     riftColorWeight = DefaultValues.riftColorWeight,
-    craterRayStrength = DefaultValues.craterRayStrength,
-    craterRayVisibility = DefaultValues.craterRayVisibility,
-    craterRayDensity = DefaultValues.craterRayDensity,
-    craterRaySharpness = DefaultValues.craterRaySharpness,
-    craterRayLengthPower = DefaultValues.craterRayLengthPower,
     enableRidges = DefaultValues.enableRidges,
     enableRifts = DefaultValues.enableRifts,
     ridgeStrength = DefaultValues.ridgeStrength,
@@ -135,11 +124,9 @@
   let normalDebugMesh = $state<Mesh | undefined>(undefined)
   let colorDebugMesh = $state<Mesh | undefined>(undefined)
   let paletteDebugMesh = $state<Mesh | undefined>(undefined)
-  let rayDebugMesh = $state<Mesh | undefined>(undefined)
   let normalDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let colorDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let paletteDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let rayDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let normalDebugTexture = $state<ReturnType<typeof createPlanetoidNormalTexture> | undefined>(
     undefined
   )
@@ -149,9 +136,6 @@
   let paletteDebugTexture = $state<
     ReturnType<typeof createPlanetoidPaletteGradientTexture> | undefined
   >(undefined)
-  let rayDebugTexture = $state<ReturnType<typeof createPlanetoidRayMaskTexture> | undefined>(
-    undefined
-  )
   let color = $derived(new Color('#ffffff'))
   const initialGeometry = createIcosphere(5)
   let geometry = $state<BufferGeometry>(initialGeometry)
@@ -613,11 +597,6 @@
     const currentRiftWidth = riftWidth
     const currentRiftSharpness = riftSharpness
     const currentRidgesRiftsBlend = ridgesRiftsBlend
-    const currentCraterRayStrength = craterRayStrength
-    const currentCraterRayVisibility = craterRayVisibility
-    const currentCraterRayDensity = craterRayDensity
-    const currentCraterRaySharpness = craterRaySharpness
-    const currentCraterRayLengthPower = craterRayLengthPower
     const currentTintShadowFloor = tintShadowFloor
     const currentSwirliness = swirliness
 
@@ -652,11 +631,6 @@
         riftWidth: currentRiftWidth,
         riftSharpness: currentRiftSharpness,
         ridgesRiftsBlend: currentRidgesRiftsBlend,
-        craterRayStrength: currentCraterRayStrength,
-        craterRayVisibility: currentCraterRayVisibility,
-        craterRayDensity: currentCraterRayDensity,
-        craterRaySharpness: currentCraterRaySharpness,
-        craterRayLengthPower: currentCraterRayLengthPower,
       }
     )
 
@@ -675,56 +649,6 @@
         colorDebugTexture = undefined
       }
       disposeGeneratedTexture(colorTexture)
-    }
-  })
-
-  $effect(() => {
-    if (!renderer) return
-
-    const needsRayTexture = showDebugMeshes || viewMode === 'ray'
-
-    if (!needsRayTexture) {
-      if (paletteDebugMaterial) {
-        paletteDebugMaterial.map = null
-        paletteDebugMaterial.needsUpdate = true
-      }
-      if (rayDebugMaterial) {
-        rayDebugMaterial.map = null
-        rayDebugMaterial.needsUpdate = true
-      }
-      return
-    }
-
-    const shape = shapeParameters
-    const textureSize = colorTextureSize
-    const currentCraterCount = craterCount
-    const currentCraterRayDensity = craterRayDensity
-    const currentCraterRaySharpness = craterRaySharpness
-    const currentCraterRayLengthPower = craterRayLengthPower
-
-    const rayTexture = createPlanetoidRayMaskTexture(
-      renderer,
-      shape.noiseOffset,
-      textureSize,
-      currentCraterCount,
-      {
-        craterRayDensity: currentCraterRayDensity,
-        craterRaySharpness: currentCraterRaySharpness,
-        craterRayLengthPower: currentCraterRayLengthPower,
-      }
-    )
-
-    rayDebugTexture = rayTexture
-    if (rayDebugMaterial) {
-      rayDebugMaterial.map = rayTexture
-      rayDebugMaterial.needsUpdate = true
-    }
-
-    return () => {
-      if (rayDebugTexture === rayTexture) {
-        rayDebugTexture = undefined
-      }
-      disposeGeneratedTexture(rayTexture)
     }
   })
 
@@ -773,8 +697,6 @@
     } else if (viewMode === 'texture') {
       mapPreviewMaterial.map =
         colorDebugTexture ?? (material?.map as Texture | null | undefined) ?? null
-    } else if (viewMode === 'ray') {
-      mapPreviewMaterial.map = rayDebugTexture ?? null
     } else {
       mapPreviewMaterial.map = null
     }
@@ -859,13 +781,7 @@
   })
 
   useTask(() => {
-    if (
-      !showDebugMeshes ||
-      !normalDebugMesh ||
-      !colorDebugMesh ||
-      !paletteDebugMesh ||
-      !rayDebugMesh
-    )
+    if (!showDebugMeshes || !normalDebugMesh || !colorDebugMesh || !paletteDebugMesh)
       return
 
     const perspectiveCamera = $camera as PerspectiveCamera
@@ -897,11 +813,6 @@
       .add(right.clone().multiplyScalar(rightX))
       .add(up.clone().multiplyScalar(topY))
 
-    rayDebugMesh.position
-      .copy(center)
-      .add(right.clone().multiplyScalar(rightX))
-      .add(up.clone().multiplyScalar(bottomY))
-
     paletteDebugMesh.position
       .copy(center)
       .add(right.clone().multiplyScalar(leftX))
@@ -910,7 +821,6 @@
     normalDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     colorDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     paletteDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
-    rayDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
   })
 
   onDestroy(() => {
@@ -954,17 +864,6 @@
       <T.MeshBasicMaterial
         bind:ref={colorDebugMaterial}
         map={colorDebugTexture}
-        toneMapped={false}
-        depthTest={false}
-        depthWrite={false}
-      />
-    </T.Mesh>
-
-    <T.Mesh bind:ref={rayDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-      <T.PlaneGeometry args={[1, 1]} />
-      <T.MeshBasicMaterial
-        bind:ref={rayDebugMaterial}
-        map={rayDebugTexture}
         toneMapped={false}
         depthTest={false}
         depthWrite={false}
