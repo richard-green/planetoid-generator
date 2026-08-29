@@ -87,13 +87,13 @@ This helper runs curated gas giant profiles and advances start seeds between eac
 
 Generated examples from `public/generated`:
 
-![Generated planetoid example 1](public/generated/generated-planetoid-20260816-123153.png)
+![Generated planetoid example 1](public/generated/generated-planetoid-20260829-191358.png)
 
-![Generated planetoid example 2](public/generated/generated-planetoid-20260816-132812.png)
+![Generated planetoid example 2](public/generated/generated-planetoid-20260829-194942.png)
 
-![Generated planetoid example 3](public/generated/generated-planetoid-20260816-132923.png)
+![Generated planetoid example 3](public/generated/generated-planetoid-20260829-195128.png)
 
-![Generated planetoid example 4](public/generated/generated-planetoid-20260816-132946.png)
+![Generated planetoid example 4](public/generated/generated-planetoid-20260829-195222.png)
 
 ## Notes
 

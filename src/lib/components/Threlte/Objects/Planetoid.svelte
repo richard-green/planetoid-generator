@@ -43,6 +43,7 @@
     normalStrength?: number
     enableCraters?: boolean
     craterCount?: number
+    craterScale?: number
     craterStrength?: number
     craterSharpness?: number
     craterColorStrength?: number
@@ -88,6 +89,7 @@
     normalStrength = DefaultValues.normalStrength,
     enableCraters = DefaultValues.enableCraters,
     craterCount = DefaultValues.craterCount,
+    craterScale = DefaultValues.craterScale,
     craterStrength = DefaultValues.craterStrength,
     craterSharpness = DefaultValues.craterSharpness,
     craterColorStrength = DefaultValues.craterColorStrength,
@@ -577,6 +579,7 @@
     const planetoidPalette = AllPalettes[palette]
     const textureScale = colorScale
     const currentCraterCount = craterCount
+    const currentCraterScale = craterScale
     const currentCraterColorStrength = craterColorStrength
     const currentCraterSharpness = craterSharpness
     const currentEnableCraters = enableCraters
@@ -611,6 +614,7 @@
         tintShadowFloor: currentTintShadowFloor,
         swirliness: currentSwirliness,
         craterCount: currentCraterCount,
+        craterScale: currentCraterScale,
         craterColorStrength: currentCraterColorStrength,
         craterSharpness: currentCraterSharpness,
         enableCraters: currentEnableCraters,
@@ -712,6 +716,7 @@
     const currentNormalStrength = normalStrength
     const currentEnableCraters = enableCraters
     const currentCraterCount = craterCount
+    const currentCraterScale = craterScale
     const currentCraterStrength = craterStrength
     const currentCraterSharpness = craterSharpness
     const volcanoesEnabled = enableVolcanoes
@@ -732,6 +737,7 @@
 
     const detailOptions = {
       craterCount: currentCraterCount,
+      craterScale: currentCraterScale,
       craterStrength: currentCraterStrength,
       craterSharpness: currentCraterSharpness,
       enableCraters: currentEnableCraters,

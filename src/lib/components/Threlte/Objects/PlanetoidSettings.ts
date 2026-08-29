@@ -27,6 +27,7 @@ export type PlanetoidSettings = {
   tintShadowFloor: number
   swirliness: number
   craterCount: number
+  craterScale: number
   craterStrength: number
   craterSharpness: number
   craterColorStrength: number
@@ -73,6 +74,7 @@ export type PlanetoidRangeValues = Pick<
   | 'tintShadowFloor'
   | 'swirliness'
   | 'craterCount'
+  | 'craterScale'
   | 'craterStrength'
   | 'craterSharpness'
   | 'craterColorStrength'
@@ -119,6 +121,7 @@ export const DefaultValues: PlanetoidSettings = {
   tintShadowFloor: 0.18,
   swirliness: 1,
   craterCount: 20,
+  craterScale: 1,
   craterStrength: 5,
   craterSharpness: 3.5,
   craterColorStrength: 0.95,
@@ -155,6 +158,7 @@ export const MinValues: PlanetoidRangeValues = {
   tintShadowFloor: 0,
   swirliness: 0,
   craterCount: 0,
+  craterScale: 0.25,
   craterStrength: 0,
   craterSharpness: 0.5,
   craterColorStrength: 0,
@@ -191,6 +195,7 @@ export const MaxValues: PlanetoidRangeValues = {
   tintShadowFloor: 0.8,
   swirliness: 2,
   craterCount: 120,
+  craterScale: 3,
   craterStrength: 10,
   craterSharpness: 8,
   craterColorStrength: 3,
@@ -227,6 +232,7 @@ export const StepValues: PlanetoidRangeValues = {
   tintShadowFloor: 0.01,
   swirliness: 0.05,
   craterCount: 1,
+  craterScale: 0.05,
   craterStrength: 0.1,
   craterSharpness: 0.1,
   craterColorStrength: 0.05,
@@ -284,6 +290,11 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     min: MinValues.craterCount,
     max: MaxValues.craterCount,
     round: true,
+  },
+  craterScale: {
+    defaultValue: DefaultValues.craterScale,
+    min: MinValues.craterScale,
+    max: MaxValues.craterScale,
   },
   craterStrength: {
     defaultValue: DefaultValues.craterStrength,
@@ -451,6 +462,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     tintShadowFloor: numeric.tintShadowFloor,
     swirliness: numeric.swirliness,
     craterCount: numeric.craterCount,
+    craterScale: numeric.craterScale,
     craterStrength: numeric.craterStrength,
     craterSharpness: numeric.craterSharpness,
     craterColorStrength: numeric.craterColorStrength,
@@ -523,6 +535,7 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   tintShadowFloor: 'Tint shadow floor',
   swirliness: 'Swirliness',
   craterCount: 'Crater count',
+  craterScale: 'Crater scale',
   craterStrength: 'Crater strength',
   craterSharpness: 'Crater sharpness',
   craterColorStrength: 'Crater color',
@@ -581,6 +594,7 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   tintShadowFloor: '--tint-shadow-floor',
   swirliness: '--swirliness',
   craterCount: '--crater-count',
+  craterScale: '--crater-scale',
   craterStrength: '--crater-strength',
   craterSharpness: '--crater-sharpness',
   craterColorStrength: '--crater-color',

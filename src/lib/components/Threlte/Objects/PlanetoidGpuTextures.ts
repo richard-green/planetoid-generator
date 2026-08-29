@@ -25,6 +25,7 @@ type PaletteColor = { r: number; g: number; b: number }
 type SurfaceDetailTextureOptions = {
   enableCraters?: boolean
   craterCount?: number
+  craterScale?: number
   craterStrength?: number
   craterSharpness?: number
   enableVolcanoes?: boolean
@@ -64,6 +65,7 @@ type ColorTextureOptions = {
   debugMidline?: boolean
   enableCraters?: boolean
   craterCount?: number
+  craterScale?: number
   craterColorStrength?: number
   craterSharpness?: number
   enableVolcanoes?: boolean
@@ -100,6 +102,7 @@ const fragmentShader = `
   uniform float uTextureScale;
   uniform int uEnableCraters;
   uniform int uCraterCount;
+  uniform float uCraterScale;
   uniform float uCraterStrength;
   uniform float uCraterColorStrength;
   uniform float uCraterSharpness;
@@ -278,17 +281,6 @@ const fragmentShader = `
 
     float minRadius = 0.018;
     float maxRadius = 0.078;
-    float largeCount = max(1.0, floor(float(uCraterCount) * 0.15 + 0.5));
-
-    float normalizedRadius;
-    if (fi < largeCount) {
-      normalizedRadius = 1.0 - pow(radiusSample, 2.4);
-    } else {
-      normalizedRadius = pow(radiusSample, 3.2);
-    }
-
-    centerUv = vec2(u, v);
-    radius = mix(minRadius, maxRadius, normalizedRadius);
 
     float countMinusOne = max(1.0, float(uCraterCount - 1));
     float chronology = fi / countMinusOne;
@@ -296,6 +288,29 @@ const fragmentShader = `
 
     // Older craters are laid first in index order and are generally more eroded.
     age = clamp(1.0 - chronology + ageJitter, 0.0, 1.0);
+
+    // Older craters trend larger, but with pseudo-random local variance so the
+    // age-size relationship is not perfectly linear.
+    float sizeNoiseA = hash12(vec2(fi * 4.11, uSeed.x * 0.001 + 131.0));
+    float sizeNoiseB = hash12(vec2(fi * 6.73, uSeed.y * 0.001 + 173.0));
+    float ageBias = pow(age, 1.35);
+    float variance = (sizeNoiseA - 0.5) * 0.55 + (sizeNoiseB - 0.5) * 0.25;
+    float effectiveAge = clamp(ageBias + variance, 0.0, 1.0);
+
+    float localExponent = mix(3.2, 1.15, effectiveAge);
+    float normalizedRadius = pow(radiusSample, localExponent);
+
+    // Occasionally produce very large old impact basins without making all old
+    // craters giant.
+    float basinChance = smoothstep(0.72, 1.0, effectiveAge);
+    float basinNoise = hash12(vec2(fi * 9.47, uSeed.z * 0.001 + 211.0));
+    float basinBoost = basinChance * pow(basinNoise, 3.0) * 0.35;
+    normalizedRadius = clamp(normalizedRadius + basinBoost, 0.0, 1.0);
+
+    centerUv = vec2(u, v);
+    float baseRadius = mix(minRadius, maxRadius, normalizedRadius);
+    float scale = clamp(uCraterScale, 0.25, 3.0);
+    radius = baseRadius * scale;
   }
 
   float craterNormalizedDistance(vec2 uv, vec2 craterUv, float craterRadius, float craterAge) {
@@ -826,6 +841,7 @@ const material = new ShaderMaterial({
     uTextureScale: new Uniform(1),
     uEnableCraters: new Uniform(1),
     uCraterCount: new Uniform(22),
+    uCraterScale: new Uniform(1),
     uCraterStrength: new Uniform(0.32),
     uCraterColorStrength: new Uniform(0.3),
     uCraterSharpness: new Uniform(CRATER_RIM_SHARPNESS),
@@ -931,6 +947,7 @@ function renderTexture(
     textureScale?: number
     enableCraters?: boolean
     craterCount?: number
+    craterScale?: number
     craterStrength?: number
     craterColorStrength?: number
     craterSharpness?: number
@@ -975,6 +992,12 @@ function renderTexture(
   material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
   material.uniforms.uEnableCraters.value = (options.enableCraters ?? true) ? 1 : 0
   material.uniforms.uCraterCount.value = Math.min(96, toNonNegativeInt(options.craterCount, 22))
+  material.uniforms.uCraterScale.value = toClampedNumber(
+    options.craterScale,
+    DefaultValues.craterScale,
+    MinValues.craterScale,
+    MaxValues.craterScale
+  )
   material.uniforms.uCraterStrength.value = toClampedNumber(
     options.craterStrength,
     DefaultValues.craterStrength,
@@ -1143,6 +1166,7 @@ export function createPlanetoidColorTexture(
     textureScale,
     enableCraters: options.enableCraters,
     craterCount: options.craterCount,
+    craterScale: options.craterScale,
     craterColorStrength: options.craterColorStrength,
     craterSharpness: options.craterSharpness,
     enableVolcanoes: options.enableVolcanoes,
@@ -1184,6 +1208,7 @@ export function createPlanetoidNormalTexture(
   const texture = renderTexture(renderer, 4, width, height, noiseOffset, {
     enableCraters: options.enableCraters,
     craterCount: options.craterCount,
+    craterScale: options.craterScale,
     craterStrength: options.craterStrength,
     craterSharpness: options.craterSharpness,
     enableVolcanoes: options.enableVolcanoes,

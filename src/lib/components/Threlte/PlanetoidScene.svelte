@@ -24,6 +24,7 @@
     normalStrength?: number
     enableCraters?: boolean
     craterCount?: number
+    craterScale?: number
     craterStrength?: number
     craterSharpness?: number
     craterColorStrength?: number
@@ -69,6 +70,7 @@
     normalStrength = DefaultValues.normalStrength,
     enableCraters = DefaultValues.enableCraters,
     craterCount = DefaultValues.craterCount,
+    craterScale = DefaultValues.craterScale,
     craterStrength = DefaultValues.craterStrength,
     craterSharpness = DefaultValues.craterSharpness,
     craterColorStrength = DefaultValues.craterColorStrength,
@@ -238,6 +240,7 @@
   {normalStrength}
   {enableCraters}
   {craterCount}
+  {craterScale}
   {craterStrength}
   {craterSharpness}
   {craterColorStrength}

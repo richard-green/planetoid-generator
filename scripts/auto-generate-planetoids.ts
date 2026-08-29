@@ -44,6 +44,7 @@ type ScriptOptions = {
   tintShadowFloor?: number
   swirliness?: number
   craterCount?: number
+  craterScale?: number
   craterStrength?: number
   craterColorStrength?: number
   ridgeStrength?: number
@@ -99,6 +100,7 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   tintShadowFloor: undefined,
   swirliness: undefined,
   craterCount: undefined,
+  craterScale: undefined,
   craterStrength: undefined,
   craterColorStrength: undefined,
   ridgeStrength: undefined,
@@ -497,6 +499,7 @@ async function main() {
       `tintShadowFloor=${options.tintShadowFloor ?? 'unchanged'}`,
       `swirliness=${options.swirliness ?? 'unchanged'}`,
       `craterCount=${options.craterCount ?? 'unchanged'}`,
+      `craterScale=${options.craterScale ?? 'unchanged'}`,
       `craterStrength=${options.craterStrength ?? 'unchanged'}`,
       `craterColorStrength=${options.craterColorStrength ?? 'unchanged'}`,
       `ridgeStrength=${options.ridgeStrength ?? 'unchanged'}`,

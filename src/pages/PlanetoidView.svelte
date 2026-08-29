@@ -77,6 +77,7 @@
     'swirliness',
     'normalStrength',
     'craterCount',
+    'craterScale',
     'craterStrength',
     'craterSharpness',
     'craterColorStrength',
@@ -153,6 +154,7 @@
   const materialControlKeys: NumericControlKey[] = ['normalStrength', 'roughness', 'metalness']
   const craterControlKeys: NumericControlKey[] = [
     'craterCount',
+    'craterScale',
     'craterStrength',
     'craterSharpness',
     'craterColorStrength',
@@ -778,6 +780,7 @@
           triangleDetail={planetoid.triangleDetail}
           normalStrength={planetoid.normalStrength}
           craterCount={planetoid.craterCount}
+          craterScale={planetoid.craterScale}
           craterStrength={planetoid.craterStrength}
           craterSharpness={planetoid.craterSharpness}
           craterColorStrength={planetoid.craterColorStrength}
