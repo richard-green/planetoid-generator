@@ -1,11 +1,11 @@
-import { DefaultGasGiantSettings } from '../../lib/components/Threlte/Objects/GasGiantSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/GasGiantSettings'
 import type { GasGiantPreset } from './types'
 
 export const jovianClassicPreset: GasGiantPreset = {
   id: 'builtin-jovian-classic',
   name: 'Jovian Classic',
   settings: {
-    ...DefaultGasGiantSettings,
+    ...DefaultValues,
     autoRotate: true,
     palette: 'jovianBands',
     surfaceTint: '#d8d1b8',

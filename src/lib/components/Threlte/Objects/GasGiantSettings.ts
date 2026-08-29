@@ -53,31 +53,7 @@ export type GasGiantRangeValues = Pick<
 
 export type GasGiantRangeKey = keyof GasGiantRangeValues
 
-export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
-  seed: '--seed',
-  colorScale: '--color-scale',
-  tintShadowFloor: '--tint-shadow-floor',
-  cloudBandCount: '--cloud-band-count',
-  cloudBandSharpness: '--cloud-band-sharpness',
-  cloudChaos: '--cloud-chaos',
-  stormCount: '--storm-count',
-  stormScale: '--storm-scale',
-  stormPower: '--storm-power',
-  stormStrength: '--storm-strength',
-  stormColorStrength: '--storm-color-strength',
-  bumpScale: '--bump-scale',
-  roughness: '--roughness',
-  metalness: '--metalness',
-  bumpTextureSize: '--bump-tex-height',
-  colorTextureSize: '--color-tex-height',
-}
-
-export const GasGiantCliToggleFlags = {
-  autoRotate: '--auto-rotate',
-  stormsEnabled: '--storms-enabled',
-} as const
-
-export const DefaultGasGiantSettings: GasGiantSettings = {
+export const DefaultValues: GasGiantSettings = {
   seed: 21,
   autoRotate: true,
   palette: 'jovianBands',
@@ -138,88 +114,107 @@ export const MaxValues: GasGiantRangeValues = {
   colorTextureSize: 4096,
 }
 
+export const StepValues: GasGiantRangeValues = {
+  seed: 1,
+  colorScale: 0.05,
+  tintShadowFloor: 0.01,
+  cloudBandCount: 1,
+  cloudBandSharpness: 0.01,
+  cloudChaos: 0.01,
+  stormCount: 1,
+  stormScale: 0.01,
+  stormPower: 0.1,
+  stormStrength: 0.01,
+  stormColorStrength: 0.01,
+  bumpScale: 0.05,
+  roughness: 0.01,
+  metalness: 0.01,
+  bumpTextureSize: 1,
+  colorTextureSize: 1,
+}
+
 const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
   seed: {
-    defaultValue: DefaultGasGiantSettings.seed,
+    defaultValue: DefaultValues.seed,
     min: MinValues.seed,
     max: MaxValues.seed,
     round: true,
   },
   colorScale: {
-    defaultValue: DefaultGasGiantSettings.colorScale,
+    defaultValue: DefaultValues.colorScale,
     min: MinValues.colorScale,
     max: MaxValues.colorScale,
   },
   tintShadowFloor: {
-    defaultValue: DefaultGasGiantSettings.tintShadowFloor,
+    defaultValue: DefaultValues.tintShadowFloor,
     min: MinValues.tintShadowFloor,
     max: MaxValues.tintShadowFloor,
   },
   cloudBandCount: {
-    defaultValue: DefaultGasGiantSettings.cloudBandCount,
+    defaultValue: DefaultValues.cloudBandCount,
     min: MinValues.cloudBandCount,
     max: MaxValues.cloudBandCount,
     round: true,
   },
   cloudBandSharpness: {
-    defaultValue: DefaultGasGiantSettings.cloudBandSharpness,
+    defaultValue: DefaultValues.cloudBandSharpness,
     min: MinValues.cloudBandSharpness,
     max: MaxValues.cloudBandSharpness,
   },
   cloudChaos: {
-    defaultValue: DefaultGasGiantSettings.cloudChaos,
+    defaultValue: DefaultValues.cloudChaos,
     min: MinValues.cloudChaos,
     max: MaxValues.cloudChaos,
   },
   stormCount: {
-    defaultValue: DefaultGasGiantSettings.stormCount,
+    defaultValue: DefaultValues.stormCount,
     min: MinValues.stormCount,
     max: MaxValues.stormCount,
     round: true,
   },
   stormScale: {
-    defaultValue: DefaultGasGiantSettings.stormScale,
+    defaultValue: DefaultValues.stormScale,
     min: MinValues.stormScale,
     max: MaxValues.stormScale,
   },
   stormPower: {
-    defaultValue: DefaultGasGiantSettings.stormPower,
+    defaultValue: DefaultValues.stormPower,
     min: MinValues.stormPower,
     max: MaxValues.stormPower,
   },
   stormStrength: {
-    defaultValue: DefaultGasGiantSettings.stormStrength,
+    defaultValue: DefaultValues.stormStrength,
     min: MinValues.stormStrength,
     max: MaxValues.stormStrength,
   },
   stormColorStrength: {
-    defaultValue: DefaultGasGiantSettings.stormColorStrength,
+    defaultValue: DefaultValues.stormColorStrength,
     min: MinValues.stormColorStrength,
     max: MaxValues.stormColorStrength,
   },
   bumpScale: {
-    defaultValue: DefaultGasGiantSettings.bumpScale,
+    defaultValue: DefaultValues.bumpScale,
     min: MinValues.bumpScale,
     max: MaxValues.bumpScale,
   },
   roughness: {
-    defaultValue: DefaultGasGiantSettings.roughness,
+    defaultValue: DefaultValues.roughness,
     min: MinValues.roughness,
     max: MaxValues.roughness,
   },
   metalness: {
-    defaultValue: DefaultGasGiantSettings.metalness,
+    defaultValue: DefaultValues.metalness,
     min: MinValues.metalness,
     max: MaxValues.metalness,
   },
   bumpTextureSize: {
-    defaultValue: DefaultGasGiantSettings.bumpTextureSize,
+    defaultValue: DefaultValues.bumpTextureSize,
     min: MinValues.bumpTextureSize,
     max: MaxValues.bumpTextureSize,
     round: true,
   },
   colorTextureSize: {
-    defaultValue: DefaultGasGiantSettings.colorTextureSize,
+    defaultValue: DefaultValues.colorTextureSize,
     min: MinValues.colorTextureSize,
     max: MaxValues.colorTextureSize,
     round: true,
@@ -230,17 +225,12 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
   const raw = toRecord(input)
   const numeric = sanitizeNumericMap(raw, NUMERIC_SANITIZE_SPECS)
 
-  const palette = sanitizeEnum(
-    raw,
-    'palette',
-    GasGiantPaletteNames,
-    DefaultGasGiantSettings.palette
-  )
-  const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultGasGiantSettings.surfaceTint)
+  const palette = sanitizeEnum(raw, 'palette', GasGiantPaletteNames, DefaultValues.palette)
+  const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
 
   return {
     seed: numeric.seed,
-    autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultGasGiantSettings.autoRotate),
+    autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate),
     palette,
     surfaceTint,
     colorScale: numeric.colorScale,
@@ -248,7 +238,7 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
     cloudBandCount: numeric.cloudBandCount,
     cloudBandSharpness: numeric.cloudBandSharpness,
     cloudChaos: numeric.cloudChaos,
-    enableStorms: sanitizeBoolean(raw, 'enableStorms', DefaultGasGiantSettings.enableStorms),
+    enableStorms: sanitizeBoolean(raw, 'enableStorms', DefaultValues.enableStorms),
     stormCount: numeric.stormCount,
     stormScale: numeric.stormScale,
     stormPower: numeric.stormPower,
@@ -291,4 +281,28 @@ export const GasGiantUiLabels = {
   palette: 'Palette',
   surfaceTint: 'Surface tint',
   enableStorms: 'Enable storm systems',
+} as const
+
+export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
+  seed: '--seed',
+  colorScale: '--color-scale',
+  tintShadowFloor: '--tint-shadow-floor',
+  cloudBandCount: '--cloud-band-count',
+  cloudBandSharpness: '--cloud-band-sharpness',
+  cloudChaos: '--cloud-chaos',
+  stormCount: '--storm-count',
+  stormScale: '--storm-scale',
+  stormPower: '--storm-power',
+  stormStrength: '--storm-strength',
+  stormColorStrength: '--storm-color-strength',
+  bumpScale: '--bump-scale',
+  roughness: '--roughness',
+  metalness: '--metalness',
+  bumpTextureSize: '--bump-tex-height',
+  colorTextureSize: '--color-tex-height',
+}
+
+export const GasGiantCliToggleFlags = {
+  autoRotate: '--auto-rotate',
+  stormsEnabled: '--storms-enabled',
 } as const

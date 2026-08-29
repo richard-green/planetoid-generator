@@ -1,11 +1,11 @@
-import { DefaultPlanetoidSettings } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const ioPreset: PlanetoidPreset = {
   id: 'builtin-io',
   name: 'Io',
   settings: {
-    ...DefaultPlanetoidSettings,
+    ...DefaultValues,
     palette: 'io',
     surfaceTint: '#c4b9a2',
     colorScale: 1,

@@ -1,11 +1,11 @@
-import { DefaultGasGiantSettings } from '../../lib/components/Threlte/Objects/GasGiantSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/GasGiantSettings'
 import type { GasGiantPreset } from './types'
 
 export const tempestBeltsPreset: GasGiantPreset = {
   id: 'builtin-tempest-belts',
   name: 'Tempest Belts',
   settings: {
-    ...DefaultGasGiantSettings,
+    ...DefaultValues,
     palette: 'stormAzure',
     surfaceTint: '#d8d1b8',
     colorScale: 1.45,

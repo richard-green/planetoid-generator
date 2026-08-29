@@ -19,6 +19,7 @@ import {
 } from 'three'
 
 import type { Palette } from './PlanetoidPalettes'
+import { DefaultValues, MaxValues, MinValues } from './GasGiantSettings'
 
 type NoiseOffset = { x: number; y: number; z: number }
 
@@ -26,8 +27,8 @@ export type GasGiantTextureOptions = {
   surfaceTint?: string
   tintShadowFloor?: number
   textureScale?: number
-  bandCount?: number
-  bandSharpness?: number
+  cloudBandCount?: number
+  cloudBandSharpness?: number
   cloudChaos?: number
   stormCount?: number
   stormScale?: number
@@ -99,7 +100,7 @@ const fragmentShader = `
   }
 
   vec3 variableBandGradientInfo(float lat01, vec3 seed) {
-    int bandCountInt = int(floor(clamp(uBandCount, 2.0, 28.0) + 0.5));
+    int bandCountInt = int(floor(clamp(uBandCount, 1.0, 28.0) + 0.5));
     float safeLat = clamp(lat01, 0.0, 1.0);
     float widthSum = 0.0;
 
@@ -531,20 +532,60 @@ function renderTexture(
   material.uniforms.uResolution.value.set(width, height)
   material.uniforms.uSeed.value.set(noiseOffset.x, noiseOffset.y, noiseOffset.z)
   material.uniforms.uTint.value.copy(parseHexTint(options.surfaceTint))
-  material.uniforms.uTintShadowFloor.value = toClampedNumber(options.tintShadowFloor, 0.22, 0, 0.9)
+  material.uniforms.uTintShadowFloor.value = toClampedNumber(
+    options.tintShadowFloor,
+    DefaultValues.tintShadowFloor,
+    MinValues.tintShadowFloor,
+    MaxValues.tintShadowFloor
+  )
   material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
-  material.uniforms.uBandCount.value = toClampedNumber(options.bandCount, 10, 2, 28)
-  material.uniforms.uBandSharpness.value = toClampedNumber(options.bandSharpness, 0.5, 0, 1)
-  material.uniforms.uCloudChaos.value = toClampedNumber(options.cloudChaos, 0.65, 0, 2)
-  material.uniforms.uStormCount.value = toClampedNumber(options.stormCount, 8, 0, 32)
-  material.uniforms.uStormScale.value = toClampedNumber(options.stormScale, 0.18, 0, 0.45)
-  material.uniforms.uStormPower.value = toClampedNumber(options.stormPower, 2.2, 0.5, 6)
-  material.uniforms.uStormStrength.value = toClampedNumber(options.stormStrength, 0.45, 0, 1.5)
+  material.uniforms.uBandCount.value = toClampedNumber(
+    options.cloudBandCount,
+    DefaultValues.cloudBandCount,
+    MinValues.cloudBandCount,
+    MaxValues.cloudBandCount
+  )
+  material.uniforms.uBandSharpness.value = toClampedNumber(
+    options.cloudBandSharpness,
+    DefaultValues.cloudBandSharpness,
+    MinValues.cloudBandSharpness,
+    MaxValues.cloudBandSharpness
+  )
+  material.uniforms.uCloudChaos.value = toClampedNumber(
+    options.cloudChaos,
+    DefaultValues.cloudChaos,
+    MinValues.cloudChaos,
+    MaxValues.cloudChaos
+  )
+  material.uniforms.uStormCount.value = toClampedNumber(
+    options.stormCount,
+    DefaultValues.stormCount,
+    MinValues.stormCount,
+    MaxValues.stormCount
+  )
+  material.uniforms.uStormScale.value = toClampedNumber(
+    options.stormScale,
+    DefaultValues.stormScale,
+    MinValues.stormScale,
+    MaxValues.stormScale
+  )
+  material.uniforms.uStormPower.value = toClampedNumber(
+    options.stormPower,
+    DefaultValues.stormPower,
+    MinValues.stormPower,
+    MaxValues.stormPower
+  )
+  material.uniforms.uStormStrength.value = toClampedNumber(
+    options.stormStrength,
+    DefaultValues.stormStrength,
+    MinValues.stormStrength,
+    MaxValues.stormStrength
+  )
   material.uniforms.uStormColorStrength.value = toClampedNumber(
     options.stormColorStrength,
-    0.4,
-    0,
-    1.5
+    DefaultValues.stormColorStrength,
+    MinValues.stormColorStrength,
+    MaxValues.stormColorStrength
   )
   setPaletteUniform(palette)
 

@@ -1,11 +1,11 @@
-import { DefaultGasGiantSettings } from '../../lib/components/Threlte/Objects/GasGiantSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/GasGiantSettings'
 import type { GasGiantPreset } from './types'
 
 export const iceCalmPreset: GasGiantPreset = {
   id: 'builtin-ice-calm',
   name: 'Ice Calm',
   settings: {
-    ...DefaultGasGiantSettings,
+    ...DefaultValues,
     palette: 'iceGiantTeal',
     colorScale: 1.15,
     cloudBandCount: 9,

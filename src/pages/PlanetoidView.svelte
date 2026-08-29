@@ -12,12 +12,13 @@
     type PlanetoidPaletteName,
   } from '../lib/components/Threlte/Objects/PlanetoidPalettes'
   import {
-    DefaultPlanetoidSettings,
+    DefaultValues,
     MaxValues,
     MinValues,
     PlanetoidCliFlagByRangeKey,
     PlanetoidCliToggleFlags,
     PlanetoidRangeLabels,
+    StepValues,
     PlanetoidUiLabels,
     sanitizePlanetoidSettings,
     type PlanetoidSettings,
@@ -66,234 +67,49 @@
     riftSectionOpen: boolean
   }
 
-  const DEFAULT_PLANETOID_SETTINGS: PlanetoidSettings = { ...DefaultPlanetoidSettings }
+  const DEFAULT_VALUES: PlanetoidSettings = { ...DefaultValues }
 
-  const textureControls: Array<{
-    key: NumericControlKey
-    min?: number
-    max?: number
-    step: string
-  }> = [
-    {
-      key: 'colorScale',
-      min: MinValues.colorScale,
-      max: MaxValues.colorScale,
-      step: '0.1',
-    },
-    {
-      key: 'tintShadowFloor',
-      min: MinValues.tintShadowFloor,
-      max: MaxValues.tintShadowFloor,
-      step: '0.01',
-    },
-    {
-      key: 'swirliness',
-      min: MinValues.swirliness,
-      max: MaxValues.swirliness,
-      step: '0.05',
-    },
-    {
-      key: 'bumpScale',
-      min: MinValues.bumpScale,
-      max: MaxValues.bumpScale,
-      step: '0.1',
-    },
-    {
-      key: 'craterCount',
-      min: MinValues.craterCount,
-      max: MaxValues.craterCount,
-      step: '1',
-    },
-    {
-      key: 'craterStrength',
-      min: MinValues.craterStrength,
-      max: MaxValues.craterStrength,
-      step: '0.1',
-    },
-    {
-      key: 'craterColorStrength',
-      min: MinValues.craterColorStrength,
-      max: MaxValues.craterColorStrength,
-      step: '0.05',
-    },
-    {
-      key: 'volcanoCount',
-      min: MinValues.volcanoCount,
-      max: MaxValues.volcanoCount,
-      step: '1',
-    },
-    {
-      key: 'volcanoScale',
-      min: MinValues.volcanoScale,
-      max: MaxValues.volcanoScale,
-      step: '0.05',
-    },
-    {
-      key: 'volcanoStrength',
-      min: MinValues.volcanoStrength,
-      max: MaxValues.volcanoStrength,
-      step: '0.05',
-    },
-    {
-      key: 'volcanoColorStrength',
-      min: MinValues.volcanoColorStrength,
-      max: MaxValues.volcanoColorStrength,
-      step: '0.05',
-    },
-    {
-      key: 'craterRayStrength',
-      min: MinValues.craterRayStrength,
-      max: MaxValues.craterRayStrength,
-      step: '0.05',
-    },
-    {
-      key: 'craterRayVisibility',
-      min: MinValues.craterRayVisibility,
-      max: MaxValues.craterRayVisibility,
-      step: '0.05',
-    },
-    {
-      key: 'craterRayDensity',
-      min: MinValues.craterRayDensity,
-      max: MaxValues.craterRayDensity,
-      step: '0.05',
-    },
-    {
-      key: 'craterRaySharpness',
-      min: MinValues.craterRaySharpness,
-      max: MaxValues.craterRaySharpness,
-      step: '0.05',
-    },
-    {
-      key: 'craterRayLengthPower',
-      min: MinValues.craterRayLengthPower,
-      max: MaxValues.craterRayLengthPower,
-      step: '0.1',
-    },
-    {
-      key: 'ridgeStrength',
-      min: MinValues.ridgeStrength,
-      max: MaxValues.ridgeStrength,
-      step: '0.05',
-    },
-    {
-      key: 'ridgeScale',
-      min: MinValues.ridgeScale,
-      max: MaxValues.ridgeScale,
-      step: '0.1',
-    },
-    {
-      key: 'ridgeSharpness',
-      min: MinValues.ridgeSharpness,
-      max: MaxValues.ridgeSharpness,
-      step: '0.05',
-    },
-    {
-      key: 'ridgeColorWeight',
-      min: MinValues.ridgeColorWeight,
-      max: MaxValues.ridgeColorWeight,
-      step: '0.05',
-    },
-    {
-      key: 'riftStrength',
-      min: MinValues.riftStrength,
-      max: MaxValues.riftStrength,
-      step: '0.05',
-    },
-    {
-      key: 'riftScale',
-      min: MinValues.riftScale,
-      max: MaxValues.riftScale,
-      step: '0.1',
-    },
-    {
-      key: 'riftWidth',
-      min: MinValues.riftWidth,
-      max: MaxValues.riftWidth,
-      step: '0.01',
-    },
-    {
-      key: 'riftSharpness',
-      min: MinValues.riftSharpness,
-      max: MaxValues.riftSharpness,
-      step: '0.05',
-    },
-    {
-      key: 'riftColorWeight',
-      min: MinValues.riftColorWeight,
-      max: MaxValues.riftColorWeight,
-      step: '0.05',
-    },
-    {
-      key: 'ridgesRiftsBlend',
-      min: MinValues.ridgesRiftsBlend,
-      max: MaxValues.ridgesRiftsBlend,
-      step: '0.05',
-    },
-    {
-      key: 'bumpTextureSize',
-      min: MinValues.bumpTextureSize,
-      max: MaxValues.bumpTextureSize,
-      step: '1',
-    },
-    {
-      key: 'colorTextureSize',
-      min: MinValues.colorTextureSize,
-      max: MaxValues.colorTextureSize,
-      step: '1',
-    },
-    {
-      key: 'roughness',
-      min: MinValues.roughness,
-      max: MaxValues.roughness,
-      step: '0.1',
-    },
-    {
-      key: 'metalness',
-      min: MinValues.metalness,
-      max: MaxValues.metalness,
-      step: '0.1',
-    },
+  const textureControls: NumericControlKey[] = [
+    'colorScale',
+    'tintShadowFloor',
+    'swirliness',
+    'bumpScale',
+    'craterCount',
+    'craterStrength',
+    'craterColorStrength',
+    'volcanoCount',
+    'volcanoScale',
+    'volcanoStrength',
+    'volcanoColorStrength',
+    'craterRayStrength',
+    'craterRayVisibility',
+    'craterRayDensity',
+    'craterRaySharpness',
+    'craterRayLengthPower',
+    'ridgeStrength',
+    'ridgeScale',
+    'ridgeSharpness',
+    'ridgeColorWeight',
+    'riftStrength',
+    'riftScale',
+    'riftWidth',
+    'riftSharpness',
+    'riftColorWeight',
+    'ridgesRiftsBlend',
+    'bumpTextureSize',
+    'colorTextureSize',
+    'roughness',
+    'metalness',
   ]
 
-  const geometryControls: Array<{
-    label: string
-    key: NumericControlKey
-    min?: number
-    max?: number
-    step: string
-  }> = [
-    {
-      label: 'Large-scale deformation',
-      key: 'largeScale',
-      min: MinValues.largeScale,
-      max: MaxValues.largeScale,
-      step: '0.1',
-    },
-    {
-      label: 'Medium-scale deformation',
-      key: 'mediumScale',
-      min: MinValues.mediumScale,
-      max: MaxValues.mediumScale,
-      step: '0.1',
-    },
-    {
-      label: 'Small-scale deformation',
-      key: 'smallScale',
-      min: MinValues.smallScale,
-      max: MaxValues.smallScale,
-      step: '0.1',
-    },
-    {
-      label: 'Triangle detail',
-      key: 'triangleDetail',
-      min: MinValues.triangleDetail,
-      max: MaxValues.triangleDetail,
-      step: '1',
-    },
+  const geometryControls: NumericControlKey[] = [
+    'largeScale',
+    'mediumScale',
+    'smallScale',
+    'triangleDetail',
   ]
 
-  let planetoid = $state<PlanetoidSettings>({ ...DEFAULT_PLANETOID_SETTINGS })
+  let planetoid = $state<PlanetoidSettings>({ ...DEFAULT_VALUES })
   let settingsHydrated = $state(false)
 
   type PlanetoidSceneExports = {
@@ -363,21 +179,17 @@
     'riftColorWeight',
   ]
 
-  const colorControls = textureControls.filter((control) => colorControlKeys.includes(control.key))
+  const colorControls = textureControls.filter((control) => colorControlKeys.includes(control))
   const textureResolutionControls = textureControls.filter((control) =>
-    textureResolutionControlKeys.includes(control.key)
+    textureResolutionControlKeys.includes(control)
   )
   const materialControls = textureControls.filter((control) =>
-    materialControlKeys.includes(control.key)
+    materialControlKeys.includes(control)
   )
-  const craterControls = textureControls.filter((control) =>
-    craterControlKeys.includes(control.key)
-  )
-  const volcanoControls = textureControls.filter((control) =>
-    volcanoControlKeys.includes(control.key)
-  )
-  const ridgeControls = textureControls.filter((control) => ridgeControlKeys.includes(control.key))
-  const riftControls = textureControls.filter((control) => riftControlKeys.includes(control.key))
+  const craterControls = textureControls.filter((control) => craterControlKeys.includes(control))
+  const volcanoControls = textureControls.filter((control) => volcanoControlKeys.includes(control))
+  const ridgeControls = textureControls.filter((control) => ridgeControlKeys.includes(control))
+  const riftControls = textureControls.filter((control) => riftControlKeys.includes(control))
 
   const effectiveCratersEnabled = $derived(cratersEnabled)
   const volcanoSectionEnabled = $derived(volcanoesEnabled)
@@ -444,7 +256,7 @@
   }
 
   function resetSceneToDefaults() {
-    applyPlanetoidSettings(DEFAULT_PLANETOID_SETTINGS)
+    applyPlanetoidSettings(DEFAULT_VALUES)
     sceneViewMode = 'mesh'
   }
 
@@ -1132,7 +944,13 @@
         </label>
         <label class="compact-number-row">
           <span>Seed</span>
-          <input type="number" min={0} max={999999} step="1" bind:value={planetoid.seed} />
+          <input
+            type="number"
+            min={0}
+            max={999999}
+            step={StepValues.seed}
+            bind:value={planetoid.seed}
+          />
         </label>
       </fieldset>
 
@@ -1164,15 +982,15 @@
             <input type="color" bind:value={planetoid.surfaceTint} />
           </label>
           <div class="control-grid">
-            {#each colorControls as control (control.key)}
+            {#each colorControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                 />
               </label>
             {/each}
@@ -1184,15 +1002,15 @@
             <span>Texture resolution</span>
           </summary>
           <div class="control-grid">
-            {#each textureResolutionControls as control (control.key)}
+            {#each textureResolutionControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                 />
               </label>
             {/each}
@@ -1208,15 +1026,15 @@
             <span>Properties</span>
           </summary>
           <div class="control-grid">
-            {#each materialControls as control (control.key)}
+            {#each materialControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                 />
               </label>
             {/each}
@@ -1244,15 +1062,15 @@
             </label>
           </summary>
           <div class="control-grid">
-            {#each craterControls as control (control.key)}
+            {#each craterControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                   disabled={!effectiveCratersEnabled}
                 />
               </label>
@@ -1278,15 +1096,15 @@
             </label>
           </summary>
           <div class="control-grid">
-            {#each volcanoControls as control (control.key)}
+            {#each volcanoControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                   disabled={!volcanoSectionEnabled}
                 />
               </label>
@@ -1312,15 +1130,15 @@
             </label>
           </summary>
           <div class="control-grid">
-            {#each ridgeControls as control (control.key)}
+            {#each ridgeControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                   disabled={!ridgeSectionEnabled}
                 />
               </label>
@@ -1346,15 +1164,15 @@
             </label>
           </summary>
           <div class="control-grid">
-            {#each riftControls as control (control.key)}
+            {#each riftControls as control (control)}
               <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control.key]}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                   disabled={!riftSectionEnabled}
                 />
               </label>
@@ -1371,15 +1189,15 @@
             <span>Properties</span>
           </summary>
           <div class="control-grid">
-            {#each geometryControls as control (control.key)}
+            {#each geometryControls as control (control)}
               <label class="compact-number-row">
-                <span>{control.label}</span>
+                <span>{PlanetoidRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control.min}
-                  max={control.max}
-                  step={control.step}
-                  bind:value={planetoid[control.key]}
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
                 />
               </label>
             {/each}

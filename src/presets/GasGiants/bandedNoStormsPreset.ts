@@ -1,11 +1,11 @@
-import { DefaultGasGiantSettings } from '../../lib/components/Threlte/Objects/GasGiantSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/GasGiantSettings'
 import type { GasGiantPreset } from './types'
 
 export const bandedNoStormsPreset: GasGiantPreset = {
   id: 'builtin-serene-green',
   name: 'Serene Green',
   settings: {
-    ...DefaultGasGiantSettings,
+    ...DefaultValues,
     palette: 'verdantCeruleanDrift',
     surfaceTint: '#AAE6CE',
     colorScale: 1.15,

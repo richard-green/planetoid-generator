@@ -1,11 +1,11 @@
-import { DefaultPlanetoidSettings } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const volcanicRiftPreset: PlanetoidPreset = {
   id: 'builtin-volcanic-rift',
   name: 'Volcanic Rift',
   settings: {
-    ...DefaultPlanetoidSettings,
+    ...DefaultValues,
     palette: 'emberFaults',
     surfaceTint: '#cf9b7d',
     colorScale: 0.92,

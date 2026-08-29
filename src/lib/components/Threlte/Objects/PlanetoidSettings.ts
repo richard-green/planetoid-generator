@@ -95,7 +95,7 @@ export type PlanetoidRangeValues = Pick<
 
 export type PlanetoidRangeKey = keyof PlanetoidRangeValues
 
-export const DefaultPlanetoidSettings: PlanetoidSettings = {
+export const DefaultValues: PlanetoidSettings = {
   autoRotate: false,
   showDebugMeshes: false,
   enableCraters: true,
@@ -217,184 +217,222 @@ export const MaxValues: PlanetoidRangeValues = {
   triangleDetail: 40,
 }
 
+export const StepValues: PlanetoidRangeValues = {
+  seed: 1,
+  colorScale: 0.1,
+  tintShadowFloor: 0.01,
+  swirliness: 0.05,
+  craterCount: 1,
+  craterStrength: 0.1,
+  craterColorStrength: 0.05,
+  volcanoCount: 1,
+  volcanoScale: 0.05,
+  volcanoStrength: 0.05,
+  volcanoColorStrength: 0.05,
+  ridgeColorWeight: 0.05,
+  riftColorWeight: 0.05,
+  craterRayStrength: 0.05,
+  craterRayVisibility: 0.05,
+  craterRayDensity: 0.05,
+  craterRaySharpness: 0.05,
+  craterRayLengthPower: 0.1,
+  ridgeStrength: 0.05,
+  ridgeScale: 0.1,
+  ridgeSharpness: 0.05,
+  riftStrength: 0.05,
+  riftScale: 0.1,
+  riftWidth: 0.01,
+  riftSharpness: 0.05,
+  ridgesRiftsBlend: 0.05,
+  bumpTextureSize: 1,
+  colorTextureSize: 1,
+  bumpScale: 0.1,
+  roughness: 0.1,
+  metalness: 0.1,
+  largeScale: 0.1,
+  mediumScale: 0.1,
+  smallScale: 0.1,
+  triangleDetail: 1,
+}
+
 const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
   seed: {
-    defaultValue: DefaultPlanetoidSettings.seed,
+    defaultValue: DefaultValues.seed,
     min: MinValues.seed,
     max: MaxValues.seed,
     round: true,
   },
   colorScale: {
-    defaultValue: DefaultPlanetoidSettings.colorScale,
+    defaultValue: DefaultValues.colorScale,
     min: MinValues.colorScale,
     max: MaxValues.colorScale,
   },
   tintShadowFloor: {
-    defaultValue: DefaultPlanetoidSettings.tintShadowFloor,
+    defaultValue: DefaultValues.tintShadowFloor,
     min: MinValues.tintShadowFloor,
     max: MaxValues.tintShadowFloor,
   },
   swirliness: {
-    defaultValue: DefaultPlanetoidSettings.swirliness,
+    defaultValue: DefaultValues.swirliness,
     min: MinValues.swirliness,
     max: MaxValues.swirliness,
   },
   craterCount: {
-    defaultValue: DefaultPlanetoidSettings.craterCount,
+    defaultValue: DefaultValues.craterCount,
     min: MinValues.craterCount,
     max: MaxValues.craterCount,
     round: true,
   },
   craterStrength: {
-    defaultValue: DefaultPlanetoidSettings.craterStrength,
+    defaultValue: DefaultValues.craterStrength,
     min: MinValues.craterStrength,
     max: MaxValues.craterStrength,
   },
   craterColorStrength: {
-    defaultValue: DefaultPlanetoidSettings.craterColorStrength,
+    defaultValue: DefaultValues.craterColorStrength,
     min: MinValues.craterColorStrength,
     max: MaxValues.craterColorStrength,
   },
   volcanoCount: {
-    defaultValue: DefaultPlanetoidSettings.volcanoCount,
+    defaultValue: DefaultValues.volcanoCount,
     min: MinValues.volcanoCount,
     max: MaxValues.volcanoCount,
     round: true,
   },
   volcanoScale: {
-    defaultValue: DefaultPlanetoidSettings.volcanoScale,
+    defaultValue: DefaultValues.volcanoScale,
     min: MinValues.volcanoScale,
     max: MaxValues.volcanoScale,
   },
   volcanoStrength: {
-    defaultValue: DefaultPlanetoidSettings.volcanoStrength,
+    defaultValue: DefaultValues.volcanoStrength,
     min: MinValues.volcanoStrength,
     max: MaxValues.volcanoStrength,
   },
   volcanoColorStrength: {
-    defaultValue: DefaultPlanetoidSettings.volcanoColorStrength,
+    defaultValue: DefaultValues.volcanoColorStrength,
     min: MinValues.volcanoColorStrength,
     max: MaxValues.volcanoColorStrength,
   },
   ridgeColorWeight: {
-    defaultValue: DefaultPlanetoidSettings.ridgeColorWeight,
+    defaultValue: DefaultValues.ridgeColorWeight,
     min: MinValues.ridgeColorWeight,
     max: MaxValues.ridgeColorWeight,
   },
   riftColorWeight: {
-    defaultValue: DefaultPlanetoidSettings.riftColorWeight,
+    defaultValue: DefaultValues.riftColorWeight,
     min: MinValues.riftColorWeight,
     max: MaxValues.riftColorWeight,
   },
   craterRayStrength: {
-    defaultValue: DefaultPlanetoidSettings.craterRayStrength,
+    defaultValue: DefaultValues.craterRayStrength,
     min: MinValues.craterRayStrength,
     max: MaxValues.craterRayStrength,
   },
   craterRayVisibility: {
-    defaultValue: DefaultPlanetoidSettings.craterRayVisibility,
+    defaultValue: DefaultValues.craterRayVisibility,
     min: MinValues.craterRayVisibility,
     max: MaxValues.craterRayVisibility,
   },
   craterRayDensity: {
-    defaultValue: DefaultPlanetoidSettings.craterRayDensity,
+    defaultValue: DefaultValues.craterRayDensity,
     min: MinValues.craterRayDensity,
     max: MaxValues.craterRayDensity,
   },
   craterRaySharpness: {
-    defaultValue: DefaultPlanetoidSettings.craterRaySharpness,
+    defaultValue: DefaultValues.craterRaySharpness,
     min: MinValues.craterRaySharpness,
     max: MaxValues.craterRaySharpness,
   },
   craterRayLengthPower: {
-    defaultValue: DefaultPlanetoidSettings.craterRayLengthPower,
+    defaultValue: DefaultValues.craterRayLengthPower,
     min: MinValues.craterRayLengthPower,
     max: MaxValues.craterRayLengthPower,
   },
   ridgeStrength: {
-    defaultValue: DefaultPlanetoidSettings.ridgeStrength,
+    defaultValue: DefaultValues.ridgeStrength,
     min: MinValues.ridgeStrength,
     max: MaxValues.ridgeStrength,
   },
   ridgeScale: {
-    defaultValue: DefaultPlanetoidSettings.ridgeScale,
+    defaultValue: DefaultValues.ridgeScale,
     min: MinValues.ridgeScale,
     max: MaxValues.ridgeScale,
   },
   ridgeSharpness: {
-    defaultValue: DefaultPlanetoidSettings.ridgeSharpness,
+    defaultValue: DefaultValues.ridgeSharpness,
     min: MinValues.ridgeSharpness,
     max: MaxValues.ridgeSharpness,
   },
   riftStrength: {
-    defaultValue: DefaultPlanetoidSettings.riftStrength,
+    defaultValue: DefaultValues.riftStrength,
     min: MinValues.riftStrength,
     max: MaxValues.riftStrength,
   },
   riftScale: {
-    defaultValue: DefaultPlanetoidSettings.riftScale,
+    defaultValue: DefaultValues.riftScale,
     min: MinValues.riftScale,
     max: MaxValues.riftScale,
   },
   riftWidth: {
-    defaultValue: DefaultPlanetoidSettings.riftWidth,
+    defaultValue: DefaultValues.riftWidth,
     min: MinValues.riftWidth,
     max: MaxValues.riftWidth,
   },
   riftSharpness: {
-    defaultValue: DefaultPlanetoidSettings.riftSharpness,
+    defaultValue: DefaultValues.riftSharpness,
     min: MinValues.riftSharpness,
     max: MaxValues.riftSharpness,
   },
   ridgesRiftsBlend: {
-    defaultValue: DefaultPlanetoidSettings.ridgesRiftsBlend,
+    defaultValue: DefaultValues.ridgesRiftsBlend,
     min: MinValues.ridgesRiftsBlend,
     max: MaxValues.ridgesRiftsBlend,
   },
   bumpTextureSize: {
-    defaultValue: DefaultPlanetoidSettings.bumpTextureSize,
+    defaultValue: DefaultValues.bumpTextureSize,
     min: MinValues.bumpTextureSize,
     max: MaxValues.bumpTextureSize,
     round: true,
   },
   colorTextureSize: {
-    defaultValue: DefaultPlanetoidSettings.colorTextureSize,
+    defaultValue: DefaultValues.colorTextureSize,
     min: MinValues.colorTextureSize,
     max: MaxValues.colorTextureSize,
     round: true,
   },
   bumpScale: {
-    defaultValue: DefaultPlanetoidSettings.bumpScale,
+    defaultValue: DefaultValues.bumpScale,
     min: MinValues.bumpScale,
     max: MaxValues.bumpScale,
   },
   roughness: {
-    defaultValue: DefaultPlanetoidSettings.roughness,
+    defaultValue: DefaultValues.roughness,
     min: MinValues.roughness,
     max: MaxValues.roughness,
   },
   metalness: {
-    defaultValue: DefaultPlanetoidSettings.metalness,
+    defaultValue: DefaultValues.metalness,
     min: MinValues.metalness,
     max: MaxValues.metalness,
   },
   largeScale: {
-    defaultValue: DefaultPlanetoidSettings.largeScale,
+    defaultValue: DefaultValues.largeScale,
     min: MinValues.largeScale,
     max: MaxValues.largeScale,
   },
   mediumScale: {
-    defaultValue: DefaultPlanetoidSettings.mediumScale,
+    defaultValue: DefaultValues.mediumScale,
     min: MinValues.mediumScale,
     max: MaxValues.mediumScale,
   },
   smallScale: {
-    defaultValue: DefaultPlanetoidSettings.smallScale,
+    defaultValue: DefaultValues.smallScale,
     min: MinValues.smallScale,
     max: MaxValues.smallScale,
   },
   triangleDetail: {
-    defaultValue: DefaultPlanetoidSettings.triangleDetail,
+    defaultValue: DefaultValues.triangleDetail,
     min: MinValues.triangleDetail,
     max: MaxValues.triangleDetail,
     round: true,
@@ -406,32 +444,15 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
 
   const numeric = sanitizeNumericMap(raw, NUMERIC_SANITIZE_SPECS)
 
-  const autoRotate = sanitizeBoolean(raw, 'autoRotate', DefaultPlanetoidSettings.autoRotate)
-  const showDebugMeshes = sanitizeBoolean(
-    raw,
-    'showDebugMeshes',
-    DefaultPlanetoidSettings.showDebugMeshes
-  )
-  const enableCraters = sanitizeBoolean(
-    raw,
-    'enableCraters',
-    DefaultPlanetoidSettings.enableCraters
-  )
-  const enableVolcanoes = sanitizeBoolean(
-    raw,
-    'enableVolcanoes',
-    DefaultPlanetoidSettings.enableVolcanoes
-  )
-  const enableRidges = sanitizeBoolean(raw, 'enableRidges', DefaultPlanetoidSettings.enableRidges)
-  const enableRifts = sanitizeBoolean(raw, 'enableRifts', DefaultPlanetoidSettings.enableRifts)
+  const autoRotate = sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate)
+  const showDebugMeshes = sanitizeBoolean(raw, 'showDebugMeshes', DefaultValues.showDebugMeshes)
+  const enableCraters = sanitizeBoolean(raw, 'enableCraters', DefaultValues.enableCraters)
+  const enableVolcanoes = sanitizeBoolean(raw, 'enableVolcanoes', DefaultValues.enableVolcanoes)
+  const enableRidges = sanitizeBoolean(raw, 'enableRidges', DefaultValues.enableRidges)
+  const enableRifts = sanitizeBoolean(raw, 'enableRifts', DefaultValues.enableRifts)
 
-  const palette = sanitizeEnum(
-    raw,
-    'palette',
-    PlanetoidPaletteNames,
-    DefaultPlanetoidSettings.palette
-  )
-  const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultPlanetoidSettings.surfaceTint)
+  const palette = sanitizeEnum(raw, 'palette', PlanetoidPaletteNames, DefaultValues.palette)
+  const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
 
   return {
     palette,
@@ -518,6 +539,20 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   triangleDetail: 'Triangle detail',
 }
 
+export const PlanetoidUiLabels = {
+  seed: 'Seed',
+  palette: 'Palette',
+  surfaceTint: 'Surface tint',
+  autoRotate: 'Auto-rotate',
+  showDebugMeshes: 'Show debug meshes',
+  sections: {
+    craters: 'Craters',
+    ridges: 'Ridges',
+    rifts: 'Rifts',
+    volcanoes: 'Volcanoes',
+  },
+} as const
+
 export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   seed: '--seed',
   colorScale: '--color-scale',
@@ -563,18 +598,4 @@ export const PlanetoidCliToggleFlags = {
   ridgesEnabled: '--ridges-enabled',
   riftsEnabled: '--rifts-enabled',
   volcanoesEnabled: '--volcanoes-enabled',
-} as const
-
-export const PlanetoidUiLabels = {
-  seed: 'Seed',
-  palette: 'Palette',
-  surfaceTint: 'Surface tint',
-  autoRotate: 'Auto-rotate',
-  showDebugMeshes: 'Show debug meshes',
-  sections: {
-    craters: 'Craters',
-    ridges: 'Ridges',
-    rifts: 'Rifts',
-    volcanoes: 'Volcanoes',
-  },
 } as const

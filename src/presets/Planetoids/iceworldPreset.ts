@@ -1,11 +1,11 @@
-import { DefaultPlanetoidSettings } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const iceworldPreset: PlanetoidPreset = {
   id: 'builtin-iceworld',
   name: 'Iceworld',
   settings: {
-    ...DefaultPlanetoidSettings,
+    ...DefaultValues,
     palette: 'icy',
     surfaceTint: '#d8ecff',
     colorScale: 0.82,

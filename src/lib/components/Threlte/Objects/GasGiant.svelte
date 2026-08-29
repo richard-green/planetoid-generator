@@ -10,7 +10,7 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { GasGiantPalettes } from './GasGiantPalettes'
-  import { DefaultGasGiantSettings, type GasGiantSettings } from './GasGiantSettings'
+  import { DefaultValues, type GasGiantSettings } from './GasGiantSettings'
   import {
     createGasGiantBumpTexture,
     createGasGiantColorTexture,
@@ -20,26 +20,26 @@
   type Props = Partial<GasGiantSettings>
 
   let {
-    palette = DefaultGasGiantSettings.palette,
-    surfaceTint = DefaultGasGiantSettings.surfaceTint,
-    colorScale = DefaultGasGiantSettings.colorScale,
-    tintShadowFloor = DefaultGasGiantSettings.tintShadowFloor,
-    seed = DefaultGasGiantSettings.seed,
-    cloudBandCount = DefaultGasGiantSettings.cloudBandCount,
-    cloudBandSharpness = DefaultGasGiantSettings.cloudBandSharpness,
-    cloudChaos = DefaultGasGiantSettings.cloudChaos,
-    enableStorms = DefaultGasGiantSettings.enableStorms,
-    stormCount = DefaultGasGiantSettings.stormCount,
-    stormScale = DefaultGasGiantSettings.stormScale,
-    stormPower = DefaultGasGiantSettings.stormPower,
-    stormStrength = DefaultGasGiantSettings.stormStrength,
-    stormColorStrength = DefaultGasGiantSettings.stormColorStrength,
-    bumpScale = DefaultGasGiantSettings.bumpScale,
-    roughness = DefaultGasGiantSettings.roughness,
-    metalness = DefaultGasGiantSettings.metalness,
-    autoRotate = DefaultGasGiantSettings.autoRotate,
-    bumpTextureSize = DefaultGasGiantSettings.bumpTextureSize,
-    colorTextureSize = DefaultGasGiantSettings.colorTextureSize,
+    palette = DefaultValues.palette,
+    surfaceTint = DefaultValues.surfaceTint,
+    colorScale = DefaultValues.colorScale,
+    tintShadowFloor = DefaultValues.tintShadowFloor,
+    seed = DefaultValues.seed,
+    cloudBandCount = DefaultValues.cloudBandCount,
+    cloudBandSharpness = DefaultValues.cloudBandSharpness,
+    cloudChaos = DefaultValues.cloudChaos,
+    enableStorms = DefaultValues.enableStorms,
+    stormCount = DefaultValues.stormCount,
+    stormScale = DefaultValues.stormScale,
+    stormPower = DefaultValues.stormPower,
+    stormStrength = DefaultValues.stormStrength,
+    stormColorStrength = DefaultValues.stormColorStrength,
+    bumpScale = DefaultValues.bumpScale,
+    roughness = DefaultValues.roughness,
+    metalness = DefaultValues.metalness,
+    autoRotate = DefaultValues.autoRotate,
+    bumpTextureSize = DefaultValues.bumpTextureSize,
+    colorTextureSize = DefaultValues.colorTextureSize,
   }: Props = $props()
 
   let mesh = $state<Mesh | undefined>(undefined)
@@ -163,8 +163,8 @@
         surfaceTint,
         tintShadowFloor,
         textureScale: colorScale,
-        bandCount: cloudBandCount,
-        bandSharpness: cloudBandSharpness,
+        cloudBandCount: cloudBandCount,
+        cloudBandSharpness: cloudBandSharpness,
         cloudChaos,
         stormCount: effectiveStormCount,
         stormScale: effectiveStormScale,
@@ -205,8 +205,8 @@
         surfaceTint,
         tintShadowFloor,
         textureScale: colorScale,
-        bandCount: cloudBandCount,
-        bandSharpness: cloudBandSharpness,
+        cloudBandCount: cloudBandCount,
+        cloudBandSharpness: cloudBandSharpness,
         cloudChaos,
         stormCount: effectiveStormCount,
         stormScale: effectiveStormScale,

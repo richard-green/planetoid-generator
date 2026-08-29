@@ -1,11 +1,11 @@
-import { DefaultPlanetoidSettings } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import { DefaultValues } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const marsPreset: PlanetoidPreset = {
   id: 'builtin-mars',
   name: 'Mars',
   settings: {
-    ...DefaultPlanetoidSettings,
+    ...DefaultValues,
     palette: 'martian',
     surfaceTint: '#c4b9a2',
     colorScale: 1,

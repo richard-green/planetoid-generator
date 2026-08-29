@@ -8,16 +8,16 @@
   import {
     GasGiantPaletteNames,
     GasGiantPalettes,
-    type GasGiantPaletteName,
   } from '../lib/components/Threlte/Objects/GasGiantPalettes'
   import {
-    DefaultGasGiantSettings,
+    DefaultValues,
     GasGiantCliFlagByRangeKey,
     GasGiantCliToggleFlags,
     GasGiantRangeLabels,
     GasGiantUiLabels,
     MaxValues,
     MinValues,
+    StepValues,
     sanitizeGasGiantSettings,
     type GasGiantRangeKey,
     type GasGiantSettings,
@@ -26,7 +26,8 @@
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
 
-  type GasGiantViewSettings = GasGiantSettings
+  type RangeControlKey = Exclude<GasGiantRangeKey, 'seed'>
+
   type GasGiantUiState = {
     sceneSectionOpen: boolean
     colorSettingsSectionOpen: boolean
@@ -53,35 +54,56 @@
     },
   ]
 
-  const DEFAULT_GAS_GIANT_SETTINGS: GasGiantViewSettings = { ...DefaultGasGiantSettings }
+  const DEFAULT_GAS_GIANT_SETTINGS: GasGiantSettings = { ...DefaultValues }
   const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
     (key) => key !== 'seed'
+  )
+
+  const numericControls: RangeControlKey[] = [
+    'colorScale',
+    'tintShadowFloor',
+    'cloudBandCount',
+    'cloudBandSharpness',
+    'cloudChaos',
+    'stormCount',
+    'stormScale',
+    'stormPower',
+    'stormStrength',
+    'stormColorStrength',
+    'bumpTextureSize',
+    'colorTextureSize',
+    'bumpScale',
+    'roughness',
+    'metalness',
+  ]
+
+  const colorControlKeys: RangeControlKey[] = ['colorScale', 'tintShadowFloor']
+  const textureResolutionControlKeys: RangeControlKey[] = ['bumpTextureSize', 'colorTextureSize']
+  const cloudControlKeys: RangeControlKey[] = ['cloudBandCount', 'cloudBandSharpness', 'cloudChaos']
+  const stormControlKeys: RangeControlKey[] = [
+    'stormCount',
+    'stormScale',
+    'stormPower',
+    'stormStrength',
+    'stormColorStrength',
+  ]
+  const materialControlKeys: RangeControlKey[] = ['bumpScale', 'roughness', 'metalness']
+
+  const colorControls = numericControls.filter((control) => colorControlKeys.includes(control))
+  const textureResolutionControls = numericControls.filter((control) =>
+    textureResolutionControlKeys.includes(control)
+  )
+  const cloudControls = numericControls.filter((control) => cloudControlKeys.includes(control))
+  const stormControls = numericControls.filter((control) => stormControlKeys.includes(control))
+  const materialControls = numericControls.filter((control) =>
+    materialControlKeys.includes(control)
   )
 
   let canvasShell: HTMLDivElement | undefined = $state(undefined)
   let gasGiantScene: GasGiantSceneExports | undefined = $state(undefined)
   let isSaving = $state(false)
 
-  let seed = $state(DEFAULT_GAS_GIANT_SETTINGS.seed)
-  let autoRotate = $state(DEFAULT_GAS_GIANT_SETTINGS.autoRotate)
-  let palette = $state<GasGiantPaletteName>(DEFAULT_GAS_GIANT_SETTINGS.palette)
-  let surfaceTint = $state(DEFAULT_GAS_GIANT_SETTINGS.surfaceTint)
-  let colorScale = $state(DEFAULT_GAS_GIANT_SETTINGS.colorScale)
-  let tintShadowFloor = $state(DEFAULT_GAS_GIANT_SETTINGS.tintShadowFloor)
-  let cloudBandCount = $state(DEFAULT_GAS_GIANT_SETTINGS.cloudBandCount)
-  let cloudBandSharpness = $state(DEFAULT_GAS_GIANT_SETTINGS.cloudBandSharpness)
-  let cloudChaos = $state(DEFAULT_GAS_GIANT_SETTINGS.cloudChaos)
-  let enableStorms = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
-  let stormCount = $state(DEFAULT_GAS_GIANT_SETTINGS.stormCount)
-  let stormScale = $state(DEFAULT_GAS_GIANT_SETTINGS.stormScale)
-  let stormPower = $state(DEFAULT_GAS_GIANT_SETTINGS.stormPower)
-  let stormStrength = $state(DEFAULT_GAS_GIANT_SETTINGS.stormStrength)
-  let stormColorStrength = $state(DEFAULT_GAS_GIANT_SETTINGS.stormColorStrength)
-  let bumpScale = $state(DEFAULT_GAS_GIANT_SETTINGS.bumpScale)
-  let roughness = $state(DEFAULT_GAS_GIANT_SETTINGS.roughness)
-  let metalness = $state(DEFAULT_GAS_GIANT_SETTINGS.metalness)
-  let bumpTextureSize = $state(DEFAULT_GAS_GIANT_SETTINGS.bumpTextureSize)
-  let colorTextureSize = $state(DEFAULT_GAS_GIANT_SETTINGS.colorTextureSize)
+  let gasGiant = $state<GasGiantSettings>({ ...DEFAULT_GAS_GIANT_SETTINGS })
 
   let settingsHydrated = $state(false)
   let sectionTogglesHydrated = $state(false)
@@ -148,28 +170,9 @@
     }
   }
 
-  function applyGasGiantSettings(settings: GasGiantViewSettings) {
-    seed = settings.seed
-    autoRotate = settings.autoRotate
-    palette = settings.palette
-    surfaceTint = settings.surfaceTint
-    colorScale = settings.colorScale
-    tintShadowFloor = settings.tintShadowFloor
-    cloudBandCount = settings.cloudBandCount
-    cloudBandSharpness = settings.cloudBandSharpness
-    cloudChaos = settings.cloudChaos
-    enableStorms = settings.enableStorms
-    stormsEnabled = settings.enableStorms
-    stormCount = settings.stormCount
-    stormScale = settings.stormScale
-    stormPower = settings.stormPower
-    stormStrength = settings.stormStrength
-    stormColorStrength = settings.stormColorStrength
-    bumpScale = settings.bumpScale
-    roughness = settings.roughness
-    metalness = settings.metalness
-    bumpTextureSize = settings.bumpTextureSize
-    colorTextureSize = settings.colorTextureSize
+  function applyGasGiantSettings(settings: GasGiantSettings) {
+    gasGiant = sanitizeGasGiantSettings(settings)
+    stormsEnabled = gasGiant.enableStorms
   }
 
   function resetSceneToDefaults() {
@@ -194,26 +197,8 @@
       id: createPresetId(),
       name,
       settings: sanitizeGasGiantSettings({
-        seed,
-        autoRotate,
-        palette,
-        surfaceTint,
-        colorScale,
-        tintShadowFloor,
-        cloudBandCount,
-        cloudBandSharpness,
-        cloudChaos,
+        ...gasGiant,
         enableStorms: effectiveStormsEnabled,
-        stormCount,
-        stormScale,
-        stormPower,
-        stormStrength,
-        stormColorStrength,
-        bumpScale,
-        roughness,
-        metalness,
-        bumpTextureSize,
-        colorTextureSize,
       }),
     }
 
@@ -278,26 +263,8 @@
     closePresetsMenu()
     const command = buildCliCommandFromPreset(
       {
-        seed,
-        autoRotate,
-        palette,
-        surfaceTint,
-        colorScale,
-        tintShadowFloor,
-        cloudBandCount,
-        cloudBandSharpness,
-        cloudChaos,
+        ...gasGiant,
         enableStorms: effectiveStormsEnabled,
-        stormCount,
-        stormScale,
-        stormPower,
-        stormStrength,
-        stormColorStrength,
-        bumpScale,
-        roughness,
-        metalness,
-        bumpTextureSize,
-        colorTextureSize,
       },
       { stormsEnabled: effectiveStormsEnabled }
     )
@@ -374,27 +341,9 @@
     if (!settingsHydrated) return
 
     try {
-      const settings: GasGiantViewSettings = {
-        seed,
-        autoRotate,
-        palette,
-        surfaceTint,
-        colorScale,
-        tintShadowFloor,
-        cloudBandCount,
-        cloudBandSharpness,
-        cloudChaos,
+      const settings: GasGiantSettings = {
+        ...gasGiant,
         enableStorms: effectiveStormsEnabled,
-        stormCount,
-        stormScale,
-        stormPower,
-        stormStrength,
-        stormColorStrength,
-        bumpScale,
-        roughness,
-        metalness,
-        bumpTextureSize,
-        colorTextureSize,
       }
 
       localStorage.setItem(GAS_GIANT_SETTINGS_STORAGE_KEY, JSON.stringify(settings))
@@ -451,7 +400,7 @@
       textureResolutionSectionOpen = restoredUiState.textureResolutionSectionOpen
       stormsEnabled = restoredUiState.stormsEnabled
     } else {
-      stormsEnabled = enableStorms
+      stormsEnabled = gasGiant.enableStorms
     }
 
     wasStormsEnabled = stormsEnabled
@@ -578,7 +527,7 @@
   }
 
   const selectedPaletteGradient = $derived(
-    `linear-gradient(90deg, ${GasGiantPalettes[palette]
+    `linear-gradient(90deg, ${GasGiantPalettes[gasGiant.palette]
       .map((entry) => `rgb(${entry.r}, ${entry.g}, ${entry.b})`)
       .join(', ')})`
   )
@@ -604,26 +553,26 @@
       >
         <GasGiantScene
           bind:this={gasGiantScene}
-          {seed}
-          {autoRotate}
-          {palette}
-          {surfaceTint}
-          {colorScale}
-          {tintShadowFloor}
-          {cloudBandCount}
-          {cloudBandSharpness}
-          {cloudChaos}
+          seed={gasGiant.seed}
+          autoRotate={gasGiant.autoRotate}
+          palette={gasGiant.palette}
+          surfaceTint={gasGiant.surfaceTint}
+          colorScale={gasGiant.colorScale}
+          tintShadowFloor={gasGiant.tintShadowFloor}
+          cloudBandCount={gasGiant.cloudBandCount}
+          cloudBandSharpness={gasGiant.cloudBandSharpness}
+          cloudChaos={gasGiant.cloudChaos}
           enableStorms={effectiveStormsEnabled}
-          {stormCount}
-          {stormScale}
-          {stormPower}
-          {stormStrength}
-          {stormColorStrength}
-          {bumpScale}
-          {roughness}
-          {metalness}
-          {bumpTextureSize}
-          {colorTextureSize}
+          stormCount={gasGiant.stormCount}
+          stormScale={gasGiant.stormScale}
+          stormPower={gasGiant.stormPower}
+          stormStrength={gasGiant.stormStrength}
+          stormColorStrength={gasGiant.stormColorStrength}
+          bumpScale={gasGiant.bumpScale}
+          roughness={gasGiant.roughness}
+          metalness={gasGiant.metalness}
+          bumpTextureSize={gasGiant.bumpTextureSize}
+          colorTextureSize={gasGiant.colorTextureSize}
         />
       </Canvas>
     </div>
@@ -702,11 +651,17 @@
         </div>
         <label class="toggle-row">
           <span>{GasGiantUiLabels.autoRotate}</span>
-          <input type="checkbox" bind:checked={autoRotate} />
+          <input type="checkbox" bind:checked={gasGiant.autoRotate} />
         </label>
         <label class="compact-number-row">
           <span>{GasGiantUiLabels.seed}</span>
-          <input type="number" min={0} max={999999} step="1" bind:value={seed} />
+          <input
+            type="number"
+            min={MinValues.seed}
+            max={MaxValues.seed}
+            step={StepValues.seed}
+            bind:value={gasGiant.seed}
+          />
         </label>
       </fieldset>
 
@@ -719,7 +674,7 @@
           </summary>
           <label>
             {GasGiantUiLabels.palette}
-            <select bind:value={palette}>
+            <select bind:value={gasGiant.palette}>
               {#each GasGiantPaletteNames as option (option)}
                 <option value={option}>{option}</option>
               {/each}
@@ -733,19 +688,23 @@
           <label class="extra-pad">
             <span class="label-row">
               <span>{GasGiantUiLabels.surfaceTint}</span>
-              <span class="label-value">{surfaceTint.toUpperCase()}</span>
+              <span class="label-value">{gasGiant.surfaceTint.toUpperCase()}</span>
             </span>
-            <input type="color" bind:value={surfaceTint} />
+            <input type="color" bind:value={gasGiant.surfaceTint} />
           </label>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>{GasGiantRangeLabels.colorScale}</span>
-              <input type="number" min={0} max={2} step="0.05" bind:value={colorScale} />
-            </label>
-            <label class="compact-number-row">
-              <span>{GasGiantRangeLabels.tintShadowFloor}</span>
-              <input type="number" min={0} max={0.9} step="0.01" bind:value={tintShadowFloor} />
-            </label>
+            {#each colorControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                />
+              </label>
+            {/each}
           </div>
         </details>
 
@@ -755,14 +714,18 @@
             <span>{GasGiantUiLabels.textureResolution}</span>
           </summary>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Bump texture height</span>
-              <input type="number" min={128} max={2048} step="1" bind:value={bumpTextureSize} />
-            </label>
-            <label class="compact-number-row">
-              <span>Color texture height</span>
-              <input type="number" min={64} max={2048} step="1" bind:value={colorTextureSize} />
-            </label>
+            {#each textureResolutionControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                />
+              </label>
+            {/each}
           </div>
         </details>
       </fieldset>
@@ -776,24 +739,18 @@
             <span>Cloud bands</span>
           </summary>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>{GasGiantRangeLabels.cloudBandCount}</span>
-              <input
-                type="number"
-                min={MinValues.cloudBandCount}
-                max={MaxValues.cloudBandCount}
-                step="1"
-                bind:value={cloudBandCount}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>{GasGiantRangeLabels.cloudBandSharpness}</span>
-              <input type="number" min={0} max={1} step="0.01" bind:value={cloudBandSharpness} />
-            </label>
-            <label class="compact-number-row">
-              <span>{GasGiantRangeLabels.cloudChaos}</span>
-              <input type="number" min={0} max={2} step="0.01" bind:value={cloudChaos} />
-            </label>
+            {#each cloudControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                />
+              </label>
+            {/each}
           </div>
         </details>
 
@@ -815,61 +772,19 @@
             </label>
           </summary>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Storm count</span>
-              <input
-                type="number"
-                min={0}
-                max={32}
-                step="1"
-                bind:value={stormCount}
-                disabled={!effectiveStormsEnabled}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Storm scale</span>
-              <input
-                type="number"
-                min={0}
-                max={0.45}
-                step="0.01"
-                bind:value={stormScale}
-                disabled={!effectiveStormsEnabled}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Storm falloff power</span>
-              <input
-                type="number"
-                min={0.5}
-                max={6}
-                step="0.1"
-                bind:value={stormPower}
-                disabled={!effectiveStormsEnabled}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Storm strength</span>
-              <input
-                type="number"
-                min={0}
-                max={1.5}
-                step="0.01"
-                bind:value={stormStrength}
-                disabled={!effectiveStormsEnabled}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Storm color strength</span>
-              <input
-                type="number"
-                min={0}
-                max={1.5}
-                step="0.01"
-                bind:value={stormColorStrength}
-                disabled={!effectiveStormsEnabled}
-              />
-            </label>
+            {#each stormControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                  disabled={!effectiveStormsEnabled}
+                />
+              </label>
+            {/each}
           </div>
         </details>
       </fieldset>
@@ -882,18 +797,18 @@
             <span>Properties</span>
           </summary>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Bump scale</span>
-              <input type="number" min={0} max={10} step="0.05" bind:value={bumpScale} />
-            </label>
-            <label class="compact-number-row">
-              <span>Roughness</span>
-              <input type="number" min={0} max={1} step="0.01" bind:value={roughness} />
-            </label>
-            <label class="compact-number-row">
-              <span>Metalness</span>
-              <input type="number" min={0} max={1} step="0.01" bind:value={metalness} />
-            </label>
+            {#each materialControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                />
+              </label>
+            {/each}
           </div>
         </details>
       </fieldset>
