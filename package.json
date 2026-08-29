@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run typecheck:node && vite build",
+    "typecheck:node": "tsc -p tsconfig.node.json",
     "preview": "vite preview",
     "auto-generate-planetoids": "tsx scripts/auto-generate-planetoids.ts",
     "auto-generate-gas-giants": "tsx scripts/auto-generate-gas-giants.ts",

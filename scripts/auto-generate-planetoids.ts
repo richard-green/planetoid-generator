@@ -572,7 +572,7 @@ async function main() {
       }
 
       const details = summary.locator('xpath=ancestor::details[1]').first()
-      const isOpen = await details.evaluate((el) => (el as HTMLDetailsElement).open)
+      const isOpen = await details.evaluate((el) => Boolean((el as { open?: unknown }).open))
       if (!isOpen) {
         await summary.click()
       }
@@ -605,7 +605,7 @@ async function main() {
       const containingDetails = locator.locator('xpath=ancestor::details[1]').first()
       if (await containingDetails.count()) {
         const isOpen = await containingDetails
-          .evaluate((el) => (el as HTMLDetailsElement).open)
+          .evaluate((el) => Boolean((el as { open?: unknown }).open))
           .catch(() => true)
 
         if (!isOpen) {
@@ -716,11 +716,12 @@ async function main() {
       const filePath = path.join(options.outputDir, fileName)
 
       const pngDataUrl = await canvas.evaluate((canvasElement) => {
-        if (!(canvasElement instanceof HTMLCanvasElement)) {
-          throw new Error('Target element is not an HTMLCanvasElement.')
+        const maybeCanvas = canvasElement as { toDataURL?: (type?: string) => string }
+        if (typeof maybeCanvas.toDataURL !== 'function') {
+          throw new Error('Target element does not expose toDataURL().')
         }
 
-        return canvasElement.toDataURL('image/png')
+        return maybeCanvas.toDataURL('image/png')
       })
 
       const base64Payload = pngDataUrl.replace(/^data:image\/png;base64,/, '')
