@@ -75,9 +75,10 @@
     'colorScale',
     'tintShadowFloor',
     'swirliness',
-    'bumpScale',
+    'normalStrength',
     'craterCount',
     'craterStrength',
+    'craterSharpness',
     'craterColorStrength',
     'volcanoCount',
     'volcanoScale',
@@ -98,7 +99,7 @@
     'riftSharpness',
     'riftColorWeight',
     'ridgesRiftsBlend',
-    'bumpTextureSize',
+    'normalTextureSize',
     'colorTextureSize',
     'roughness',
     'metalness',
@@ -118,7 +119,7 @@
 
   type PlanetoidSceneExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
-    downloadBumpMapPng: (fileName?: string) => Promise<boolean>
+    downloadNormalMapPng: (fileName?: string) => Promise<boolean>
   }
 
   let canvasShell: HTMLDivElement | undefined = $state(undefined)
@@ -150,11 +151,15 @@
   let userPresets = $state<PlanetoidPreset[]>([])
 
   const colorControlKeys: NumericControlKey[] = ['colorScale', 'tintShadowFloor', 'swirliness']
-  const textureResolutionControlKeys: NumericControlKey[] = ['bumpTextureSize', 'colorTextureSize']
-  const materialControlKeys: NumericControlKey[] = ['bumpScale', 'roughness', 'metalness']
+  const textureResolutionControlKeys: NumericControlKey[] = [
+    'normalTextureSize',
+    'colorTextureSize',
+  ]
+  const materialControlKeys: NumericControlKey[] = ['normalStrength', 'roughness', 'metalness']
   const craterControlKeys: NumericControlKey[] = [
     'craterCount',
     'craterStrength',
+    'craterSharpness',
     'craterColorStrength',
     'craterRayStrength',
     'craterRayVisibility',
@@ -456,7 +461,7 @@
 
     const isValidViewMode =
       raw.viewMode === 'mesh' ||
-      raw.viewMode === 'bump' ||
+      raw.viewMode === 'normal' ||
       raw.viewMode === 'texture' ||
       raw.viewMode === 'ray'
 
@@ -737,13 +742,13 @@
     }
   }
 
-  async function downloadBumpMapPng() {
+  async function downloadNormalMapPng() {
     if (!planetoidScene || isSaving) return
 
     isSaving = true
     try {
-      const fileName = `generated-planetoid-bump-${getTimestamp()}.png`
-      await planetoidScene.downloadBumpMapPng(fileName)
+      const fileName = `generated-planetoid-normal-${getTimestamp()}.png`
+      await planetoidScene.downloadNormalMapPng(fileName)
     } catch (error) {
       console.error(error)
     } finally {
@@ -784,9 +789,10 @@
           mediumFrequency={planetoid.mediumFrequency}
           smallFrequency={planetoid.smallFrequency}
           triangleDetail={planetoid.triangleDetail}
-          bumpScale={planetoid.bumpScale}
+          normalStrength={planetoid.normalStrength}
           craterCount={planetoid.craterCount}
           craterStrength={planetoid.craterStrength}
+          craterSharpness={planetoid.craterSharpness}
           craterColorStrength={planetoid.craterColorStrength}
           enableCraters={effectiveCratersEnabled}
           enableVolcanoes={effectiveVolcanoesEnabled}
@@ -811,7 +817,7 @@
           riftWidth={planetoid.riftWidth}
           riftSharpness={planetoid.riftSharpness}
           ridgesRiftsBlend={planetoid.ridgesRiftsBlend}
-          bumpTextureSize={planetoid.bumpTextureSize}
+          normalTextureSize={planetoid.normalTextureSize}
           colorTextureSize={planetoid.colorTextureSize}
           roughness={planetoid.roughness}
           metalness={planetoid.metalness}
@@ -858,15 +864,16 @@
             <button
               type="button"
               class="action"
-              onmouseenter={(event) => showActionPopover(event, 'Download the generated bump map.')}
+              onmouseenter={(event) =>
+                showActionPopover(event, 'Download the generated normal map.')}
               onmouseleave={hideActionPopover}
-              onfocus={(event) => showActionPopover(event, 'Download the generated bump map.')}
+              onfocus={(event) => showActionPopover(event, 'Download the generated normal map.')}
               onblur={hideActionPopover}
-              onclick={downloadBumpMapPng}
+              onclick={downloadNormalMapPng}
               disabled={isSaving}
-              aria-label="Download bump map"
+              aria-label="Download normal map"
             >
-              BMP
+              NRM
             </button>
           </div>
           <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
@@ -923,8 +930,13 @@
               <span>3D</span>
             </label>
             <label class="radio-row">
-              <input type="radio" name="scene-view-mode" value="bump" bind:group={sceneViewMode} />
-              <span>Bump map</span>
+              <input
+                type="radio"
+                name="scene-view-mode"
+                value="normal"
+                bind:group={sceneViewMode}
+              />
+              <span>Normal map</span>
             </label>
             <label class="radio-row">
               <input

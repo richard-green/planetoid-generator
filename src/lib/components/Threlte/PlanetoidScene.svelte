@@ -21,10 +21,11 @@
     smallScale?: number
     mediumFrequency?: number
     smallFrequency?: number
-    bumpScale?: number
+    normalStrength?: number
     enableCraters?: boolean
     craterCount?: number
     craterStrength?: number
+    craterSharpness?: number
     craterColorStrength?: number
     enableVolcanoes?: boolean
     volcanoCount?: number
@@ -53,7 +54,7 @@
     autoRotate?: boolean
     showDebugMeshes?: boolean
     triangleDetail?: number
-    bumpTextureSize?: number
+    normalTextureSize?: number
     colorTextureSize?: number
   }
 
@@ -70,10 +71,11 @@
     smallScale = DefaultValues.smallScale,
     mediumFrequency = DefaultValues.mediumFrequency,
     smallFrequency = DefaultValues.smallFrequency,
-    bumpScale = DefaultValues.bumpScale,
+    normalStrength = DefaultValues.normalStrength,
     enableCraters = DefaultValues.enableCraters,
     craterCount = DefaultValues.craterCount,
     craterStrength = DefaultValues.craterStrength,
+    craterSharpness = DefaultValues.craterSharpness,
     craterColorStrength = DefaultValues.craterColorStrength,
     enableVolcanoes = DefaultValues.enableVolcanoes,
     volcanoCount = DefaultValues.volcanoCount,
@@ -102,13 +104,13 @@
     autoRotate = DefaultValues.autoRotate,
     showDebugMeshes = DefaultValues.showDebugMeshes,
     triangleDetail = DefaultValues.triangleDetail,
-    bumpTextureSize = DefaultValues.bumpTextureSize,
+    normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
   }: Props = $props()
 
   type PlanetoidExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
-    downloadBumpMapPng: (fileName?: string) => Promise<boolean>
+    downloadNormalMapPng: (fileName?: string) => Promise<boolean>
   }
 
   type ViewCameraState = {
@@ -208,8 +210,8 @@
     return (await planetoidRef?.downloadTextureMapPng(fileName)) ?? false
   }
 
-  export async function downloadBumpMapPng(fileName?: string) {
-    return (await planetoidRef?.downloadBumpMapPng(fileName)) ?? false
+  export async function downloadNormalMapPng(fileName?: string) {
+    return (await planetoidRef?.downloadNormalMapPng(fileName)) ?? false
   }
 </script>
 
@@ -243,10 +245,11 @@
   {smallScale}
   {mediumFrequency}
   {smallFrequency}
-  {bumpScale}
+  {normalStrength}
   {enableCraters}
   {craterCount}
   {craterStrength}
+  {craterSharpness}
   {craterColorStrength}
   {enableVolcanoes}
   {volcanoCount}
@@ -276,6 +279,6 @@
   {showDebugMeshes}
   {viewMode}
   {triangleDetail}
-  {bumpTextureSize}
+  {normalTextureSize}
   {colorTextureSize}
 />

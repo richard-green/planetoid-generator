@@ -8,10 +8,10 @@ import {
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
 
-export type PlanetoidViewMode = 'mesh' | 'bump' | 'texture' | 'ray'
+export type PlanetoidViewMode = 'mesh' | 'normal' | 'texture' | 'ray'
 
 export type PlanetoidPresetExcludedKey =
-  'seed' | 'autoRotate' | 'showDebugMeshes' | 'bumpTextureSize' | 'colorTextureSize'
+  'seed' | 'autoRotate' | 'showDebugMeshes' | 'normalTextureSize' | 'colorTextureSize'
 
 export type PlanetoidSettings = {
   autoRotate: boolean
@@ -28,6 +28,7 @@ export type PlanetoidSettings = {
   swirliness: number
   craterCount: number
   craterStrength: number
+  craterSharpness: number
   craterColorStrength: number
   volcanoCount: number
   volcanoScale: number
@@ -48,9 +49,9 @@ export type PlanetoidSettings = {
   riftWidth: number
   riftSharpness: number
   ridgesRiftsBlend: number
-  bumpTextureSize: number
+  normalTextureSize: number
   colorTextureSize: number
-  bumpScale: number
+  normalStrength: number
   roughness: number
   metalness: number
   largeScale: number
@@ -65,7 +66,7 @@ export type PlanetoidPresetSettings = Omit<PlanetoidSettings, PlanetoidPresetExc
 
 export type PlanetoidViewSettings = Pick<
   PlanetoidSettings,
-  'autoRotate' | 'showDebugMeshes' | 'bumpTextureSize' | 'colorTextureSize'
+  'autoRotate' | 'showDebugMeshes' | 'normalTextureSize' | 'colorTextureSize'
 > & {
   viewMode: PlanetoidViewMode
 }
@@ -78,6 +79,7 @@ export type PlanetoidRangeValues = Pick<
   | 'swirliness'
   | 'craterCount'
   | 'craterStrength'
+  | 'craterSharpness'
   | 'craterColorStrength'
   | 'volcanoCount'
   | 'volcanoScale'
@@ -98,9 +100,9 @@ export type PlanetoidRangeValues = Pick<
   | 'riftWidth'
   | 'riftSharpness'
   | 'ridgesRiftsBlend'
-  | 'bumpTextureSize'
+  | 'normalTextureSize'
   | 'colorTextureSize'
-  | 'bumpScale'
+  | 'normalStrength'
   | 'roughness'
   | 'metalness'
   | 'largeScale'
@@ -128,6 +130,7 @@ export const DefaultValues: PlanetoidSettings = {
   swirliness: 1,
   craterCount: 20,
   craterStrength: 5,
+  craterSharpness: 3.5,
   craterColorStrength: 0.95,
   volcanoCount: 12,
   volcanoScale: 2,
@@ -148,9 +151,9 @@ export const DefaultValues: PlanetoidSettings = {
   riftWidth: 0.05,
   riftSharpness: 2,
   riftColorWeight: 0.25,
-  bumpTextureSize: 1024,
+  normalTextureSize: 1024,
   colorTextureSize: 1024,
-  bumpScale: 1,
+  normalStrength: 1,
   roughness: 0.75,
   metalness: 0.4,
   largeScale: 0.4,
@@ -168,6 +171,7 @@ export const MinValues: PlanetoidRangeValues = {
   swirliness: 0,
   craterCount: 0,
   craterStrength: 0,
+  craterSharpness: 0.5,
   craterColorStrength: 0,
   volcanoCount: 0,
   volcanoScale: 0.35,
@@ -188,9 +192,9 @@ export const MinValues: PlanetoidRangeValues = {
   riftWidth: 0.01,
   riftSharpness: 0.5,
   ridgesRiftsBlend: 0,
-  bumpTextureSize: 128,
+  normalTextureSize: 128,
   colorTextureSize: 64,
-  bumpScale: 0,
+  normalStrength: 0,
   roughness: 0,
   metalness: 0,
   largeScale: 0,
@@ -208,6 +212,7 @@ export const MaxValues: PlanetoidRangeValues = {
   swirliness: 2,
   craterCount: 120,
   craterStrength: 10,
+  craterSharpness: 8,
   craterColorStrength: 3,
   volcanoCount: 96,
   volcanoScale: 2.5,
@@ -228,9 +233,9 @@ export const MaxValues: PlanetoidRangeValues = {
   riftWidth: 0.25,
   riftSharpness: 6,
   ridgesRiftsBlend: 1,
-  bumpTextureSize: 4096,
+  normalTextureSize: 4096,
   colorTextureSize: 4096,
-  bumpScale: 10,
+  normalStrength: 10,
   roughness: 1,
   metalness: 1,
   largeScale: 2,
@@ -248,6 +253,7 @@ export const StepValues: PlanetoidRangeValues = {
   swirliness: 0.05,
   craterCount: 1,
   craterStrength: 0.1,
+  craterSharpness: 0.1,
   craterColorStrength: 0.05,
   volcanoCount: 1,
   volcanoScale: 0.05,
@@ -268,9 +274,9 @@ export const StepValues: PlanetoidRangeValues = {
   riftWidth: 0.01,
   riftSharpness: 0.05,
   ridgesRiftsBlend: 0.05,
-  bumpTextureSize: 1,
+  normalTextureSize: 1,
   colorTextureSize: 1,
-  bumpScale: 0.1,
+  normalStrength: 0.1,
   roughness: 0.1,
   metalness: 0.1,
   largeScale: 0.1,
@@ -313,6 +319,11 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultValues.craterStrength,
     min: MinValues.craterStrength,
     max: MaxValues.craterStrength,
+  },
+  craterSharpness: {
+    defaultValue: DefaultValues.craterSharpness,
+    min: MinValues.craterSharpness,
+    max: MaxValues.craterSharpness,
   },
   craterColorStrength: {
     defaultValue: DefaultValues.craterColorStrength,
@@ -415,10 +426,10 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     min: MinValues.ridgesRiftsBlend,
     max: MaxValues.ridgesRiftsBlend,
   },
-  bumpTextureSize: {
-    defaultValue: DefaultValues.bumpTextureSize,
-    min: MinValues.bumpTextureSize,
-    max: MaxValues.bumpTextureSize,
+  normalTextureSize: {
+    defaultValue: DefaultValues.normalTextureSize,
+    min: MinValues.normalTextureSize,
+    max: MaxValues.normalTextureSize,
     round: true,
   },
   colorTextureSize: {
@@ -427,10 +438,10 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     max: MaxValues.colorTextureSize,
     round: true,
   },
-  bumpScale: {
-    defaultValue: DefaultValues.bumpScale,
-    min: MinValues.bumpScale,
-    max: MaxValues.bumpScale,
+  normalStrength: {
+    defaultValue: DefaultValues.normalStrength,
+    min: MinValues.normalStrength,
+    max: MaxValues.normalStrength,
   },
   roughness: {
     defaultValue: DefaultValues.roughness,
@@ -477,7 +488,6 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
 
 export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
   const raw = toRecord(input)
-
   const numeric = sanitizeNumericMap(raw, NUMERIC_SANITIZE_SPECS)
 
   const autoRotate = sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate)
@@ -489,7 +499,6 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
 
   const palette = sanitizeEnum(raw, 'palette', PlanetoidPaletteNames, DefaultValues.palette)
   const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
-
   return {
     palette,
     surfaceTint,
@@ -498,6 +507,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     swirliness: numeric.swirliness,
     craterCount: numeric.craterCount,
     craterStrength: numeric.craterStrength,
+    craterSharpness: numeric.craterSharpness,
     craterColorStrength: numeric.craterColorStrength,
     volcanoCount: numeric.volcanoCount,
     volcanoScale: numeric.volcanoScale,
@@ -522,7 +532,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     riftWidth: numeric.riftWidth,
     riftSharpness: numeric.riftSharpness,
     ridgesRiftsBlend: numeric.ridgesRiftsBlend,
-    bumpTextureSize: numeric.bumpTextureSize,
+    normalTextureSize: numeric.normalTextureSize,
     colorTextureSize: numeric.colorTextureSize,
     seed: numeric.seed,
     largeScale: numeric.largeScale,
@@ -531,7 +541,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     mediumFrequency: numeric.mediumFrequency,
     smallFrequency: numeric.smallFrequency,
     triangleDetail: numeric.triangleDetail,
-    bumpScale: numeric.bumpScale,
+    normalStrength: numeric.normalStrength,
     roughness: numeric.roughness,
     metalness: numeric.metalness,
     autoRotate,
@@ -544,7 +554,7 @@ export function toPlanetoidPresetSettings(settings: PlanetoidSettings): Planetoi
     seed: _seed,
     autoRotate: _autoRotate,
     showDebugMeshes: _showDebugMeshes,
-    bumpTextureSize: _bumpTextureSize,
+    normalTextureSize: _normalTextureSize,
     colorTextureSize: _colorTextureSize,
     ...presetSettings
   } = settings
@@ -574,6 +584,7 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   swirliness: 'Swirliness',
   craterCount: 'Crater count',
   craterStrength: 'Crater strength',
+  craterSharpness: 'Crater sharpness',
   craterColorStrength: 'Crater color',
   volcanoCount: 'Volcano count',
   volcanoScale: 'Volcano scale',
@@ -594,9 +605,9 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   riftWidth: 'Rift width',
   riftSharpness: 'Rift sharpness',
   ridgesRiftsBlend: 'Ridges/rifts blend',
-  bumpTextureSize: 'Bump texture size',
+  normalTextureSize: 'Normal texture size',
   colorTextureSize: 'Color texture size',
-  bumpScale: 'Bump scale',
+  normalStrength: 'Normal strength',
   roughness: 'Roughness',
   metalness: 'Metalness',
   largeScale: 'Large-scale',
@@ -636,6 +647,7 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   swirliness: '--swirliness',
   craterCount: '--crater-count',
   craterStrength: '--crater-strength',
+  craterSharpness: '--crater-sharpness',
   craterColorStrength: '--crater-color',
   volcanoCount: '--volcano-count',
   volcanoScale: '--volcano-scale',
@@ -656,9 +668,9 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   riftWidth: '--rift-width',
   riftSharpness: '--rift-sharpness',
   ridgesRiftsBlend: '--ridges-rifts-blend',
-  bumpTextureSize: '--bump-tex-height',
+  normalTextureSize: '--normal-tex-height',
   colorTextureSize: '--color-tex-height',
-  bumpScale: '--bump-scale',
+  normalStrength: '--normal-strength',
   roughness: '--roughness',
   metalness: '--metalness',
   largeScale: '--large-scale',

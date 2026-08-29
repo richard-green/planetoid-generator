@@ -17,14 +17,16 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three'
+import { DefaultValues, MaxValues, MinValues } from './PlanetoidSettings'
 
 type NoiseOffset = { x: number; y: number; z: number }
 type PaletteColor = { r: number; g: number; b: number }
 
-type BumpTextureOptions = {
+type SurfaceDetailTextureOptions = {
   enableCraters?: boolean
   craterCount?: number
   craterStrength?: number
+  craterSharpness?: number
   enableVolcanoes?: boolean
   volcanoCount?: number
   volcanoScale?: number
@@ -63,6 +65,7 @@ type ColorTextureOptions = {
   enableCraters?: boolean
   craterCount?: number
   craterColorStrength?: number
+  craterSharpness?: number
   enableVolcanoes?: boolean
   volcanoCount?: number
   volcanoScale?: number
@@ -81,6 +84,9 @@ type RayDebugOptions = Pick<
 >
 
 const MAX_PALETTE = 16
+
+// Higher values make crater rims narrower and crisper.
+export const CRATER_RIM_SHARPNESS = 3.5
 
 const vertexShader = `
   varying vec2 vUv;
@@ -106,6 +112,7 @@ const fragmentShader = `
   uniform int uCraterCount;
   uniform float uCraterStrength;
   uniform float uCraterColorStrength;
+  uniform float uCraterSharpness;
   uniform int uEnableVolcanoes;
   uniform int uVolcanoCount;
   uniform float uVolcanoScale;
@@ -274,7 +281,7 @@ const fragmentShader = `
     );
   }
 
-  void buildCrater(int i, out vec2 centerUv, out float radius) {
+  void buildCrater(int i, out vec2 centerUv, out float radius, out float age) {
     float fi = float(i);
 
     float u = hash12(vec2(fi * 1.17, uSeed.x * 0.001 + 11.0));
@@ -294,27 +301,78 @@ const fragmentShader = `
 
     centerUv = vec2(u, v);
     radius = mix(minRadius, maxRadius, normalizedRadius);
+
+    float ageSample = hash12(vec2(fi * 8.93, uSeed.z * 0.001 + 97.0));
+    age = pow(ageSample, 1.35);
   }
 
-  float craterNormalizedDistance(vec2 uv, vec2 craterUv, float craterRadius) {
-    float duRaw = abs(uv.x - craterUv.x);
-    float du = min(duRaw, 1.0 - duRaw);
-    float dv = abs(uv.y - craterUv.y);
+  float craterNormalizedDistance(vec2 uv, vec2 craterUv, float craterRadius, float craterAge) {
+    float du = uv.x - craterUv.x;
+    if (du > 0.5) du -= 1.0;
+    if (du < -0.5) du += 1.0;
+    float dv = uv.y - craterUv.y;
 
     float rx = max(1e-5, craterRadius * 0.5);
     float ry = max(1e-5, craterRadius);
 
-    return length(vec2(du / rx, dv / ry));
+    vec2 local = vec2(du / rx, dv / ry);
+    float baseDistance = length(local);
+
+    // Per-crater age softens local rim sharpness and increases rim corrosion.
+    float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
+    float sharpness01 = clamp((localRimSharpness - 0.5) / 7.5, 0.0, 1.0);
+    float corrosionAmount = (1.0 - sharpness01) * mix(0.08, 0.26, craterAge);
+
+    float rimMask = smoothstep(0.45, 0.95, baseDistance) * (1.0 - smoothstep(1.2, 1.55, baseDistance));
+
+    float angle = atan(local.y, local.x);
+    float phaseA = hash12(vec2(craterUv.x * 41.7, craterUv.y * 67.3)) * TAU;
+    float phaseB = hash12(vec2(craterUv.x * 83.1, craterUv.y * 19.9)) * TAU;
+    float phaseC = hash12(vec2(craterUv.x * 13.7, craterUv.y * 101.3)) * TAU;
+
+    float wobble =
+      sin(angle * 3.0 + phaseA) * 0.55 +
+      sin(angle * 7.0 + phaseB) * 0.3 +
+      sin(angle * 12.0 + phaseC) * 0.15;
+
+    float segment = floor((angle + PI) / TAU * 24.0);
+    float chipNoise = hash12(vec2(segment + phaseB, craterUv.x * 97.3 + craterUv.y * 53.1)) * 2.0 - 1.0;
+    float rimCorrosion = (wobble * 0.75 + chipNoise * 0.25) * corrosionAmount * rimMask;
+
+    return max(0.0, baseDistance + rimCorrosion);
   }
 
-  float craterShape(float t) {
+  float craterShape(float t, float craterAge) {
     if (t >= 1.25) return 0.0;
 
-    float bowl = -pow(clamp(1.0 - t / 0.82, 0.0, 1.0), 1.35);
-    float wall = -exp(-pow((t - 0.78) / 0.14, 2.0)) * 0.22;
-    float rim = exp(-pow((t - 1.02) / 0.08, 2.0)) * 0.2;
+    float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
+    float sharpness01 = clamp((localRimSharpness - 0.5) / 7.5, 0.0, 1.0);
 
-    return bowl + wall + rim;
+    float outerShoulder = exp(-pow((t - 1.1) / 0.2, 2.0)) * mix(0.07, 0.035, craterAge);
+
+    float rimWidth = 0.1 / max(0.001, localRimSharpness);
+    float rim = exp(-pow((t - 1.02) / rimWidth, 2.0)) * mix(0.25, 0.12, craterAge);
+
+    float bowlDepth = mix(0.6, 0.42, craterAge);
+    float floorRadius = mix(0.62, 0.7, craterAge);
+    float floorBlend = 0.06;
+    float floorMask = 1.0 - smoothstep(floorRadius - floorBlend, floorRadius, t);
+    float flatFloor = -bowlDepth * floorMask;
+
+    float descentOuter = 0.98;
+    float descentWidth = mix(0.22, 0.08, sharpness01);
+    float descentInner = descentOuter - descentWidth;
+    float descentProgress = 1.0 - smoothstep(descentInner, descentOuter, t);
+    float wallExponent = mix(1.5, 2.9, sharpness01);
+    float descentWall =
+      -bowlDepth * pow(clamp(descentProgress, 0.0, 1.0), wallExponent) * (1.0 - floorMask);
+
+    float floorMicro =
+      fractalNoise(vec3(t * 13.0 + craterAge * 4.0, t * 9.0 + craterAge * 2.0, craterAge * 11.0))
+      * 0.015
+      * floorMask;
+
+    return outerShoulder + rim + flatFloor + descentWall + floorMicro;
   }
 
   float accumulateCraterHeight(vec2 uv) {
@@ -325,10 +383,11 @@ const fragmentShader = `
 
       vec2 craterUv;
       float craterRadius;
-      buildCrater(i, craterUv, craterRadius);
+      float craterAge;
+      buildCrater(i, craterUv, craterRadius, craterAge);
 
-      float t = craterNormalizedDistance(uv, craterUv, craterRadius);
-      craterHeight += craterShape(t);
+      float t = craterNormalizedDistance(uv, craterUv, craterRadius, craterAge);
+      craterHeight += craterShape(t, craterAge);
     }
 
     return clamp(craterHeight, -1.25, 0.35);
@@ -342,16 +401,31 @@ const fragmentShader = `
 
       vec2 craterUv;
       float craterRadius;
-      buildCrater(i, craterUv, craterRadius);
+      float craterAge;
+      buildCrater(i, craterUv, craterRadius, craterAge);
 
-      float t = craterNormalizedDistance(uv, craterUv, craterRadius);
+      float t = craterNormalizedDistance(uv, craterUv, craterRadius, craterAge);
       if (t >= 1.35) continue;
 
-      float bowlDarken = -pow(clamp(1.0 - t / 0.82, 0.0, 1.0), 1.15) * 0.42;
-      float rimLighten = exp(-pow((t - 1.02) / 0.1, 2.0)) * 0.2;
+      float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
+      float sharpness01 = clamp((localRimSharpness - 0.5) / 7.5, 0.0, 1.0);
+
+      float floorRadius = mix(0.62, 0.7, craterAge);
+      float floorMask = 1.0 - smoothstep(floorRadius - 0.06, floorRadius, t);
+      float bowlDarken = -mix(0.4, 0.24, craterAge) * floorMask;
+
+      float descentOuter = 0.98;
+      float descentWidth = mix(0.22, 0.08, sharpness01);
+      float descentInner = descentOuter - descentWidth;
+      float descentProgress = 1.0 - smoothstep(descentInner, descentOuter, t);
+      float wallDarken = -mix(0.2, 0.12, craterAge) * pow(clamp(descentProgress, 0.0, 1.0), 1.6) * (1.0 - floorMask);
+
+      float rimLightenWidth = 0.1 / max(0.001, localRimSharpness);
+      float rimLighten = exp(-pow((t - 1.02) / rimLightenWidth, 2.0)) * mix(0.24, 0.1, craterAge);
+      float outerShoulderLighten = exp(-pow((t - 1.1) / 0.2, 2.0)) * mix(0.08, 0.04, craterAge);
       float ejectaLighten = exp(-pow((t - 1.2) / 0.16, 2.0)) * 0.1;
 
-      craterWarp += bowlDarken + rimLighten + ejectaLighten;
+      craterWarp += bowlDarken + wallDarken + rimLighten + outerShoulderLighten + ejectaLighten;
     }
 
     return clamp(craterWarp, -1.0, 0.8);
@@ -538,7 +612,8 @@ const fragmentShader = `
 
       vec2 craterUv;
       float craterRadius;
-      buildCrater(i, craterUv, craterRadius);
+      float craterAge;
+      buildCrater(i, craterUv, craterRadius, craterAge);
 
       float du = uv.x - craterUv.x;
       if (du > 0.5) du -= 1.0;
@@ -618,9 +693,10 @@ const fragmentShader = `
 
         vec2 laterUv;
         float laterRadius;
-        buildCrater(j, laterUv, laterRadius);
+        float laterAge;
+        buildCrater(j, laterUv, laterRadius, laterAge);
 
-        float tLater = craterNormalizedDistance(uv, laterUv, laterRadius);
+        float tLater = craterNormalizedDistance(uv, laterUv, laterRadius, laterAge);
 
         // Strong suppression in crater bowl and rim regions.
         float bowl = 1.0 - smoothstep(0.0, 0.95, tLater);
@@ -673,6 +749,83 @@ const fragmentShader = `
     return abs(x - meridianX) < 0.5;
   }
 
+  vec2 wrapSurfaceUv(vec2 uv) {
+    return vec2(fract(uv.x), clamp(uv.y, 0.0, 1.0));
+  }
+
+  float sampleSurfaceDisplacement(vec2 uv, bool includeDebugGuides) {
+    uv = wrapSurfaceUv(uv);
+
+    float x = uv.x * (uResolution.x - 1.0);
+    float y = uv.y * (uResolution.y - 1.0);
+
+    float theta = uv.x * TAU;
+    float phi = uv.y * PI;
+    float equatorFactor = pow(sin(phi), 0.8);
+
+    vec3 spherePos = vec3(
+      sin(phi) * cos(theta),
+      cos(phi),
+      sin(phi) * sin(theta)
+    );
+
+    vec3 seed = uSeed;
+
+    float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
+    float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
+    float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
+    float swirlStrength = 0.22 * clamp(uSwirliness, 0.0, 2.0);
+    vec3 warpedSpherePos = normalize(spherePos + vec3(warpX, warpY, warpZ) * swirlStrength);
+
+    vec3 remappedPos = vec3(
+      dot(warpedSpherePos, vec3(0.00, 0.83, 0.56)),
+      dot(warpedSpherePos, vec3(0.56, 0.00, 0.83)),
+      dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
+    );
+
+    float craterHeight = (uEnableCraters == 1) ? accumulateCraterHeight(uv) : 0.0;
+    float volcanoHeight = (uEnableVolcanoes == 1) ? accumulateVolcanoHeight(uv) : 0.0;
+    float ridgeRift = 0.0;
+    if (uEnableRidges == 1 || uEnableRifts == 1) {
+      vec2 ridgeRiftSignalsLocal = ridgeRiftSignals(remappedPos, seed);
+      float blend = clamp(uRidgesRiftsBlend, 0.0, 1.0);
+      float ridgeTerm = (uEnableRidges == 1) ? ridgeRiftSignalsLocal.x * (1.0 - blend) : 0.0;
+      float riftTerm = (uEnableRifts == 1) ? -ridgeRiftSignalsLocal.y * blend : 0.0;
+      ridgeRift = ridgeTerm + riftTerm;
+    }
+
+    float bumpBase = fractalNoise(remappedPos * 8.7 + seed * 1.03 + vec3(1.1, 2.3, 3.7));
+    float bumpDust = fractalNoise(remappedPos * 93.0 + seed * 1.79 + vec3(11.3, 17.9, 23.1));
+    float bumpGrain = fractalNoise(remappedPos * 187.0 + seed * 2.41 + vec3(29.3, 31.7, 37.1));
+
+    float polarHighFrequencyScale = mix(0.15, 1.0, equatorFactor);
+    float brightSpeckles = pow(clamp((bumpDust + 1.0) * 0.5, 0.0, 1.0), 9.0);
+    float darkSpeckles = pow(clamp((-bumpDust + 1.0) * 0.5, 0.0, 1.0), 10.0);
+
+    float debugGuideRaise = 0.0;
+    if (includeDebugGuides) {
+      bool debugEquator = (uDebugMidline == 1) && isDebugEquatorPixel(y);
+      bool debugMeridian0 = (uDebugMidline == 1) && (x < 0.5 || x > (uResolution.x - 1.5));
+      bool debugMeridian90 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.25);
+      bool debugMeridian180 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.5);
+      bool debugMeridian270 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.75);
+      debugGuideRaise = (debugEquator || debugMeridian0 || debugMeridian90 || debugMeridian180 || debugMeridian270)
+        ? 0.65
+        : 0.0;
+    }
+
+    return
+      bumpBase * 0.55 +
+      bumpDust * 0.2 * polarHighFrequencyScale +
+      bumpGrain * 0.1 * polarHighFrequencyScale +
+      craterHeight * uCraterStrength +
+      volcanoHeight +
+      ridgeRift +
+      debugGuideRaise +
+      brightSpeckles * 0.75 * polarHighFrequencyScale -
+      darkSpeckles * 0.55 * polarHighFrequencyScale;
+  }
+
   void main() {
     vec2 uv = vUv;
     float x = uv.x * (uResolution.x - 1.0);
@@ -690,7 +843,7 @@ const fragmentShader = `
 
     vec3 seed = uSeed;
 
-    // Shared warped domain keeps micro-structure consistent between bump and color paths.
+    // Shared warped domain keeps micro-structure consistent between surface detail and color paths.
     float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
     float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
     float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
@@ -726,41 +879,20 @@ const fragmentShader = `
     bool debugMeridian180 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.5);
     bool debugMeridian270 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.75);
 
-    if (uMode == 1) {
-      float bumpBase = fractalNoise(remappedPos * 8.7 + seed * 1.03 + vec3(1.1, 2.3, 3.7));
-      float bumpDust = fractalNoise(remappedPos * 93.0 + seed * 1.79 + vec3(11.3, 17.9, 23.1));
-      float bumpGrain = fractalNoise(remappedPos * 187.0 + seed * 2.41 + vec3(29.3, 31.7, 37.1));
-      float ridgeRift = 0.0;
-      if (uEnableRidges == 1 || uEnableRifts == 1) {
-        vec2 ridgeRiftSignalsLocal = ridgeRiftSignals(remappedPos, seed);
-        float blend = clamp(uRidgesRiftsBlend, 0.0, 1.0);
-        float ridgeTerm = (uEnableRidges == 1) ? ridgeRiftSignalsLocal.x * (1.0 - blend) : 0.0;
-        float riftTerm = (uEnableRifts == 1) ? -ridgeRiftSignalsLocal.y * blend : 0.0;
-        ridgeRift = ridgeTerm + riftTerm;
-      }
+    if (uMode == 4) {
+      vec2 texel = 1.0 / max(uResolution, vec2(1.0));
 
-      float polarHighFrequencyScale = mix(0.15, 1.0, equatorFactor);
+      float hL = sampleSurfaceDisplacement(uv + vec2(-texel.x, 0.0), false);
+      float hR = sampleSurfaceDisplacement(uv + vec2(texel.x, 0.0), false);
+      float hD = sampleSurfaceDisplacement(uv + vec2(0.0, -texel.y), false);
+      float hU = sampleSurfaceDisplacement(uv + vec2(0.0, texel.y), false);
 
-      float brightSpeckles = pow(clamp((bumpDust + 1.0) * 0.5, 0.0, 1.0), 9.0);
-      float darkSpeckles = pow(clamp((-bumpDust + 1.0) * 0.5, 0.0, 1.0), 10.0);
+      float dX = hR - hL;
+      float dY = hU - hD;
+      vec3 normal = normalize(vec3(-dX * 0.85, -dY * 0.85, 1.0));
+      vec3 encodedNormal = normal * 0.5 + 0.5;
 
-      float debugGuideRaise = (debugEquator || debugMeridian0 || debugMeridian90 || debugMeridian180 || debugMeridian270)
-        ? 0.65
-        : 0.0;
-
-      float combined =
-        bumpBase * 0.55 +
-        bumpDust * 0.2 * polarHighFrequencyScale +
-        bumpGrain * 0.1 * polarHighFrequencyScale +
-        craterHeight * uCraterStrength +
-        volcanoHeight +
-        ridgeRift +
-        debugGuideRaise +
-        brightSpeckles * 0.75 * polarHighFrequencyScale -
-        darkSpeckles * 0.55 * polarHighFrequencyScale;
-
-      float value = clamp(0.5 + combined * 0.5, 0.0, 1.0);
-      gl_FragColor = vec4(vec3(value), 1.0);
+      gl_FragColor = vec4(clamp(encodedNormal, 0.0, 1.0), 1.0);
       return;
     }
 
@@ -872,6 +1004,7 @@ const material = new ShaderMaterial({
     uCraterCount: new Uniform(22),
     uCraterStrength: new Uniform(0.32),
     uCraterColorStrength: new Uniform(0.3),
+    uCraterSharpness: new Uniform(CRATER_RIM_SHARPNESS),
     uEnableVolcanoes: new Uniform(0),
     uVolcanoCount: new Uniform(10),
     uVolcanoScale: new Uniform(1.0),
@@ -968,7 +1101,7 @@ function setPaletteUniform(palette: PaletteColor[]) {
 
 function renderTexture(
   renderer: WebGLRenderer,
-  mode: 0 | 1 | 2 | 3,
+  mode: 0 | 2 | 3 | 4,
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
@@ -981,6 +1114,7 @@ function renderTexture(
     craterCount?: number
     craterStrength?: number
     craterColorStrength?: number
+    craterSharpness?: number
     enableVolcanoes?: boolean
     volcanoCount?: number
     volcanoScale?: number
@@ -1012,74 +1146,150 @@ function renderTexture(
   material.uniforms.uSeed.value.set(noiseOffset.x, noiseOffset.y, noiseOffset.z)
   const tint = parseHexTint(options.surfaceTint)
   material.uniforms.uTint.value.copy(tint)
-  material.uniforms.uTintShadowFloor.value = toClampedNumber(options.tintShadowFloor, 0.18, 0, 0.8)
-  material.uniforms.uSwirliness.value = toClampedNumber(options.swirliness, 1, 0, 2)
+  material.uniforms.uTintShadowFloor.value = toClampedNumber(
+    options.tintShadowFloor,
+    DefaultValues.tintShadowFloor,
+    MinValues.tintShadowFloor,
+    MaxValues.tintShadowFloor
+  )
+  material.uniforms.uSwirliness.value = toClampedNumber(
+    options.swirliness,
+    DefaultValues.swirliness,
+    MinValues.swirliness,
+    MaxValues.swirliness
+  )
   material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
   material.uniforms.uEnableCraters.value = (options.enableCraters ?? true) ? 1 : 0
   material.uniforms.uCraterCount.value = Math.min(96, toNonNegativeInt(options.craterCount, 22))
-  material.uniforms.uCraterStrength.value = toClampedNumber(options.craterStrength, 0.32, 0, 1.5)
+  material.uniforms.uCraterStrength.value = toClampedNumber(
+    options.craterStrength,
+    DefaultValues.craterStrength,
+    MinValues.craterStrength,
+    MaxValues.craterStrength
+  )
   material.uniforms.uCraterColorStrength.value = toClampedNumber(
     options.craterColorStrength,
-    0.3,
-    0,
-    1.25
+    DefaultValues.craterColorStrength,
+    MinValues.craterColorStrength,
+    MaxValues.craterColorStrength
+  )
+  material.uniforms.uCraterSharpness.value = toClampedNumber(
+    options.craterSharpness,
+    DefaultValues.craterSharpness,
+    MinValues.craterSharpness,
+    MaxValues.craterSharpness
   )
   material.uniforms.uEnableVolcanoes.value = options.enableVolcanoes ? 1 : 0
   material.uniforms.uVolcanoCount.value = Math.min(80, toNonNegativeInt(options.volcanoCount, 10))
-  material.uniforms.uVolcanoScale.value = toClampedNumber(options.volcanoScale, 1, 0.35, 2.5)
-  material.uniforms.uVolcanoStrength.value = toClampedNumber(options.volcanoStrength, 1, 0, 3)
+  material.uniforms.uVolcanoScale.value = toClampedNumber(
+    options.volcanoScale,
+    DefaultValues.volcanoScale,
+    MinValues.volcanoScale,
+    MaxValues.volcanoScale
+  )
+  material.uniforms.uVolcanoStrength.value = toClampedNumber(
+    options.volcanoStrength,
+    DefaultValues.volcanoStrength,
+    MinValues.volcanoStrength,
+    MaxValues.volcanoStrength
+  )
   material.uniforms.uVolcanoColorStrength.value = toClampedNumber(
     options.volcanoColorStrength,
-    0.75,
-    0,
-    2.5
+    DefaultValues.volcanoColorStrength,
+    MinValues.volcanoColorStrength,
+    MaxValues.volcanoColorStrength
   )
-  material.uniforms.uRidgeColorWeight.value = toClampedNumber(options.ridgeColorWeight, 0.35, 0, 4)
-  material.uniforms.uRiftColorWeight.value = toClampedNumber(options.riftColorWeight, 0.35, 0, 4)
+  material.uniforms.uRidgeColorWeight.value = toClampedNumber(
+    options.ridgeColorWeight,
+    DefaultValues.ridgeColorWeight,
+    MinValues.ridgeColorWeight,
+    MaxValues.ridgeColorWeight
+  )
+  material.uniforms.uRiftColorWeight.value = toClampedNumber(
+    options.riftColorWeight,
+    DefaultValues.riftColorWeight,
+    MinValues.riftColorWeight,
+    MaxValues.riftColorWeight
+  )
   material.uniforms.uCraterRayStrength.value = toClampedNumber(
     options.craterRayStrength,
-    2.0,
-    0,
-    6.0
+    DefaultValues.craterRayStrength,
+    MinValues.craterRayStrength,
+    MaxValues.craterRayStrength
   )
   material.uniforms.uCraterRayVisibility.value = toClampedNumber(
     options.craterRayVisibility,
-    1.0,
-    0.0,
-    4.0
+    DefaultValues.craterRayVisibility,
+    MinValues.craterRayVisibility,
+    MaxValues.craterRayVisibility
   )
   material.uniforms.uCraterRayDensity.value = toClampedNumber(
     options.craterRayDensity,
-    1.0,
-    0.3,
-    3.0
+    DefaultValues.craterRayDensity,
+    MinValues.craterRayDensity,
+    MaxValues.craterRayDensity
   )
   material.uniforms.uCraterRaySharpness.value = toClampedNumber(
     options.craterRaySharpness,
-    1.0,
-    0.5,
-    4.0
+    DefaultValues.craterRaySharpness,
+    MinValues.craterRaySharpness,
+    MaxValues.craterRaySharpness
   )
   material.uniforms.uCraterRayLengthPower.value = toClampedNumber(
     options.craterRayLengthPower,
-    2.8,
-    1.0,
-    5.0
+    DefaultValues.craterRayLengthPower,
+    MinValues.craterRayLengthPower,
+    MaxValues.craterRayLengthPower
   )
   material.uniforms.uEnableRidges.value = options.enableRidges ? 1 : 0
   material.uniforms.uEnableRifts.value = options.enableRifts ? 1 : 0
-  material.uniforms.uRidgeStrength.value = toClampedNumber(options.ridgeStrength, 0.5, 0.0, 2.0)
-  material.uniforms.uRidgeFrequency.value = toClampedNumber(options.ridgeFrequency, 2.2, 0.5, 8.0)
-  material.uniforms.uRidgeSharpness.value = toClampedNumber(options.ridgeSharpness, 1.6, 0.5, 4.0)
-  material.uniforms.uRiftStrength.value = toClampedNumber(options.riftStrength, 0.4, 0.0, 2.0)
-  material.uniforms.uRiftFrequency.value = toClampedNumber(options.riftFrequency, 3.4, 0.5, 12.0)
-  material.uniforms.uRiftWidth.value = toClampedNumber(options.riftWidth, 0.09, 0.01, 0.25)
-  material.uniforms.uRiftSharpness.value = toClampedNumber(options.riftSharpness, 2.0, 0.5, 6.0)
+  material.uniforms.uRidgeStrength.value = toClampedNumber(
+    options.ridgeStrength,
+    DefaultValues.ridgeStrength,
+    MinValues.ridgeStrength,
+    MaxValues.ridgeStrength
+  )
+  material.uniforms.uRidgeFrequency.value = toClampedNumber(
+    options.ridgeFrequency,
+    DefaultValues.ridgeFrequency,
+    MinValues.ridgeFrequency,
+    MaxValues.ridgeFrequency
+  )
+  material.uniforms.uRidgeSharpness.value = toClampedNumber(
+    options.ridgeSharpness,
+    DefaultValues.ridgeSharpness,
+    MinValues.ridgeSharpness,
+    MaxValues.ridgeSharpness
+  )
+  material.uniforms.uRiftStrength.value = toClampedNumber(
+    options.riftStrength,
+    DefaultValues.riftStrength,
+    MinValues.riftStrength,
+    MaxValues.riftStrength
+  )
+  material.uniforms.uRiftFrequency.value = toClampedNumber(
+    options.riftFrequency,
+    DefaultValues.riftFrequency,
+    MinValues.riftFrequency,
+    MaxValues.riftFrequency
+  )
+  material.uniforms.uRiftWidth.value = toClampedNumber(
+    options.riftWidth,
+    DefaultValues.riftWidth,
+    MinValues.riftWidth,
+    MaxValues.riftWidth
+  )
+  material.uniforms.uRiftSharpness.value = toClampedNumber(
+    options.riftSharpness,
+    DefaultValues.riftSharpness,
+    MinValues.riftSharpness,
+    MaxValues.riftSharpness
+  )
   material.uniforms.uRidgesRiftsBlend.value = toClampedNumber(
     options.ridgesRiftsBlend,
-    0.55,
-    0.0,
-    1.0
+    DefaultValues.ridgesRiftsBlend,
+    MinValues.ridgesRiftsBlend,
+    MaxValues.ridgesRiftsBlend
   )
   material.uniforms.uDebugMidline.value = options.debugMidline ? 1 : 0
 
@@ -1150,6 +1360,7 @@ export function createPlanetoidColorTexture(
     enableCraters: options.enableCraters,
     craterCount: options.craterCount,
     craterColorStrength: options.craterColorStrength,
+    craterSharpness: options.craterSharpness,
     enableVolcanoes: options.enableVolcanoes,
     volcanoCount: options.volcanoCount,
     volcanoScale: options.volcanoScale,
@@ -1182,19 +1393,20 @@ export function createPlanetoidColorTexture(
   return texture
 }
 
-export function createPlanetoidBumpTexture(
+export function createPlanetoidNormalTexture(
   renderer: WebGLRenderer,
   noiseOffset: NoiseOffset,
   textureHeight: number,
-  options: BumpTextureOptions = {}
+  options: SurfaceDetailTextureOptions = {}
 ) {
   const height = Math.max(2, Math.floor(textureHeight))
   const width = height * 2
 
-  const texture = renderTexture(renderer, 1, width, height, noiseOffset, {
+  const texture = renderTexture(renderer, 4, width, height, noiseOffset, {
     enableCraters: options.enableCraters,
     craterCount: options.craterCount,
     craterStrength: options.craterStrength,
+    craterSharpness: options.craterSharpness,
     enableVolcanoes: options.enableVolcanoes,
     volcanoCount: options.volcanoCount,
     volcanoScale: options.volcanoScale,
@@ -1214,6 +1426,7 @@ export function createPlanetoidBumpTexture(
   })
 
   texture.anisotropy = 8
+  texture.colorSpace = NoColorSpace
 
   return texture
 }

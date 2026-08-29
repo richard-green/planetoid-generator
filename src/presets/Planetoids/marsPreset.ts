@@ -44,7 +44,7 @@ export const marsPreset: PlanetoidPreset = {
     mediumScale: 0,
     smallScale: 0,
     triangleDetail: 15,
-    bumpScale: 1,
+    normalStrength: 1,
     roughness: 0.8,
     metalness: 0.5,
   }),

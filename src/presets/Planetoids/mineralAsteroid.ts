@@ -46,7 +46,7 @@ export const mineralAsteroidPreset: PlanetoidPreset = {
     mediumFrequency: 0.5,
     smallFrequency: 4.3,
     triangleDetail: 40,
-    bumpScale: 2,
+    normalStrength: 2,
     roughness: 0.75,
     metalness: 0.4,
   }),

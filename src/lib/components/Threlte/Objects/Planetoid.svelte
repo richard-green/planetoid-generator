@@ -10,6 +10,7 @@
     MeshBasicMaterial,
     MeshStandardMaterial,
     PerspectiveCamera,
+    Vector2,
     Vector3,
     WebGLRenderTarget,
     type Texture,
@@ -19,8 +20,8 @@
   import { AllPalettes, type AnyPaletteName } from './AllPalettes'
   import { DefaultValues, MaxValues, MinValues, type PlanetoidViewMode } from './PlanetoidSettings'
   import {
-    createPlanetoidBumpTexture,
     createPlanetoidColorTexture,
+    createPlanetoidNormalTexture,
     createPlanetoidPaletteGradientTexture,
     createPlanetoidRayMaskTexture,
     disposeGeneratedTexture,
@@ -40,10 +41,11 @@
     smallScale?: number
     mediumFrequency?: number
     smallFrequency?: number
-    bumpScale?: number
+    normalStrength?: number
     enableCraters?: boolean
     craterCount?: number
     craterStrength?: number
+    craterSharpness?: number
     craterColorStrength?: number
     enableVolcanoes?: boolean
     volcanoCount?: number
@@ -72,7 +74,7 @@
     autoRotate?: boolean
     showDebugMeshes?: boolean
     triangleDetail?: number
-    bumpTextureSize?: number
+    normalTextureSize?: number
     colorTextureSize?: number
   }
 
@@ -89,10 +91,11 @@
     smallScale = DefaultValues.smallScale,
     mediumFrequency = DefaultValues.mediumFrequency,
     smallFrequency = DefaultValues.smallFrequency,
-    bumpScale = DefaultValues.bumpScale,
+    normalStrength = DefaultValues.normalStrength,
     enableCraters = DefaultValues.enableCraters,
     craterCount = DefaultValues.craterCount,
     craterStrength = DefaultValues.craterStrength,
+    craterSharpness = DefaultValues.craterSharpness,
     craterColorStrength = DefaultValues.craterColorStrength,
     enableVolcanoes = DefaultValues.enableVolcanoes,
     volcanoCount = DefaultValues.volcanoCount,
@@ -121,7 +124,7 @@
     autoRotate = DefaultValues.autoRotate,
     showDebugMeshes = DefaultValues.showDebugMeshes,
     triangleDetail = DefaultValues.triangleDetail,
-    bumpTextureSize = DefaultValues.bumpTextureSize,
+    normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
   }: Props = $props()
 
@@ -129,15 +132,15 @@
   let mapPreviewMesh = $state<Mesh | undefined>(undefined)
   let material = $state<MeshStandardMaterial | undefined>(undefined)
   let mapPreviewMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let bumpDebugMesh = $state<Mesh | undefined>(undefined)
+  let normalDebugMesh = $state<Mesh | undefined>(undefined)
   let colorDebugMesh = $state<Mesh | undefined>(undefined)
   let paletteDebugMesh = $state<Mesh | undefined>(undefined)
   let rayDebugMesh = $state<Mesh | undefined>(undefined)
-  let bumpDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
+  let normalDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let colorDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let paletteDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let rayDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let bumpDebugTexture = $state<ReturnType<typeof createPlanetoidBumpTexture> | undefined>(
+  let normalDebugTexture = $state<ReturnType<typeof createPlanetoidNormalTexture> | undefined>(
     undefined
   )
   let colorDebugTexture = $state<ReturnType<typeof createPlanetoidColorTexture> | undefined>(
@@ -160,6 +163,22 @@
   let massCentre = $state(new Vector3())
 
   const { camera, size, renderer } = useThrelte()
+
+  function linearToSrgbChannel(channel: number) {
+    const x = MathUtils.clamp(channel / 255, 0, 1)
+    const srgb = x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055
+    return Math.round(MathUtils.clamp(srgb, 0, 1) * 255)
+  }
+
+  function convertPixelsLinearToSrgb(pixels: Uint8Array) {
+    for (let i = 0; i < pixels.length; i += 4) {
+      pixels[i] = linearToSrgbChannel(pixels[i])
+      pixels[i + 1] = linearToSrgbChannel(pixels[i + 1])
+      pixels[i + 2] = linearToSrgbChannel(pixels[i + 2])
+    }
+
+    return pixels
+  }
 
   function flipRowsRgba(source: Uint8Array, width: number, height: number) {
     const rowSize = width * 4
@@ -198,7 +217,11 @@
     return true
   }
 
-  function downloadRenderTexture(texture: Texture | null | undefined, fileName: string) {
+  function downloadRenderTexture(
+    texture: Texture | null | undefined,
+    fileName: string,
+    options: { convertLinearToSrgb?: boolean } = {}
+  ) {
     if (!renderer || !texture) return false
 
     const renderTarget = texture.userData.renderTarget as WebGLRenderTarget | undefined
@@ -220,17 +243,18 @@
     }
 
     const flipped = flipRowsRgba(pixels, width, height)
-    return triggerPngDownload(width, height, flipped, fileName)
+    const converted = options.convertLinearToSrgb ? convertPixelsLinearToSrgb(flipped) : flipped
+    return triggerPngDownload(width, height, converted, fileName)
   }
 
   export async function downloadTextureMapPng(fileName = 'planetoid-texture-map.png') {
     const colorMap = (material?.map as Texture | null | undefined) ?? colorDebugTexture
-    return downloadRenderTexture(colorMap, fileName)
+    return downloadRenderTexture(colorMap, fileName, { convertLinearToSrgb: true })
   }
 
-  export async function downloadBumpMapPng(fileName = 'planetoid-bump-map.png') {
-    const bumpMap = (material?.bumpMap as Texture | null | undefined) ?? bumpDebugTexture
-    return downloadRenderTexture(bumpMap, fileName)
+  export async function downloadNormalMapPng(fileName = 'planetoid-normal-map.png') {
+    const normalMap = (material?.normalMap as Texture | null | undefined) ?? normalDebugTexture
+    return downloadRenderTexture(normalMap, fileName, { convertLinearToSrgb: true })
   }
 
   function applySphericalUVs(geometry: BufferGeometry) {
@@ -570,6 +594,7 @@
     const textureScale = colorScale
     const currentCraterCount = craterCount
     const currentCraterColorStrength = craterColorStrength
+    const currentCraterSharpness = craterSharpness
     const currentEnableCraters = enableCraters
     const volcanoesEnabled = enableVolcanoes
     const currentVolcanoCount = volcanoCount
@@ -608,6 +633,7 @@
         swirliness: currentSwirliness,
         craterCount: currentCraterCount,
         craterColorStrength: currentCraterColorStrength,
+        craterSharpness: currentCraterSharpness,
         enableCraters: currentEnableCraters,
         enableVolcanoes: volcanoesEnabled,
         volcanoCount: currentVolcanoCount,
@@ -741,9 +767,9 @@
   $effect(() => {
     if (!mapPreviewMaterial) return
 
-    if (viewMode === 'bump') {
+    if (viewMode === 'normal') {
       mapPreviewMaterial.map =
-        bumpDebugTexture ?? (material?.bumpMap as Texture | null | undefined) ?? null
+        normalDebugTexture ?? (material?.normalMap as Texture | null | undefined) ?? null
     } else if (viewMode === 'texture') {
       mapPreviewMaterial.map =
         colorDebugTexture ?? (material?.map as Texture | null | undefined) ?? null
@@ -760,11 +786,12 @@
     if (!renderer) return
 
     const shape = shapeParameters
-    const textureSize = bumpTextureSize
-    const currentBumpScale = bumpScale
+    const textureSize = normalTextureSize
+    const currentNormalStrength = normalStrength
     const currentEnableCraters = enableCraters
     const currentCraterCount = craterCount
     const currentCraterStrength = craterStrength
+    const currentCraterSharpness = craterSharpness
     const volcanoesEnabled = enableVolcanoes
     const currentVolcanoCount = volcanoCount
     const currentVolcanoScale = volcanoScale
@@ -781,9 +808,10 @@
     const currentRidgesRiftsBlend = ridgesRiftsBlend
     const currentSwirliness = swirliness
 
-    const bumpTexture = createPlanetoidBumpTexture(renderer, shape.noiseOffset, textureSize, {
+    const detailOptions = {
       craterCount: currentCraterCount,
       craterStrength: currentCraterStrength,
+      craterSharpness: currentCraterSharpness,
       enableCraters: currentEnableCraters,
       enableVolcanoes: volcanoesEnabled,
       volcanoCount: currentVolcanoCount,
@@ -800,29 +828,44 @@
       riftSharpness: currentRiftSharpness,
       ridgesRiftsBlend: currentRidgesRiftsBlend,
       swirliness: currentSwirliness,
-    })
+    }
 
-    bumpDebugTexture = bumpTexture
+    const normalTexture = createPlanetoidNormalTexture(
+      renderer,
+      shape.noiseOffset,
+      textureSize,
+      detailOptions
+    )
+    normalDebugTexture = normalTexture
+
     if (material) {
-      material.bumpMap = bumpTexture
-      material.bumpScale = currentBumpScale
+      material.bumpMap = null
+      material.normalMap = normalTexture
+      material.bumpScale = 0
+      material.normalScale = new Vector2(currentNormalStrength, currentNormalStrength)
       material.needsUpdate = true
     }
-    if (bumpDebugMaterial) {
-      bumpDebugMaterial.map = bumpTexture
-      bumpDebugMaterial.needsUpdate = true
+    if (normalDebugMaterial) {
+      normalDebugMaterial.map = normalTexture
+      normalDebugMaterial.needsUpdate = true
     }
 
     return () => {
-      if (bumpDebugTexture === bumpTexture) {
-        bumpDebugTexture = undefined
+      if (normalDebugTexture === normalTexture) {
+        normalDebugTexture = undefined
       }
-      disposeGeneratedTexture(bumpTexture)
+      disposeGeneratedTexture(normalTexture)
     }
   })
 
   useTask(() => {
-    if (!showDebugMeshes || !bumpDebugMesh || !colorDebugMesh || !paletteDebugMesh || !rayDebugMesh)
+    if (
+      !showDebugMeshes ||
+      !normalDebugMesh ||
+      !colorDebugMesh ||
+      !paletteDebugMesh ||
+      !rayDebugMesh
+    )
       return
 
     const perspectiveCamera = $camera as PerspectiveCamera
@@ -844,7 +887,7 @@
     const leftX = -halfWidth + margin
     const rightX = halfWidth - margin
 
-    bumpDebugMesh.position
+    normalDebugMesh.position
       .copy(center)
       .add(right.clone().multiplyScalar(leftX))
       .add(up.clone().multiplyScalar(topY))
@@ -864,7 +907,7 @@
       .add(right.clone().multiplyScalar(leftX))
       .add(up.clone().multiplyScalar(bottomY))
 
-    bumpDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
+    normalDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     colorDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     paletteDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
     rayDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
@@ -895,11 +938,11 @@
   </T.Mesh>
 
   {#if showDebugMeshes}
-    <T.Mesh bind:ref={bumpDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
+    <T.Mesh bind:ref={normalDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
       <T.PlaneGeometry args={[1, 1]} />
       <T.MeshBasicMaterial
-        bind:ref={bumpDebugMaterial}
-        map={bumpDebugTexture}
+        bind:ref={normalDebugMaterial}
+        map={normalDebugTexture}
         toneMapped={false}
         depthTest={false}
         depthWrite={false}
