@@ -17,7 +17,7 @@
   import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
   import { onDestroy } from 'svelte'
   import { AllPalettes, type AnyPaletteName } from './AllPalettes'
-  import { MaxValues, MinValues, type PlanetoidViewMode } from './PlanetoidSettings'
+  import { DefaultValues, MaxValues, MinValues, type PlanetoidViewMode } from './PlanetoidSettings'
   import {
     createPlanetoidBumpTexture,
     createPlanetoidColorTexture,
@@ -76,49 +76,49 @@
 
   let {
     viewMode = 'mesh',
-    palette = 'rocky',
-    surfaceTint = '#05a0aa',
-    colorScale = 1.75,
-    tintShadowFloor = 0.18,
-    swirliness = 1,
-    seed = 12345,
-    largeScale = 0.32,
-    mediumScale = 0.1,
-    smallScale = 0.15,
-    bumpScale = 0.82,
-    enableCraters = true,
-    craterCount = 50,
-    craterStrength = 5,
-    craterColorStrength = 1.25,
-    enableVolcanoes = false,
-    volcanoCount = 10,
-    volcanoScale = 1,
-    volcanoStrength = 1,
-    volcanoColorStrength = 0.75,
-    ridgeColorWeight = 0.35,
-    riftColorWeight = 0.35,
-    craterRayStrength = 2,
-    craterRayVisibility = 1,
-    craterRayDensity = 1,
-    craterRaySharpness = 1,
-    craterRayLengthPower = 2.8,
-    enableRidges = false,
-    enableRifts = false,
-    ridgeStrength = 0.5,
-    ridgeScale = 2.2,
-    ridgeSharpness = 1.6,
-    riftStrength = 0.4,
-    riftScale = 3.4,
-    riftWidth = 0.09,
-    riftSharpness = 2,
-    ridgesRiftsBlend = 0.55,
-    roughness = 0.92,
-    metalness = 0.02,
-    autoRotate = false,
-    showDebugMeshes = true,
-    triangleDetail = 20,
-    bumpTextureSize = 800,
-    colorTextureSize = 256,
+    palette = DefaultValues.palette,
+    surfaceTint = DefaultValues.surfaceTint,
+    colorScale = DefaultValues.colorScale,
+    tintShadowFloor = DefaultValues.tintShadowFloor,
+    swirliness = DefaultValues.swirliness,
+    seed = DefaultValues.seed,
+    largeScale = DefaultValues.largeScale,
+    mediumScale = DefaultValues.mediumScale,
+    smallScale = DefaultValues.smallScale,
+    bumpScale = DefaultValues.bumpScale,
+    enableCraters = DefaultValues.enableCraters,
+    craterCount = DefaultValues.craterCount,
+    craterStrength = DefaultValues.craterStrength,
+    craterColorStrength = DefaultValues.craterColorStrength,
+    enableVolcanoes = DefaultValues.enableVolcanoes,
+    volcanoCount = DefaultValues.volcanoCount,
+    volcanoScale = DefaultValues.volcanoScale,
+    volcanoStrength = DefaultValues.volcanoStrength,
+    volcanoColorStrength = DefaultValues.volcanoColorStrength,
+    ridgeColorWeight = DefaultValues.ridgeColorWeight,
+    riftColorWeight = DefaultValues.riftColorWeight,
+    craterRayStrength = DefaultValues.craterRayStrength,
+    craterRayVisibility = DefaultValues.craterRayVisibility,
+    craterRayDensity = DefaultValues.craterRayDensity,
+    craterRaySharpness = DefaultValues.craterRaySharpness,
+    craterRayLengthPower = DefaultValues.craterRayLengthPower,
+    enableRidges = DefaultValues.enableRidges,
+    enableRifts = DefaultValues.enableRifts,
+    ridgeStrength = DefaultValues.ridgeStrength,
+    ridgeScale = DefaultValues.ridgeScale,
+    ridgeSharpness = DefaultValues.ridgeSharpness,
+    riftStrength = DefaultValues.riftStrength,
+    riftScale = DefaultValues.riftScale,
+    riftWidth = DefaultValues.riftWidth,
+    riftSharpness = DefaultValues.riftSharpness,
+    ridgesRiftsBlend = DefaultValues.ridgesRiftsBlend,
+    roughness = DefaultValues.roughness,
+    metalness = DefaultValues.metalness,
+    autoRotate = DefaultValues.autoRotate,
+    showDebugMeshes = DefaultValues.showDebugMeshes,
+    triangleDetail = DefaultValues.triangleDetail,
+    bumpTextureSize = DefaultValues.bumpTextureSize,
+    colorTextureSize = DefaultValues.colorTextureSize,
   }: Props = $props()
 
   let mesh = $state<Mesh | undefined>(undefined)
@@ -145,7 +145,7 @@
   let rayDebugTexture = $state<ReturnType<typeof createPlanetoidRayMaskTexture> | undefined>(
     undefined
   )
-  let color = $derived(new Color('#ffffff'))
+  let color = $derived(new Color(surfaceTint))
   const initialGeometry = createIcosphere(5)
   let geometry = $state<BufferGeometry>(initialGeometry)
   let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
@@ -889,55 +889,55 @@
   <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
     <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
   </T.Mesh>
+
+  {#if showDebugMeshes}
+    <T.Mesh bind:ref={bumpDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
+      <T.PlaneGeometry args={[1, 1]} />
+      <T.MeshBasicMaterial
+        bind:ref={bumpDebugMaterial}
+        map={bumpDebugTexture}
+        toneMapped={false}
+        depthTest={false}
+        depthWrite={false}
+      />
+    </T.Mesh>
+
+    <T.Mesh bind:ref={colorDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
+      <T.PlaneGeometry args={[1, 1]} />
+      <T.MeshBasicMaterial
+        bind:ref={colorDebugMaterial}
+        map={colorDebugTexture}
+        toneMapped={false}
+        depthTest={false}
+        depthWrite={false}
+      />
+    </T.Mesh>
+
+    <T.Mesh bind:ref={rayDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
+      <T.PlaneGeometry args={[1, 1]} />
+      <T.MeshBasicMaterial
+        bind:ref={rayDebugMaterial}
+        map={rayDebugTexture}
+        toneMapped={false}
+        depthTest={false}
+        depthWrite={false}
+      />
+    </T.Mesh>
+
+    <T.Mesh bind:ref={paletteDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
+      <T.PlaneGeometry args={[1, 1]} />
+      <T.MeshBasicMaterial
+        bind:ref={paletteDebugMaterial}
+        map={paletteDebugTexture}
+        toneMapped={false}
+        depthTest={false}
+        depthWrite={false}
+      />
+    </T.Mesh>
+  {/if}
 {:else}
   <T.Mesh bind:ref={mapPreviewMesh} scale={[3.8, 3.8, 1]} renderOrder={10}>
     <T.PlaneGeometry args={[1.8, 0.9]} />
     <T.MeshBasicMaterial bind:ref={mapPreviewMaterial} toneMapped={false} />
-  </T.Mesh>
-{/if}
-
-{#if viewMode === 'mesh' && showDebugMeshes}
-  <T.Mesh bind:ref={bumpDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-    <T.PlaneGeometry args={[1, 1]} />
-    <T.MeshBasicMaterial
-      bind:ref={bumpDebugMaterial}
-      map={bumpDebugTexture}
-      toneMapped={false}
-      depthTest={false}
-      depthWrite={false}
-    />
-  </T.Mesh>
-
-  <T.Mesh bind:ref={colorDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-    <T.PlaneGeometry args={[1, 1]} />
-    <T.MeshBasicMaterial
-      bind:ref={colorDebugMaterial}
-      map={colorDebugTexture}
-      toneMapped={false}
-      depthTest={false}
-      depthWrite={false}
-    />
-  </T.Mesh>
-
-  <T.Mesh bind:ref={rayDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-    <T.PlaneGeometry args={[1, 1]} />
-    <T.MeshBasicMaterial
-      bind:ref={rayDebugMaterial}
-      map={rayDebugTexture}
-      toneMapped={false}
-      depthTest={false}
-      depthWrite={false}
-    />
-  </T.Mesh>
-
-  <T.Mesh bind:ref={paletteDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-    <T.PlaneGeometry args={[1, 1]} />
-    <T.MeshBasicMaterial
-      bind:ref={paletteDebugMaterial}
-      map={paletteDebugTexture}
-      toneMapped={false}
-      depthTest={false}
-      depthWrite={false}
-    />
   </T.Mesh>
 {/if}
