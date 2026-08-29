@@ -393,32 +393,14 @@ const fragmentShader = `
       float t = craterNormalizedDistance(uv, craterUv, craterRadius, craterAge);
       if (t >= 1.35) continue;
 
-      float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
-      float sharpness01 = clamp((localRimSharpness - 0.5) / 7.5, 0.0, 1.0);
+      // Use the same signed crater profile as displacement so crater-center color
+      // tracks the normal-map crater interior/rim behavior.
+      float profile = craterShape(t, craterAge);
+      float interiorGain = mix(1.2, 1.05, craterAge);
+      float rimGain = mix(0.9, 0.78, craterAge);
+      float signedGain = profile < 0.0 ? interiorGain : rimGain;
 
-      float rimPeak = mix(0.2, 0.1, craterAge);
-
-      float exteriorWidth = mix(0.32, 0.22, sharpness01);
-      float exteriorProgress = clamp((t - 1.0) / max(1e-4, exteriorWidth), 0.0, 1.0);
-      float exteriorExponent = mix(2.2, 1.45, sharpness01);
-      float exteriorFalloff = pow(1.0 - exteriorProgress, exteriorExponent);
-
-      float floorRadius = mix(0.62, 0.7, craterAge);
-      float floorBlend = 0.06;
-      float floorMask = 1.0 - smoothstep(floorRadius - floorBlend, floorRadius, t);
-
-      float inwardProgress = clamp((t - floorRadius) / max(1e-4, 1.0 - floorRadius), 0.0, 1.0);
-      float inwardExponent = mix(2.9, 1.95, sharpness01);
-      float inwardFalloff = pow(inwardProgress, inwardExponent);
-
-      float isExterior = step(1.0, t);
-      float rimFlank = mix(rimPeak * inwardFalloff, rimPeak * exteriorFalloff, isExterior);
-
-      float bowlDarken = -mix(0.28, 0.16, craterAge) * floorMask;
-      float wallDarken = -mix(0.22, 0.13, craterAge) * (1.0 - inwardFalloff);
-      float rimLighten = rimFlank * mix(0.8, 0.68, craterAge);
-
-      craterWarp += bowlDarken + wallDarken + rimLighten;
+      craterWarp += profile * signedGain;
     }
 
     return clamp(craterWarp, -1.0, 0.8);

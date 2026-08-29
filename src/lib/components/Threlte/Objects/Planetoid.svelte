@@ -781,8 +781,7 @@
   })
 
   useTask(() => {
-    if (!showDebugMeshes || !normalDebugMesh || !colorDebugMesh || !paletteDebugMesh)
-      return
+    if (!showDebugMeshes || !normalDebugMesh || !colorDebugMesh || !paletteDebugMesh) return
 
     const perspectiveCamera = $camera as PerspectiveCamera
     const distance = 2.2

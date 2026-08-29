@@ -450,9 +450,7 @@
     if (!hasAllKeys) return null
 
     const isValidViewMode =
-      raw.viewMode === 'mesh' ||
-      raw.viewMode === 'normal' ||
-      raw.viewMode === 'texture'
+      raw.viewMode === 'mesh' || raw.viewMode === 'normal' || raw.viewMode === 'texture'
 
     if (!isValidViewMode) return null
 
