@@ -53,6 +53,8 @@ export type PlanetoidSettings = {
   largeScale: number
   mediumScale: number
   smallScale: number
+  mediumFrequency: number
+  smallFrequency: number
   triangleDetail: number
 }
 
@@ -92,6 +94,8 @@ export type PlanetoidRangeValues = Pick<
   | 'largeScale'
   | 'mediumScale'
   | 'smallScale'
+  | 'mediumFrequency'
+  | 'smallFrequency'
   | 'triangleDetail'
 >
 
@@ -140,6 +144,8 @@ export const DefaultValues: PlanetoidSettings = {
   largeScale: 0.4,
   mediumScale: 0.2,
   smallScale: 0.1,
+  mediumFrequency: 1,
+  smallFrequency: 4,
   triangleDetail: 15,
 }
 
@@ -178,6 +184,8 @@ export const MinValues: PlanetoidRangeValues = {
   largeScale: 0,
   mediumScale: 0,
   smallScale: 0,
+  mediumFrequency: 0.5,
+  smallFrequency: 1,
   triangleDetail: 1,
 }
 
@@ -216,6 +224,8 @@ export const MaxValues: PlanetoidRangeValues = {
   largeScale: 2,
   mediumScale: 2,
   smallScale: 2,
+  mediumFrequency: 5,
+  smallFrequency: 20,
   triangleDetail: 40,
 }
 
@@ -254,6 +264,8 @@ export const StepValues: PlanetoidRangeValues = {
   largeScale: 0.1,
   mediumScale: 0.1,
   smallScale: 0.1,
+  mediumFrequency: 0.1,
+  smallFrequency: 0.1,
   triangleDetail: 1,
 }
 
@@ -433,6 +445,16 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     min: MinValues.smallScale,
     max: MaxValues.smallScale,
   },
+  mediumFrequency: {
+    defaultValue: DefaultValues.mediumFrequency,
+    min: MinValues.mediumFrequency,
+    max: MaxValues.mediumFrequency,
+  },
+  smallFrequency: {
+    defaultValue: DefaultValues.smallFrequency,
+    min: MinValues.smallFrequency,
+    max: MaxValues.smallFrequency,
+  },
   triangleDetail: {
     defaultValue: DefaultValues.triangleDetail,
     min: MinValues.triangleDetail,
@@ -494,6 +516,8 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     largeScale: numeric.largeScale,
     mediumScale: numeric.mediumScale,
     smallScale: numeric.smallScale,
+    mediumFrequency: numeric.mediumFrequency,
+    smallFrequency: numeric.smallFrequency,
     triangleDetail: numeric.triangleDetail,
     bumpScale: numeric.bumpScale,
     roughness: numeric.roughness,
@@ -538,6 +562,8 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   largeScale: 'Large-scale',
   mediumScale: 'Medium-scale',
   smallScale: 'Small-scale',
+  mediumFrequency: 'Medium frequency',
+  smallFrequency: 'Small frequency',
   triangleDetail: 'Triangle detail',
 }
 
@@ -598,6 +624,8 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   largeScale: '--large-scale',
   mediumScale: '--medium-scale',
   smallScale: '--small-scale',
+  mediumFrequency: '--medium-frequency',
+  smallFrequency: '--small-frequency',
   triangleDetail: '--triangle-detail',
 }
 

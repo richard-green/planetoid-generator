@@ -19,6 +19,8 @@
     largeScale?: number
     mediumScale?: number
     smallScale?: number
+    mediumFrequency?: number
+    smallFrequency?: number
     bumpScale?: number
     enableCraters?: boolean
     craterCount?: number
@@ -66,6 +68,8 @@
     largeScale = DefaultValues.largeScale,
     mediumScale = DefaultValues.mediumScale,
     smallScale = DefaultValues.smallScale,
+    mediumFrequency = DefaultValues.mediumFrequency,
+    smallFrequency = DefaultValues.smallFrequency,
     bumpScale = DefaultValues.bumpScale,
     enableCraters = DefaultValues.enableCraters,
     craterCount = DefaultValues.craterCount,
@@ -237,6 +241,8 @@
   {largeScale}
   {mediumScale}
   {smallScale}
+  {mediumFrequency}
+  {smallFrequency}
   {bumpScale}
   {enableCraters}
   {craterCount}

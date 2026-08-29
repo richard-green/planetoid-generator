@@ -38,6 +38,8 @@
     largeScale?: number
     mediumScale?: number
     smallScale?: number
+    mediumFrequency?: number
+    smallFrequency?: number
     bumpScale?: number
     enableCraters?: boolean
     craterCount?: number
@@ -85,6 +87,8 @@
     largeScale = DefaultValues.largeScale,
     mediumScale = DefaultValues.mediumScale,
     smallScale = DefaultValues.smallScale,
+    mediumFrequency = DefaultValues.mediumFrequency,
+    smallFrequency = DefaultValues.smallFrequency,
     bumpScale = DefaultValues.bumpScale,
     enableCraters = DefaultValues.enableCraters,
     craterCount = DefaultValues.craterCount,
@@ -145,7 +149,7 @@
   let rayDebugTexture = $state<ReturnType<typeof createPlanetoidRayMaskTexture> | undefined>(
     undefined
   )
-  let color = $derived(new Color(surfaceTint))
+  let color = $derived(new Color('#ffffff'))
   const initialGeometry = createIcosphere(5)
   let geometry = $state<BufferGeometry>(initialGeometry)
   let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
@@ -372,7 +376,7 @@
         y: random() * 1000,
         z: random() * 1000,
       },
-      potatoLobes: [
+      lobes: [
         {
           direction: randomUnitVector(random),
           frequency: 1.2 + random() * 1.8,
@@ -453,11 +457,13 @@
     weldGroups: number[][],
     shape: {
       noiseOffset: { x: number; y: number; z: number }
-      potatoLobes: Array<{ direction: Vector3; frequency: number; phase: number; weight: number }>
+      lobes: Array<{ direction: Vector3; frequency: number; phase: number; weight: number }>
     },
-    potatoScale: number,
-    broadScale: number,
-    fineScale: number
+    largeScale: number,
+    mediumScale: number,
+    smallScale: number,
+    mediumFrequency: number,
+    smallFrequency: number
   ) {
     const position = targetGeometry.attributes.position
     const vertex = new Vector3()
@@ -470,30 +476,30 @@
       const direction = vertex.clone().normalize()
 
       // Broad surface breakup.
-      const broad = fractalNoise(
-        direction.x * 1.4 + shape.noiseOffset.x,
-        direction.y * 1.4 + shape.noiseOffset.y,
-        direction.z * 1.4 + shape.noiseOffset.z
+      const medium = fractalNoise(
+        direction.x * mediumFrequency + shape.noiseOffset.x,
+        direction.y * mediumFrequency + shape.noiseOffset.y,
+        direction.z * mediumFrequency + shape.noiseOffset.z
       )
 
       // Finer surface breakup.
-      const fine = fractalNoise(
-        direction.x * 3.0 + shape.noiseOffset.x,
-        direction.y * 3.0 + shape.noiseOffset.y,
-        direction.z * 3.0 + shape.noiseOffset.z
+      const small = fractalNoise(
+        direction.x * smallFrequency + shape.noiseOffset.x,
+        direction.y * smallFrequency + shape.noiseOffset.y,
+        direction.z * smallFrequency + shape.noiseOffset.z
       )
 
-      let potato = 0
-      for (const lobe of shape.potatoLobes) {
+      let large = 0
+      for (const lobe of shape.lobes) {
         const projection = direction.dot(lobe.direction)
-        potato += Math.sin(projection * lobe.frequency + lobe.phase) * lobe.weight
+        large += Math.sin(projection * lobe.frequency + lobe.phase) * lobe.weight
       }
 
       // Scale mapping:
-      // largeScale -> global silhouette (potato)
+      // largeScale -> lobes
       // mediumScale -> broad breakup
       // smallScale -> fine breakup
-      const displacement = potato * potatoScale + broad * broadScale + fine * fineScale
+      const displacement = large * largeScale + medium * mediumScale + small * smallScale
 
       vertex.copy(direction).multiplyScalar(2 + displacement)
 
@@ -540,18 +546,17 @@
     const sourcePositions = basePositions
     const weldGroups = normalWeldGroups
     const shape = shapeParameters
-    const potatoScale = largeScale
-    const broadScale = mediumScale
-    const fineScale = smallScale
 
     deformGeometry(
       targetGeometry,
       sourcePositions,
       weldGroups,
       shape,
-      potatoScale,
-      broadScale,
-      fineScale
+      largeScale,
+      mediumScale,
+      smallScale,
+      mediumFrequency,
+      smallFrequency
     )
 
     massCentre = centreOfMass(geometry)

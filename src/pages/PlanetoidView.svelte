@@ -105,6 +105,8 @@
     'largeScale',
     'mediumScale',
     'smallScale',
+    'mediumFrequency',
+    'smallFrequency',
     'triangleDetail',
   ]
 
@@ -771,6 +773,8 @@
           largeScale={planetoid.largeScale}
           mediumScale={planetoid.mediumScale}
           smallScale={planetoid.smallScale}
+          mediumFrequency={planetoid.mediumFrequency}
+          smallFrequency={planetoid.smallFrequency}
           triangleDetail={planetoid.triangleDetail}
           bumpScale={planetoid.bumpScale}
           craterCount={planetoid.craterCount}

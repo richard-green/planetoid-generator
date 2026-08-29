@@ -38,6 +38,8 @@ function Invoke-PlanetoidBatch {
         [double]$LargeScale = 0.4,
         [double]$MediumScale = 0.1,
         [double]$SmallScale = 0.1,
+        [double]$MediumFrequency = 1,
+        [double]$SmallFrequency = 4,
         [int]$TriangleDetail = 20,
         [string]$ViewMode = "",
         [Nullable[int]]$Step = $null,
@@ -65,6 +67,8 @@ function Invoke-PlanetoidBatch {
         '--large-scale', $LargeScale,
         '--medium-scale', $MediumScale,
         '--small-scale', $SmallScale,
+        '--medium-frequency', $MediumFrequency,
+        '--small-frequency', $SmallFrequency,
         '--triangle-detail', $TriangleDetail,
         '--seed', $currentStartSeed,
         '--count', $Count

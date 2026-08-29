@@ -70,6 +70,8 @@ type ScriptOptions = {
   largeScale?: number
   mediumScale?: number
   smallScale?: number
+  mediumFrequency?: number
+  smallFrequency?: number
   bumpScale?: number
   roughness?: number
   metalness?: number
@@ -128,6 +130,8 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   largeScale: undefined,
   mediumScale: undefined,
   smallScale: undefined,
+  mediumFrequency: undefined,
+  smallFrequency: undefined,
   bumpScale: undefined,
   roughness: undefined,
   metalness: undefined,
