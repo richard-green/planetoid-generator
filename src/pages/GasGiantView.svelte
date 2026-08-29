@@ -2,6 +2,8 @@
   import { Canvas } from '@threlte/core'
   import { tick } from 'svelte'
   import { WebGLRenderer } from 'three'
+  import '../styles/common.css'
+  import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
   import {
     GasGiantPaletteNames,
@@ -18,7 +20,7 @@
     type GasGiantRangeKey,
     type GasGiantSettings,
   } from '../lib/components/Threlte/Objects/GasGiantSettings'
-  import { BUILTIN_GAS_GIANT_PRESETS, type GasGiantPreset } from './gas-giant-presets'
+  import { BUILTIN_GAS_GIANT_PRESETS, type GasGiantPreset } from '../presets/GasGiants'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
 
@@ -41,6 +43,13 @@
   const GAS_GIANT_SETTINGS_STORAGE_KEY = 'gas-giant-view-settings-v1'
   const GAS_GIANT_UI_STORAGE_KEY = 'gas-giant-view-ui-v1'
   const GAS_GIANT_PRESETS_STORAGE_KEY = 'gas-giant-view-presets-v1'
+
+  const pageTitleLinks = [
+    {
+      href: '#/planetoids',
+      label: 'Planetoid Generator',
+    },
+  ]
 
   const DEFAULT_GAS_GIANT_SETTINGS: GasGiantViewSettings = { ...DefaultGasGiantSettings }
   const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
@@ -695,36 +704,7 @@
 <svelte:window onpointerdown={onWindowPointerDown} />
 
 <div class="page">
-  <h1 class="page-title">
-    <span>Gas and Ice Giant Generator</span>
-    <div class="page-title-actions">
-      <a class="page-title-link" href="#/planetoids">Planetoid Generator</a>
-      <a
-        class="page-title-github-link"
-        href="https://github.com/richard-green/planetoid-generator"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="Open GitHub repository"
-        title="View source on GitHub"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path
-            fill="currentColor"
-            d="M12 0.5c-6.35 0-11.5 5.15-11.5 11.5 0 5.08 3.29 9.39 7.86 10.91 0.58 0.11 0.79-0.25 0.79-0.56 0-0.28-0.01-1.02-0.02-2-3.2 0.7-3.88-1.54-3.88-1.54-0.52-1.33-1.28-1.68-1.28-1.68-1.04-0.71 0.08-0.7 0.08-0.7 1.15 0.08 1.76 1.18 1.76 1.18 1.02 1.76 2.68 1.25 3.33 0.96 0.1-0.74 0.4-1.25 0.73-1.54-2.55-0.29-5.24-1.27-5.24-5.65 0-1.25 0.45-2.28 1.18-3.08-0.12-0.29-0.51-1.46 0.11-3.05 0 0 0.97-0.31 3.17 1.18 0.92-0.26 1.9-0.38 2.88-0.38 0.98 0 1.96 0.13 2.88 0.38 2.2-1.49 3.17-1.18 3.17-1.18 0.63 1.59 0.23 2.76 0.11 3.05 0.73 0.8 1.18 1.83 1.18 3.08 0 4.39-2.69 5.36-5.25 5.64 0.41 0.35 0.77 1.04 0.77 2.1 0 1.52-0.01 2.74-0.01 3.11 0 0.31 0.21 0.68 0.8 0.56 4.56-1.53 7.85-5.84 7.85-10.91 0-6.35-5.15-11.5-11.5-11.5z"
-          ></path>
-        </svg>
-      </a>
-      <button
-        type="button"
-        class="page-title-help-button"
-        onclick={onOpenWelcome}
-        aria-label="Open welcome message"
-        title="Open welcome message"
-      >
-        ?
-      </button>
-    </div>
-  </h1>
+  <PageTitle title="Gas and Ice Giant Generator" links={pageTitleLinks} {onOpenWelcome} />
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
@@ -1109,7 +1089,3 @@
     </section>
   </div>
 {/if}
-
-<style>
-  @import './generator-view-common.css';
-</style>
