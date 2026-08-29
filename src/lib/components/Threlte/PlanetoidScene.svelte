@@ -44,7 +44,7 @@
     ridgeScale?: number
     ridgeSharpness?: number
     riftStrength?: number
-    riftScale?: number
+    riftFrequency?: number
     riftWidth?: number
     riftSharpness?: number
     ridgesRiftsBlend?: number
@@ -93,7 +93,7 @@
     ridgeScale = DefaultValues.ridgeScale,
     ridgeSharpness = DefaultValues.ridgeSharpness,
     riftStrength = DefaultValues.riftStrength,
-    riftScale = DefaultValues.riftScale,
+    riftFrequency = DefaultValues.riftFrequency,
     riftWidth = DefaultValues.riftWidth,
     riftSharpness = DefaultValues.riftSharpness,
     ridgesRiftsBlend = DefaultValues.ridgesRiftsBlend,
@@ -266,7 +266,7 @@
   {ridgeScale}
   {ridgeSharpness}
   {riftStrength}
-  {riftScale}
+  {riftFrequency}
   {riftWidth}
   {riftSharpness}
   {ridgesRiftsBlend}

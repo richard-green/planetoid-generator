@@ -36,7 +36,7 @@ type BumpTextureOptions = {
   ridgeScale?: number
   ridgeSharpness?: number
   riftStrength?: number
-  riftScale?: number
+  riftFrequency?: number
   riftWidth?: number
   riftSharpness?: number
   ridgesRiftsBlend?: number
@@ -55,7 +55,7 @@ type ColorTextureOptions = {
   ridgeScale?: number
   ridgeSharpness?: number
   riftStrength?: number
-  riftScale?: number
+  riftFrequency?: number
   riftWidth?: number
   riftSharpness?: number
   ridgesRiftsBlend?: number
@@ -124,7 +124,7 @@ const fragmentShader = `
   uniform float uRidgeScale;
   uniform float uRidgeSharpness;
   uniform float uRiftStrength;
-  uniform float uRiftScale;
+  uniform float uRiftFrequency;
   uniform float uRiftWidth;
   uniform float uRiftSharpness;
   uniform float uRidgesRiftsBlend;
@@ -174,7 +174,7 @@ const fragmentShader = `
 
   vec2 ridgeRiftSignals(vec3 p, vec3 seed) {
     float ridgeScale = max(0.1, uRidgeScale);
-    float riftScale = max(0.1, uRiftScale);
+    float riftFrequency = max(0.1, uRiftFrequency);
 
     float ridgeNoise = fractalNoise(p * ridgeScale + seed * 0.91 + vec3(17.7, 53.2, 91.4));
     float ridgeRaw = 1.0 - abs(ridgeNoise);
@@ -185,11 +185,11 @@ const fragmentShader = `
     );
     float ridgeHeight = ridgeSharp * uRidgeStrength;
 
-    float riftNoise = fractalNoise(p * riftScale + seed * 1.17 + vec3(61.3, 13.9, 37.5));
+    float riftNoise = fractalNoise(p * riftFrequency + seed * 1.17 + vec3(61.3, 13.9, 37.5));
     float riftCrossing = abs(riftNoise);
     float riftWidth = max(0.003, uRiftWidth * 0.6);
     float riftCore = 1.0 - smoothstep(0.0, riftWidth, riftCrossing);
-    float riftSecondary = fractalNoise(p * (riftScale * 2.35) + seed * 1.41 + vec3(23.1, 79.7, 45.2));
+    float riftSecondary = fractalNoise(p * (riftFrequency * 2.35) + seed * 1.41 + vec3(23.1, 79.7, 45.2));
     float riftIrregularity = mix(0.75, 1.25, clamp((riftSecondary + 1.0) * 0.5, 0.0, 1.0));
     float riftSharp = pow(clamp(riftCore * riftIrregularity, 0.0, 1.0), uRiftSharpness * 1.2);
     float riftDepth = riftSharp * uRiftStrength;
@@ -890,7 +890,7 @@ const material = new ShaderMaterial({
     uRidgeScale: new Uniform(2.2),
     uRidgeSharpness: new Uniform(1.6),
     uRiftStrength: new Uniform(0.4),
-    uRiftScale: new Uniform(3.4),
+    uRiftFrequency: new Uniform(3.4),
     uRiftWidth: new Uniform(0.09),
     uRiftSharpness: new Uniform(2.0),
     uRidgesRiftsBlend: new Uniform(0.55),
@@ -999,7 +999,7 @@ function renderTexture(
     ridgeScale?: number
     ridgeSharpness?: number
     riftStrength?: number
-    riftScale?: number
+    riftFrequency?: number
     riftWidth?: number
     riftSharpness?: number
     ridgesRiftsBlend?: number
@@ -1072,7 +1072,7 @@ function renderTexture(
   material.uniforms.uRidgeScale.value = toClampedNumber(options.ridgeScale, 2.2, 0.5, 8.0)
   material.uniforms.uRidgeSharpness.value = toClampedNumber(options.ridgeSharpness, 1.6, 0.5, 4.0)
   material.uniforms.uRiftStrength.value = toClampedNumber(options.riftStrength, 0.4, 0.0, 2.0)
-  material.uniforms.uRiftScale.value = toClampedNumber(options.riftScale, 3.4, 0.5, 12.0)
+  material.uniforms.uRiftFrequency.value = toClampedNumber(options.riftFrequency, 3.4, 0.5, 12.0)
   material.uniforms.uRiftWidth.value = toClampedNumber(options.riftWidth, 0.09, 0.01, 0.25)
   material.uniforms.uRiftSharpness.value = toClampedNumber(options.riftSharpness, 2.0, 0.5, 6.0)
   material.uniforms.uRidgesRiftsBlend.value = toClampedNumber(
@@ -1163,7 +1163,7 @@ export function createPlanetoidColorTexture(
     ridgeScale: options.ridgeScale,
     ridgeSharpness: options.ridgeSharpness,
     riftStrength: options.riftStrength,
-    riftScale: options.riftScale,
+    riftFrequency: options.riftFrequency,
     riftWidth: options.riftWidth,
     riftSharpness: options.riftSharpness,
     ridgesRiftsBlend: options.ridgesRiftsBlend,
@@ -1206,7 +1206,7 @@ export function createPlanetoidBumpTexture(
     ridgeScale: options.ridgeScale,
     ridgeSharpness: options.ridgeSharpness,
     riftStrength: options.riftStrength,
-    riftScale: options.riftScale,
+    riftFrequency: options.riftFrequency,
     riftWidth: options.riftWidth,
     riftSharpness: options.riftSharpness,
     ridgesRiftsBlend: options.ridgesRiftsBlend,

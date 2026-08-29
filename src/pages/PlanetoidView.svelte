@@ -90,7 +90,7 @@
     'ridgeSharpness',
     'ridgeColorWeight',
     'riftStrength',
-    'riftScale',
+    'riftFrequency',
     'riftWidth',
     'riftSharpness',
     'riftColorWeight',
@@ -174,7 +174,7 @@
   ]
   const riftControlKeys: NumericControlKey[] = [
     'riftStrength',
-    'riftScale',
+    'riftFrequency',
     'riftWidth',
     'riftSharpness',
     'riftColorWeight',
@@ -799,7 +799,7 @@
           ridgeScale={planetoid.ridgeScale}
           ridgeSharpness={planetoid.ridgeSharpness}
           riftStrength={effectiveRiftsEnabled ? planetoid.riftStrength : 0}
-          riftScale={planetoid.riftScale}
+          riftFrequency={planetoid.riftFrequency}
           riftWidth={planetoid.riftWidth}
           riftSharpness={planetoid.riftSharpness}
           ridgesRiftsBlend={planetoid.ridgesRiftsBlend}

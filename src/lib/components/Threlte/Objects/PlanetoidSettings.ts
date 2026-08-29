@@ -41,7 +41,7 @@ export type PlanetoidSettings = {
   ridgeScale: number
   ridgeSharpness: number
   riftStrength: number
-  riftScale: number
+  riftFrequency: number
   riftWidth: number
   riftSharpness: number
   ridgesRiftsBlend: number
@@ -82,7 +82,7 @@ export type PlanetoidRangeValues = Pick<
   | 'ridgeScale'
   | 'ridgeSharpness'
   | 'riftStrength'
-  | 'riftScale'
+  | 'riftFrequency'
   | 'riftWidth'
   | 'riftSharpness'
   | 'ridgesRiftsBlend'
@@ -132,7 +132,7 @@ export const DefaultValues: PlanetoidSettings = {
   ridgeColorWeight: 0.1,
   ridgesRiftsBlend: 0.5,
   riftStrength: 0.75,
-  riftScale: 1.5,
+  riftFrequency: 1.5,
   riftWidth: 0.05,
   riftSharpness: 2,
   riftColorWeight: 0.25,
@@ -172,7 +172,7 @@ export const MinValues: PlanetoidRangeValues = {
   ridgeScale: 0.5,
   ridgeSharpness: 0.5,
   riftStrength: 0,
-  riftScale: 0.5,
+  riftFrequency: 0.5,
   riftWidth: 0.01,
   riftSharpness: 0.5,
   ridgesRiftsBlend: 0,
@@ -212,7 +212,7 @@ export const MaxValues: PlanetoidRangeValues = {
   ridgeScale: 8,
   ridgeSharpness: 4,
   riftStrength: 2,
-  riftScale: 12,
+  riftFrequency: 12,
   riftWidth: 0.25,
   riftSharpness: 6,
   ridgesRiftsBlend: 1,
@@ -252,7 +252,7 @@ export const StepValues: PlanetoidRangeValues = {
   ridgeScale: 0.1,
   ridgeSharpness: 0.05,
   riftStrength: 0.05,
-  riftScale: 0.1,
+  riftFrequency: 0.1,
   riftWidth: 0.01,
   riftSharpness: 0.05,
   ridgesRiftsBlend: 0.05,
@@ -383,10 +383,10 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     min: MinValues.riftStrength,
     max: MaxValues.riftStrength,
   },
-  riftScale: {
-    defaultValue: DefaultValues.riftScale,
-    min: MinValues.riftScale,
-    max: MaxValues.riftScale,
+  riftFrequency: {
+    defaultValue: DefaultValues.riftFrequency,
+    min: MinValues.riftFrequency,
+    max: MaxValues.riftFrequency,
   },
   riftWidth: {
     defaultValue: DefaultValues.riftWidth,
@@ -506,7 +506,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     ridgeScale: numeric.ridgeScale,
     ridgeSharpness: numeric.ridgeSharpness,
     riftStrength: numeric.riftStrength,
-    riftScale: numeric.riftScale,
+    riftFrequency: numeric.riftFrequency,
     riftWidth: numeric.riftWidth,
     riftSharpness: numeric.riftSharpness,
     ridgesRiftsBlend: numeric.ridgesRiftsBlend,
@@ -550,7 +550,7 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   ridgeScale: 'Ridge scale',
   ridgeSharpness: 'Ridge sharpness',
   riftStrength: 'Rift strength',
-  riftScale: 'Rift scale',
+  riftFrequency: 'Rift frequency',
   riftWidth: 'Rift width',
   riftSharpness: 'Rift sharpness',
   ridgesRiftsBlend: 'Ridges/rifts blend',
@@ -612,7 +612,7 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   ridgeScale: '--ridge-scale',
   ridgeSharpness: '--ridge-sharpness',
   riftStrength: '--rift-strength',
-  riftScale: '--rift-scale',
+  riftFrequency: '--rift-frequency',
   riftWidth: '--rift-width',
   riftSharpness: '--rift-sharpness',
   ridgesRiftsBlend: '--ridges-rifts-blend',

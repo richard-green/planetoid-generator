@@ -33,7 +33,7 @@ export const iceworldPreset: PlanetoidPreset = {
     ridgeScale: 2.5,
     ridgeSharpness: 2.5,
     riftStrength: 0.75,
-    riftScale: 1.5,
+    riftFrequency: 1.5,
     riftWidth: 0.05,
     riftSharpness: 2,
     ridgesRiftsBlend: 0.5,

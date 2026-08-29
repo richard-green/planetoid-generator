@@ -63,7 +63,7 @@
     ridgeScale?: number
     ridgeSharpness?: number
     riftStrength?: number
-    riftScale?: number
+    riftFrequency?: number
     riftWidth?: number
     riftSharpness?: number
     ridgesRiftsBlend?: number
@@ -112,7 +112,7 @@
     ridgeScale = DefaultValues.ridgeScale,
     ridgeSharpness = DefaultValues.ridgeSharpness,
     riftStrength = DefaultValues.riftStrength,
-    riftScale = DefaultValues.riftScale,
+    riftFrequency = DefaultValues.riftFrequency,
     riftWidth = DefaultValues.riftWidth,
     riftSharpness = DefaultValues.riftSharpness,
     ridgesRiftsBlend = DefaultValues.ridgesRiftsBlend,
@@ -584,7 +584,7 @@
     const currentRidgeScale = ridgeScale
     const currentRidgeSharpness = ridgeSharpness
     const currentRiftStrength = riftStrength
-    const currentRiftScale = riftScale
+    const currentRiftFrequency = riftFrequency
     const currentRiftWidth = riftWidth
     const currentRiftSharpness = riftSharpness
     const currentRidgesRiftsBlend = ridgesRiftsBlend
@@ -622,7 +622,7 @@
         ridgeScale: currentRidgeScale,
         ridgeSharpness: currentRidgeSharpness,
         riftStrength: currentRiftStrength,
-        riftScale: currentRiftScale,
+        riftFrequency: currentRiftFrequency,
         riftWidth: currentRiftWidth,
         riftSharpness: currentRiftSharpness,
         ridgesRiftsBlend: currentRidgesRiftsBlend,
@@ -775,7 +775,7 @@
     const currentRidgeScale = ridgeScale
     const currentRidgeSharpness = ridgeSharpness
     const currentRiftStrength = riftStrength
-    const currentRiftScale = riftScale
+    const currentRiftFrequency = riftFrequency
     const currentRiftWidth = riftWidth
     const currentRiftSharpness = riftSharpness
     const currentRidgesRiftsBlend = ridgesRiftsBlend
@@ -795,7 +795,7 @@
       ridgeScale: currentRidgeScale,
       ridgeSharpness: currentRidgeSharpness,
       riftStrength: currentRiftStrength,
-      riftScale: currentRiftScale,
+      riftFrequency: currentRiftFrequency,
       riftWidth: currentRiftWidth,
       riftSharpness: currentRiftSharpness,
       ridgesRiftsBlend: currentRidgesRiftsBlend,

@@ -33,7 +33,7 @@ export const marsPreset: PlanetoidPreset = {
     ridgeScale: 8,
     ridgeSharpness: 2,
     riftStrength: 0.4,
-    riftScale: 1.5,
+    riftFrequency: 1.5,
     riftWidth: 0.05,
     riftSharpness: 2,
     ridgesRiftsBlend: 0.5,
