@@ -1,4 +1,4 @@
-import type { GasGiantSettings } from '../../lib/components/Threlte/Objects/GasGiantSettings'
+import type { GasGiantSettings } from '../../lib/components/Threlte/GasGiant/GasGiantSettings'
 
 export type GasGiantPreset = {
   id: string

@@ -1,4 +1,4 @@
-import type { PlanetoidPresetSettings } from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+import type { PlanetoidPresetSettings } from '../../lib/components/Threlte/Planetoid/PlanetoidSettings'
 
 export type PlanetoidPreset = {
   id: string

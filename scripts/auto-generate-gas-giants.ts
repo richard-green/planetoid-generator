@@ -5,9 +5,9 @@ import path from 'path'
 import type { Locator, Page } from 'playwright'
 import { firefox } from 'playwright'
 import {
-  GasGiantPaletteNames as VALID_PALETTES,
+  GasGiantPaletteNames,
   type GasGiantPaletteName as PaletteName,
-} from '../src/lib/components/Threlte/Objects/GasGiantPalettes'
+} from '../src/lib/components/Threlte/GasGiant/GasGiantPalettes'
 import {
   GasGiantCliFlagByRangeKey,
   GasGiantCliToggleFlags,
@@ -16,7 +16,7 @@ import {
   MaxValues,
   MinValues,
   type GasGiantRangeKey,
-} from '../src/lib/components/Threlte/Objects/GasGiantSettings'
+} from '../src/lib/components/Threlte/GasGiant/GasGiantSettings'
 
 const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
   (key) => key !== 'seed'
@@ -284,7 +284,7 @@ function normalizePalette(input: string | undefined): PaletteName | undefined {
   if (!input) return undefined
 
   const normalized = input.trim().toLowerCase()
-  const matched = VALID_PALETTES.find((value) => value.toLowerCase() === normalized)
+  const matched = GasGiantPaletteNames.find((value) => value.toLowerCase() === normalized)
   return matched
 }
 
@@ -358,7 +358,7 @@ async function main() {
   const requestedPalette = normalizePalette(options.palette)
   if (options.palette && !requestedPalette) {
     throw new Error(
-      `palette is invalid. Received: ${options.palette}. Valid values: ${VALID_PALETTES.join(', ')}`
+      `palette is invalid. Received: ${options.palette}. Valid values: ${GasGiantPaletteNames.join(', ')}`
     )
   }
 

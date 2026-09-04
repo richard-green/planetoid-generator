@@ -5,9 +5,9 @@ import path from 'path'
 import type { Locator, Page } from 'playwright'
 import { firefox } from 'playwright'
 import {
-  PlanetoidPaletteNames as VALID_PALETTES,
+  PlanetoidPaletteNames,
   type PlanetoidPaletteName as PaletteName,
-} from '../src/lib/components/Threlte/Objects/PlanetoidPalettes'
+} from '../src/lib/components/Threlte/Planetoid/PlanetoidPalettes'
 import {
   MaxValues,
   MinValues,
@@ -16,7 +16,7 @@ import {
   PlanetoidRangeLabels,
   PlanetoidUiLabels,
   type PlanetoidRangeKey,
-} from '../src/lib/components/Threlte/Objects/PlanetoidSettings'
+} from '../src/lib/components/Threlte/Planetoid/PlanetoidSettings'
 
 const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as PlanetoidRangeKey[]).filter(
   (key) => key !== 'seed'
@@ -449,7 +449,7 @@ function normalizePalette(input: string | undefined): PaletteName | undefined {
     return 'oxidizedBasalt'
   }
 
-  const matched = VALID_PALETTES.find((value) => value.toLowerCase() === normalized)
+  const matched = PlanetoidPaletteNames.find((value: string) => value.toLowerCase() === normalized)
   return matched
 }
 
@@ -560,7 +560,7 @@ async function main() {
   const requestedPalette = normalizePalette(options.palette)
   if (options.palette && !requestedPalette) {
     throw new Error(
-      `palette is invalid. Received: ${options.palette}. Valid values: ${VALID_PALETTES.join(', ')}`
+      `palette is invalid. Received: ${options.palette}. Valid values: ${PlanetoidPaletteNames.join(', ')}`
     )
   }
 

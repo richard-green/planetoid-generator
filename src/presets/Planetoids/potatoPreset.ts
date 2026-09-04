@@ -1,7 +1,7 @@
 import {
   DefaultValues,
   toPlanetoidPresetSettings,
-} from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+} from '../../lib/components/Threlte/Planetoid/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const potatoPreset: PlanetoidPreset = {
@@ -16,7 +16,7 @@ export const potatoPreset: PlanetoidPreset = {
     swirliness: 0.3,
     craterCount: 20,
     craterStrength: 0.5,
-    craterColorStrength: 2.05,
+    craterColorStrength: 0.45,
     volcanoCount: 12,
     volcanoScale: 2,
     volcanoStrength: 2,

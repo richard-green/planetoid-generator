@@ -1,4 +1,4 @@
-import { DefaultValues } from '../../lib/components/Threlte/Objects/GasGiantSettings'
+import { DefaultValues } from '../../lib/components/Threlte/GasGiant/GasGiantSettings'
 import type { GasGiantPreset } from './types'
 
 export const iceCalmPreset: GasGiantPreset = {

@@ -4,8 +4,8 @@
   import { MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
-  import GasGiant from './Objects/GasGiant.svelte'
-  import { DefaultValues, type GasGiantSettings } from './Objects/GasGiantSettings'
+  import GasGiant from './GasGiant/GasGiant.svelte'
+  import { DefaultValues, type GasGiantSettings } from './GasGiant/GasGiantSettings'
 
   type Props = Partial<GasGiantSettings>
 

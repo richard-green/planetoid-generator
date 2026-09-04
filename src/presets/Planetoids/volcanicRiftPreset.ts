@@ -1,7 +1,7 @@
 import {
   DefaultValues,
   toPlanetoidPresetSettings,
-} from '../../lib/components/Threlte/Objects/PlanetoidSettings'
+} from '../../lib/components/Threlte/Planetoid/PlanetoidSettings'
 import type { PlanetoidPreset } from './types'
 
 export const volcanicRiftPreset: PlanetoidPreset = {

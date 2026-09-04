@@ -3,12 +3,15 @@
   import { tick } from 'svelte'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
+  import PresetManager, {
+    type PresetListItem,
+  } from '../lib/components/Controls/PresetManager.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
   import {
     PlanetoidPalettes,
     PlanetoidPaletteNames,
-  } from '../lib/components/Threlte/Objects/PlanetoidPalettes'
+  } from '../lib/components/Threlte/Planetoid/PlanetoidPalettes'
   import {
     DefaultValues,
     MaxValues,
@@ -24,7 +27,7 @@
     type PlanetoidSettings,
     toPlanetoidPresetSettings,
     type PlanetoidViewMode,
-  } from '../lib/components/Threlte/Objects/PlanetoidSettings'
+  } from '../lib/components/Threlte/Planetoid/PlanetoidSettings'
   import { BUILTIN_PRESETS, type PlanetoidPreset } from '../presets/Planetoids'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
@@ -419,6 +422,11 @@
   function applyPresetAndCloseManager(preset: PlanetoidPreset) {
     applyPreset(preset)
     presetsManagerOpen = false
+  }
+
+  function findPresetById(presetId: string) {
+    return BUILTIN_PRESETS.find((preset) => preset.id === presetId) ??
+      userPresets.find((preset) => preset.id === presetId)
   }
 
   function deleteUserPreset(presetId: string) {
@@ -1213,81 +1221,20 @@
 </div>
 
 {#if presetsManagerOpen}
-  <div class="preset-manager-backdrop" role="dialog" aria-modal="true" aria-label="Preset manager">
-    <section class="preset-manager-panel">
-      <header class="preset-manager-header">
-        <h2>Manage Presets</h2>
-        <button type="button" class="close-manager-button" onclick={closePresetManager}
-          >Close</button
-        >
-      </header>
-
-      <div class="preset-group">
-        <h3>Preconfigured</h3>
-        <ul class="preset-list">
-          {#each BUILTIN_PRESETS as preset (preset.id)}
-            <li class="preset-row">
-              <span>{preset.name}</span>
-              <div class="preset-row-actions">
-                <button
-                  type="button"
-                  class="preset-row-button"
-                  onclick={() => applyPresetAndCloseManager(preset)}
-                >
-                  Apply
-                </button>
-                <button
-                  type="button"
-                  class="preset-row-button"
-                  onclick={() => exportPresetToCli(preset)}
-                >
-                  CLI
-                </button>
-              </div>
-            </li>
-          {/each}
-        </ul>
-      </div>
-
-      <div class="preset-group">
-        <h3>Saved</h3>
-        {#if userPresets.length === 0}
-          <p class="preset-empty">No saved presets yet.</p>
-        {:else}
-          <ul class="preset-list">
-            {#each userPresets as preset (preset.id)}
-              <li class="preset-row">
-                <span>{preset.name}</span>
-                <div class="preset-row-actions">
-                  <button
-                    type="button"
-                    class="preset-row-button"
-                    onclick={() => applyPresetAndCloseManager(preset)}
-                  >
-                    Apply
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-row-button"
-                    onclick={() => exportPresetToCli(preset)}
-                  >
-                    CLI
-                  </button>
-                  <button
-                    type="button"
-                    class="preset-row-button delete"
-                    onclick={() => deleteUserPreset(preset.id)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </li>
-            {/each}
-          </ul>
-        {/if}
-      </div>
-    </section>
-  </div>
+  <PresetManager
+    builtInPresets={BUILTIN_PRESETS}
+    {userPresets}
+    onClose={closePresetManager}
+    onApplyPreset={(entry: PresetListItem) => {
+      const preset = findPresetById(entry.id)
+      if (preset) applyPresetAndCloseManager(preset)
+    }}
+    onExportPreset={(entry: PresetListItem) => {
+      const preset = findPresetById(entry.id)
+      if (preset) exportPresetToCli(preset)
+    }}
+    onDeleteUserPreset={(entry: PresetListItem) => deleteUserPreset(entry.id)}
+  />
 {/if}
 
 <style>

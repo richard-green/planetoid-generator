@@ -4,13 +4,13 @@
   import { MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
-  import Planetoid from './Objects/Planetoid.svelte'
-  import type { AnyPaletteName } from './Objects/AllPalettes'
-  import { DefaultValues, type PlanetoidViewMode } from './Objects/PlanetoidSettings'
+  import Planetoid from './Planetoid/Planetoid.svelte'
+  import { DefaultValues, type PlanetoidViewMode } from './Planetoid/PlanetoidSettings'
+  import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
 
   type Props = {
     viewMode?: PlanetoidViewMode
-    palette?: AnyPaletteName
+    palette?: PlanetoidPaletteName
     surfaceTint?: string
     colorScale?: number
     tintShadowFloor?: number
