@@ -1,6 +1,7 @@
 <script lang="ts">
   import SvelteMarkdown from '@humanspeak/svelte-markdown'
   import GasGiantView from './pages/GasGiantView.svelte'
+  import GalaxyView from './pages/GalaxyView.svelte'
   import PlanetoidView from './pages/PlanetoidView.svelte'
   import welcomeMarkdown from './welcome.md?raw'
   import type { Component } from 'svelte'
@@ -14,6 +15,7 @@
   const routes: Route[] = [
     { name: 'Planetoids', path: '/planetoids', component: PlanetoidView },
     { name: 'Gas And Ice Giants', path: '/giants', component: GasGiantView },
+    { name: 'Galaxies', path: '/galaxies', component: GalaxyView },
   ]
 
   const fallbackPath = routes[0]?.path ?? '/'

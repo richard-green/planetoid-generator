@@ -1,4 +1,4 @@
-import type { Palette } from "../../../types/palette"
+import type { Palette } from '../../../types/palette'
 
 export const GasGiantPaletteNames = [
   'jovianBands',

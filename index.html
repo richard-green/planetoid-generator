@@ -42,7 +42,12 @@
         background-image:
           radial-gradient(1200px 700px at 110% -15%, rgba(58, 117, 195, 0.45), transparent 60%),
           radial-gradient(900px 500px at -5% 110%, rgba(117, 160, 199, 0.32), transparent 64%),
-          linear-gradient(165deg, rgba(3, 7, 18, 0.84) 0%, rgba(7, 16, 31, 0.88) 45%, rgba(4, 8, 21, 0.92) 100%),
+          linear-gradient(
+            165deg,
+            rgba(3, 7, 18, 0.84) 0%,
+            rgba(7, 16, 31, 0.88) 45%,
+            rgba(4, 8, 21, 0.92) 100%
+          ),
           url('/hero.jpg');
         background-size: auto, auto, auto, cover;
         background-position: center, center, center, center;
@@ -129,9 +134,7 @@
       <section class="boot-hero" aria-label="Loading application">
         <p class="boot-kicker">Procedural World Studio</p>
         <h1 class="boot-title">Planetoid Generator</h1>
-        <p class="boot-subtitle">
-          Forging terrain maps, crater fields, and atmospheric palettes.
-        </p>
+        <p class="boot-subtitle">Forging terrain maps, crater fields, and atmospheric palettes.</p>
         <div class="boot-status">
           <span class="boot-spinner" aria-hidden="true"></span>
           Preparing renderer and controls...

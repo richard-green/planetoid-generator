@@ -44,7 +44,11 @@
               <button type="button" class="preset-row-button" onclick={() => onApplyPreset(preset)}>
                 Apply
               </button>
-              <button type="button" class="preset-row-button" onclick={() => onExportPreset(preset)}>
+              <button
+                type="button"
+                class="preset-row-button"
+                onclick={() => onExportPreset(preset)}
+              >
                 CLI
               </button>
             </div>
@@ -63,10 +67,18 @@
             <li class="preset-row">
               <span>{preset.name}</span>
               <div class="preset-row-actions">
-                <button type="button" class="preset-row-button" onclick={() => onApplyPreset(preset)}>
+                <button
+                  type="button"
+                  class="preset-row-button"
+                  onclick={() => onApplyPreset(preset)}
+                >
                   Apply
                 </button>
-                <button type="button" class="preset-row-button" onclick={() => onExportPreset(preset)}>
+                <button
+                  type="button"
+                  class="preset-row-button"
+                  onclick={() => onExportPreset(preset)}
+                >
                   CLI
                 </button>
                 <button

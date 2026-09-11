@@ -53,6 +53,10 @@
       href: '#/giants',
       label: 'Gas and Ice Giants',
     },
+    {
+      href: '#/galaxies',
+      label: 'Galaxies',
+    },
   ]
 
   type PlanetoidUiState = {
@@ -425,8 +429,10 @@
   }
 
   function findPresetById(presetId: string) {
-    return BUILTIN_PRESETS.find((preset) => preset.id === presetId) ??
+    return (
+      BUILTIN_PRESETS.find((preset) => preset.id === presetId) ??
       userPresets.find((preset) => preset.id === presetId)
+    )
   }
 
   function deleteUserPreset(presetId: string) {

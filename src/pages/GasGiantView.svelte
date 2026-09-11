@@ -55,6 +55,10 @@
       href: '#/planetoids',
       label: 'Planetoid Generator',
     },
+    {
+      href: '#/galaxies',
+      label: 'Galaxies',
+    },
   ]
 
   const DEFAULT_GAS_GIANT_SETTINGS: GasGiantSettings = { ...DefaultValues }
