@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useThrelte } from '@threlte/core'
+  import { T, useTask, useThrelte } from '@threlte/core'
   import { OrbitControls } from '@threlte/extras'
   import { onDestroy } from 'svelte'
   import {
@@ -7,8 +7,8 @@
     BufferAttribute,
     BufferGeometry,
     Color,
+    Group,
     ShaderMaterial,
-    Vector4,
   } from 'three'
 
   const STAR_COUNT = 90000
@@ -17,10 +17,13 @@
   const DUST_CLOUD_COUNT = 600
   const DUST_PARTICLES_PER_CLOUD = 27
   const DUST_PARTICLE_COUNT = DUST_CLOUD_COUNT * DUST_PARTICLES_PER_CLOUD
-  const DUST_REGION_COUNT = 24
 
   type Props = {
     haloStrength?: number
+    nebulaAmount?: number
+    nebulaSize?: number
+    nebulaDepth?: number
+    nebulaBrightness?: number
     armCount?: number
     armRotation?: number
     armSpread?: number
@@ -34,6 +37,10 @@
 
   let {
     haloStrength = 0.32,
+    nebulaAmount = 1,
+    nebulaSize = 1,
+    nebulaDepth = 1,
+    nebulaBrightness = 1,
     armCount = 4,
     armRotation = 0.62,
     armSpread = 0.28,
@@ -46,56 +53,30 @@
   }: Props = $props()
 
   const { scene } = useThrelte()
+  let galaxyGroup: Group | undefined = $state(undefined)
   const geometry = new BufferGeometry()
   const dustGeometry = new BufferGeometry()
-  const dustRegions = Array.from({ length: DUST_REGION_COUNT }, () => {
-    const radius = Math.pow(Math.random(), 0.72) * GALAXY_RADIUS * 0.82
-    const arm = Math.floor(Math.random() * ARM_COUNT) * ((Math.PI * 2) / ARM_COUNT)
-    const angle = arm + radius * 0.62 + (Math.random() - 0.5) * 0.7
-
-    return new Vector4(
-      Math.cos(angle) * radius,
-      Math.sin(angle) * radius,
-      0.35 + Math.random() * 0.85,
-      0.12 + Math.random() * 0.22
-    )
-  })
   const starMaterial = new ShaderMaterial({
     transparent: true,
     depthWrite: false,
     blending: AdditiveBlending,
     uniforms: {
       haloStrength: { value: 0.32 },
-      dustRegions: { value: dustRegions },
     },
     vertexShader: `
       attribute vec3 color;
       varying vec3 vColor;
-      varying float vDustAttenuation;
       uniform float haloStrength;
-      uniform vec4 dustRegions[${DUST_REGION_COUNT}];
 
       void main() {
         vColor = color;
         vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
-        vec4 galaxyCenterPosition = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-        float behindGalaxyCenter = step(-galaxyCenterPosition.z, -modelViewPosition.z);
-        vDustAttenuation = 1.0;
-
-        for (int index = 0; index < ${DUST_REGION_COUNT}; index++) {
-          vec4 region = dustRegions[index];
-          vec2 delta = position.xz - region.xy;
-          float influence = exp(-dot(delta, delta) / (2.0 * region.z * region.z));
-          vDustAttenuation *= 1.0 - behindGalaxyCenter * region.w * influence;
-        }
-
         gl_PointSize = 0.16 * (220.0 / -modelViewPosition.z) * (1.0 + haloStrength * 2.5);
         gl_Position = projectionMatrix * modelViewPosition;
       }
     `,
     fragmentShader: `
       varying vec3 vColor;
-      varying float vDustAttenuation;
       uniform float haloStrength;
 
       void main() {
@@ -106,18 +87,22 @@
         float halo = pow(radialFalloff, 0.7) * haloStrength * 0.42;
         float alpha = min(1.0, core + halo);
         if (alpha < 0.01) discard;
-        gl_FragColor = vec4(vColor, alpha * vDustAttenuation);
+        gl_FragColor = vec4(vColor, alpha);
       }
     `,
   })
 
   $effect(() => {
     starMaterial.uniforms.haloStrength.value = haloStrength
+    dustMaterial.uniforms.brightness.value = nebulaBrightness
   })
   const dustMaterial = new ShaderMaterial({
     transparent: true,
     depthWrite: false,
     blending: AdditiveBlending,
+    uniforms: {
+      brightness: { value: 1 },
+    },
     vertexShader: `
       attribute float size;
       attribute vec3 color;
@@ -132,11 +117,12 @@
     `,
     fragmentShader: `
       varying vec3 vColor;
+      uniform float brightness;
 
       void main() {
         float distanceFromCenter = length(gl_PointCoord - vec2(0.5));
         float alpha = 1.0 - smoothstep(0.0, 0.5, distanceFromCenter);
-        gl_FragColor = vec4(vColor, alpha * alpha * 0.12);
+        gl_FragColor = vec4(vColor, alpha * alpha * 0.12 * brightness);
       }
     `,
   })
@@ -169,6 +155,10 @@
       } while (Math.random() > density)
 
       const spread = (1 - radius / GALAXY_RADIUS) * 0.5
+  const edgeProgress = Math.max(0, (radius / GALAXY_RADIUS - 0.65) / 0.35)
+  const edgeFade = edgeProgress * edgeProgress * (3 - 2 * edgeProgress)
+  const edgeWarp = Math.sin(angle * 5 + 1.7) * 0.38 + Math.sin(angle * 11 - 0.8) * 0.18
+  const adjustedRadius = Math.max(0, radius + edgeFade * (edgeWarp + (Math.random() - 0.5) * 0.95))
       const bulgeThickness = armDepth + coreDepth * Math.exp(-Math.pow(radius / coreRadius, 2))
       const verticalVariation = 0.8 + Math.random() * 0.4
       const verticalDistribution = Math.min(
@@ -177,9 +167,9 @@
           Math.cos(Math.PI * 2 * Math.random())
       )
 
-      positions[offset] = Math.cos(angle) * radius + (Math.random() - 0.5) * spread
+      positions[offset] = Math.cos(angle) * adjustedRadius + (Math.random() - 0.5) * spread
       positions[offset + 1] = (verticalDistribution / 2.5) * bulgeThickness * verticalVariation
-      positions[offset + 2] = Math.sin(angle) * radius + (Math.random() - 0.5) * spread
+      positions[offset + 2] = Math.sin(angle) * adjustedRadius + (Math.random() - 0.5) * spread
 
       color.copy(coreColor).lerp(outerColor, Math.min(1, radius / GALAXY_RADIUS))
       color.multiplyScalar(0.55 + Math.random() * 0.75)
@@ -212,41 +202,64 @@
   const dustPositions = new Float32Array(DUST_PARTICLE_COUNT * 3)
   const dustColors = new Float32Array(DUST_PARTICLE_COUNT * 3)
   const dustSizes = new Float32Array(DUST_PARTICLE_COUNT)
+  const dustPositionAttribute = new BufferAttribute(dustPositions, 3)
+  const dustColorAttribute = new BufferAttribute(dustColors, 3)
+  const dustSizeAttribute = new BufferAttribute(dustSizes, 1)
 
-  for (let cloudIndex = 0; cloudIndex < DUST_CLOUD_COUNT; cloudIndex += 1) {
-    const cloudRadius = Math.pow(Math.random(), 0.65) * GALAXY_RADIUS * 0.92
-    const cloudArm = Math.floor(Math.random() * ARM_COUNT) * ((Math.PI * 2) / ARM_COUNT)
-    const cloudAngle = cloudArm + cloudRadius * 0.62 + (Math.random() - 0.5) * 0.65
-    const cloudSpread = 0.14 + Math.random() * 0.38
-    const cloudX = Math.cos(cloudAngle) * cloudRadius
-    const cloudZ = Math.sin(cloudAngle) * cloudRadius
-    const cloudThickness = 0.16 + (1 - cloudRadius / GALAXY_RADIUS) * 0.48
+  function populateNebulae() {
+    const activeCloudCount = Math.round(DUST_CLOUD_COUNT * nebulaAmount)
 
-    for (let particleIndex = 0; particleIndex < DUST_PARTICLES_PER_CLOUD; particleIndex += 1) {
-      const index = cloudIndex * DUST_PARTICLES_PER_CLOUD + particleIndex
-      const offset = index * 3
-      const particleAngle = Math.random() * Math.PI * 2
-      const particleRadius = Math.sqrt(Math.random()) * cloudSpread
-      const verticalOffset =
-        (Math.random() + Math.random() + Math.random() + Math.random() - 2) * cloudThickness
+    for (let cloudIndex = 0; cloudIndex < DUST_CLOUD_COUNT; cloudIndex += 1) {
+      const cloudRadius = Math.pow(Math.random(), 0.65) * GALAXY_RADIUS * 0.92
+      const cloudArm = Math.floor(Math.random() * ARM_COUNT) * ((Math.PI * 2) / ARM_COUNT)
+      const cloudAngle = cloudArm + cloudRadius * 0.62 + (Math.random() - 0.5) * 0.65
+      const cloudSpread = (0.14 + Math.random() * 0.38) * nebulaSize
+      const cloudX = Math.cos(cloudAngle) * cloudRadius
+      const cloudZ = Math.sin(cloudAngle) * cloudRadius
+      const cloudThickness = (0.16 + (1 - cloudRadius / GALAXY_RADIUS) * 0.48) * nebulaDepth
 
-      dustPositions[offset] = cloudX + Math.cos(particleAngle) * particleRadius
-      dustPositions[offset + 1] = verticalOffset
-      dustPositions[offset + 2] = cloudZ + Math.sin(particleAngle) * particleRadius
+      for (let particleIndex = 0; particleIndex < DUST_PARTICLES_PER_CLOUD; particleIndex += 1) {
+        const index = cloudIndex * DUST_PARTICLES_PER_CLOUD + particleIndex
+        const offset = index * 3
+        const particleAngle = Math.random() * Math.PI * 2
+        const particleRadius = Math.sqrt(Math.random()) * cloudSpread
+        const verticalOffset =
+          (Math.random() + Math.random() + Math.random() + Math.random() - 2) * cloudThickness
 
-      color.copy(dustCoreColor).lerp(dustOuterColor, cloudRadius / GALAXY_RADIUS)
-      color.multiplyScalar(0.65 + Math.random() * 0.45)
-      dustColors[offset] = color.r
-      dustColors[offset + 1] = color.g
-      dustColors[offset + 2] = color.b
-      dustSizes[index] = 0.7 + Math.random() * 1.35
+        dustPositions[offset] = cloudX + Math.cos(particleAngle) * particleRadius
+        dustPositions[offset + 1] = verticalOffset
+        dustPositions[offset + 2] = cloudZ + Math.sin(particleAngle) * particleRadius
+
+        color.copy(dustCoreColor).lerp(dustOuterColor, cloudRadius / GALAXY_RADIUS)
+        color.multiplyScalar(0.65 + Math.random() * 0.45)
+        dustColors[offset] = color.r
+        dustColors[offset + 1] = color.g
+        dustColors[offset + 2] = color.b
+        dustSizes[index] = cloudIndex < activeCloudCount ? 0.7 + Math.random() * 1.35 : 0
+      }
     }
+
+    dustPositionAttribute.needsUpdate = true
+    dustColorAttribute.needsUpdate = true
+    dustSizeAttribute.needsUpdate = true
   }
 
-  dustGeometry.setAttribute('position', new BufferAttribute(dustPositions, 3))
-  dustGeometry.setAttribute('color', new BufferAttribute(dustColors, 3))
-  dustGeometry.setAttribute('size', new BufferAttribute(dustSizes, 1))
+  dustGeometry.setAttribute('position', dustPositionAttribute)
+  dustGeometry.setAttribute('color', dustColorAttribute)
+  dustGeometry.setAttribute('size', dustSizeAttribute)
   dustGeometry.computeBoundingSphere()
+
+  $effect(() => {
+    nebulaAmount
+    nebulaSize
+    nebulaDepth
+    populateNebulae()
+  })
+
+  useTask((delta) => {
+    if (!galaxyGroup) return
+    galaxyGroup.rotation.y += delta * 0.035
+  })
 
   scene.background = new Color('#01030a')
 
@@ -270,7 +283,7 @@
   />
 </T.PerspectiveCamera>
 
-<T.Group rotation={[-0.36, 0.16, 0]}>
+<T.Group bind:ref={galaxyGroup} rotation={[-0.36, 0.16, 0]}>
   <T.Points geometry={dustGeometry} material={dustMaterial} renderOrder={0} />
   <T.Points {geometry} material={starMaterial} renderOrder={1} />
 </T.Group>

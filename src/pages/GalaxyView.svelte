@@ -7,6 +7,10 @@
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
   let haloStrength = $state(0.32)
+  let nebulaAmount = $state(1)
+  let nebulaSize = $state(1)
+  let nebulaDepth = $state(1)
+  let nebulaBrightness = $state(1)
   let armCount = $state(4)
   let armRotation = $state(0.62)
   let armSpread = $state(0.28)
@@ -40,6 +44,10 @@
       >
         <GalaxyScene
           {haloStrength}
+          {nebulaAmount}
+          {nebulaSize}
+          {nebulaDepth}
+          {nebulaBrightness}
           {armCount}
           {armRotation}
           {armSpread}
@@ -65,6 +73,32 @@
             max="0.8"
             step="0.01"
             bind:value={haloStrength}
+          />
+        </label>
+      </fieldset>
+      <fieldset>
+        <legend>Nebulae</legend>
+        <label for="nebula-amount">
+          <span>Amount <output>{nebulaAmount.toFixed(2)}</output></span>
+          <input id="nebula-amount" type="range" min="0" max="1" step="0.01" bind:value={nebulaAmount} />
+        </label>
+        <label for="nebula-size">
+          <span>Size <output>{nebulaSize.toFixed(2)}</output></span>
+          <input id="nebula-size" type="range" min="0.3" max="3" step="0.01" bind:value={nebulaSize} />
+        </label>
+        <label for="nebula-depth">
+          <span>Depth <output>{nebulaDepth.toFixed(2)}</output></span>
+          <input id="nebula-depth" type="range" min="0.1" max="3" step="0.01" bind:value={nebulaDepth} />
+        </label>
+        <label for="nebula-brightness">
+          <span>Brightness <output>{nebulaBrightness.toFixed(2)}</output></span>
+          <input
+            id="nebula-brightness"
+            type="range"
+            min="0"
+            max="3"
+            step="0.01"
+            bind:value={nebulaBrightness}
           />
         </label>
       </fieldset>
