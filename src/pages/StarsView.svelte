@@ -8,11 +8,14 @@
     DefaultValues,
     MaxValues,
     MinValues,
+    sanitizeStarSettings,
     StepValues,
     type StarPaletteName,
+    type StarSettings,
   } from '../lib/components/Threlte/Star/StarSettings'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
+  const STAR_SETTINGS_STORAGE_KEY = 'star-view-settings-v1'
 
   type StarsSceneExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
@@ -54,6 +57,94 @@
   let colorTextureSize = $state(DefaultValues.colorTextureSize)
   let autoRotate = $state(DefaultValues.autoRotate)
   let isSaving = $state(false)
+  let settingsHydrated = $state(false)
+
+  function applyStarSettings(settings: StarSettings): void {
+    seed = settings.seed
+    palette = settings.palette
+    brightness = settings.brightness
+    saturation = settings.saturation
+    contrast = settings.contrast
+    limbBrightness = settings.limbBrightness
+    haloIntensity = settings.haloIntensity
+    haloFalloff = settings.haloFalloff
+    haloSize = settings.haloSize
+    haloTurbulence = settings.haloTurbulence
+    plasmaIntensity = settings.plasmaIntensity
+    plasmaExtent = settings.plasmaExtent
+    plasmaTurbulence = settings.plasmaTurbulence
+    plasmaSharpness = settings.plasmaSharpness
+    plasmaTextureScale = settings.plasmaTextureScale
+    colorTextureSize = settings.colorTextureSize
+    textureScale = settings.textureScale
+    bandContrast = settings.bandContrast
+    bandSwirl = settings.bandSwirl
+    granularity = settings.granularity
+    turbulence = settings.turbulence
+    convection = settings.convection
+    sunspotCount = settings.sunspotCount
+    sunspotScale = settings.sunspotScale
+    sunspotJaggedness = settings.sunspotJaggedness
+    sunspotNeighbours = settings.sunspotNeighbours
+    sunspotDarkness = settings.sunspotDarkness
+    autoRotate = settings.autoRotate
+  }
+
+  function getStarSettings(): StarSettings {
+    return {
+      seed,
+      palette,
+      brightness,
+      saturation,
+      contrast,
+      limbBrightness,
+      haloIntensity,
+      haloFalloff,
+      haloSize,
+      haloTurbulence,
+      plasmaIntensity,
+      plasmaExtent,
+      plasmaTurbulence,
+      plasmaSharpness,
+      plasmaTextureScale,
+      colorTextureSize,
+      textureScale,
+      bandContrast,
+      bandSwirl,
+      granularity,
+      turbulence,
+      convection,
+      sunspotCount,
+      sunspotScale,
+      sunspotJaggedness,
+      sunspotNeighbours,
+      sunspotDarkness,
+      autoRotate,
+    }
+  }
+
+  $effect(() => {
+    if (settingsHydrated) return
+
+    try {
+      const raw = localStorage.getItem(STAR_SETTINGS_STORAGE_KEY)
+      if (raw) applyStarSettings(sanitizeStarSettings(JSON.parse(raw)))
+    } catch (error) {
+      console.warn('Failed to restore star settings from localStorage', error)
+    } finally {
+      settingsHydrated = true
+    }
+  })
+
+  $effect(() => {
+    if (!settingsHydrated) return
+
+    try {
+      localStorage.setItem(STAR_SETTINGS_STORAGE_KEY, JSON.stringify(getStarSettings()))
+    } catch (error) {
+      console.warn('Failed to persist star settings to localStorage', error)
+    }
+  })
 
   function timestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
@@ -102,7 +193,7 @@
             canvas,
             powerPreference: 'high-performance',
             antialias: true,
-            alpha: false,
+            alpha: true,
             preserveDrawingBuffer: true,
           })}
       >

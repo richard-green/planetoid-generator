@@ -1,4 +1,14 @@
+import {
+  sanitizeBoolean,
+  sanitizeEnum,
+  sanitizeNumber,
+  toRecord,
+  type NumericSanitizeSpec,
+} from '../../../utils/sanitize'
+
 export type StarPaletteName = 'White' | 'Blue' | 'Yellow' | 'Orange' | 'Red'
+
+export const StarPaletteNames: readonly StarPaletteName[] = ['White', 'Blue', 'Yellow', 'Orange', 'Red']
 
 export type StarSettings = {
   seed: number
@@ -140,8 +150,8 @@ export const MaxValues: StarRangeValues = {
   plasmaTextureScale: 4,
   colorTextureSize: 4096,
   textureScale: 4,
-  bandContrast: 1,
-  bandSwirl: 4,
+  bandContrast: 5,
+  bandSwirl: 5,
   granularity: 8,
   turbulence: 8,
   convection: 8,
@@ -179,6 +189,34 @@ export const StepValues: StarRangeValues = {
   sunspotJaggedness: 0.1,
   sunspotNeighbours: 1,
   sunspotDarkness: 0.05,
+}
+
+const INTEGER_RANGE_KEYS: readonly StarRangeKey[] = [
+  'seed',
+  'colorTextureSize',
+  'sunspotCount',
+  'sunspotNeighbours',
+]
+
+export function sanitizeStarSettings(input: unknown): StarSettings {
+  const raw = toRecord(input)
+  const numeric = {} as StarRangeValues
+
+  for (const key of Object.keys(MinValues) as StarRangeKey[]) {
+    const spec: NumericSanitizeSpec = {
+      defaultValue: DefaultValues[key],
+      min: MinValues[key],
+      max: MaxValues[key],
+      round: INTEGER_RANGE_KEYS.includes(key),
+    }
+    numeric[key] = sanitizeNumber(raw, key, spec)
+  }
+
+  return {
+    ...numeric,
+    palette: sanitizeEnum(raw, 'palette', StarPaletteNames, DefaultValues.palette),
+    autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate),
+  }
 }
 
 export const DefaultStarSettings = DefaultValues

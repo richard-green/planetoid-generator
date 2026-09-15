@@ -249,7 +249,7 @@
   let haloMaterial = $state<ShaderMaterial | undefined>(undefined)
   let colorTexture = $state<Texture | undefined>(undefined)
   const { renderer, scene } = useThrelte()
-  scene.background = new Color('#030005')
+  scene.background = null
   const limbColor = $derived(new Color(...(starPalettes[palette] ?? starPalettes.Orange)[2]))
   const surfaceUniforms = {
     uMap: { value: null },
