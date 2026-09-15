@@ -13,16 +13,42 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { createStarColorTexture, disposeStarTexture } from './Star/StarGpuTextures'
-  import { DefaultValues, type StarPaletteName } from './Star/StarSettings'
+  import {
+    DefaultValues,
+    MaxValues,
+    MinValues,
+    type StarPaletteName,
+    type StarRangeKey,
+  } from './Star/StarSettings'
 
   export type { StarPaletteName } from './Star/StarSettings'
 
   const starPalettes: Record<StarPaletteName, readonly [number, number, number][]> = {
-    White: [[0.38, 0.42, 0.5], [0.84, 0.9, 1], [1, 0.98, 0.83]],
-    Blue: [[0.03, 0.1, 0.38], [0.12, 0.45, 1], [0.78, 0.92, 1]],
-    Yellow: [[0.32, 0.13, 0.002], [1, 0.52, 0.015], [1, 0.94, 0.38]],
-    Orange: [[0.42, 0.012, 0.001], [1, 0.12, 0.004], [1, 0.7, 0.08]],
-    Red: [[0.28, 0.002, 0.001], [0.8, 0.025, 0.008], [1, 0.25, 0.04]],
+    White: [
+      [0.38, 0.42, 0.5],
+      [0.84, 0.9, 1],
+      [1, 0.98, 0.83],
+    ],
+    Blue: [
+      [0.03, 0.1, 0.38],
+      [0.12, 0.45, 1],
+      [0.78, 0.92, 1],
+    ],
+    Yellow: [
+      [0.32, 0.13, 0.002],
+      [1, 0.52, 0.015],
+      [1, 0.94, 0.38],
+    ],
+    Orange: [
+      [0.4, 0.055, 0.001],
+      [1, 0.28, 0.006],
+      [1, 0.78, 0.12],
+    ],
+    Red: [
+      [0.28, 0.002, 0.001],
+      [0.8, 0.025, 0.008],
+      [1, 0.25, 0.04],
+    ],
   }
 
   const surfaceVertexShader = `
@@ -125,6 +151,7 @@
     haloFalloff?: number
     haloSize?: number
     haloTurbulence?: number
+    colorTextureSize?: number
     autoRotate?: boolean
   }
 
@@ -149,6 +176,7 @@
     haloFalloff = DefaultValues.haloFalloff,
     haloSize = DefaultValues.haloSize,
     haloTurbulence = DefaultValues.haloTurbulence,
+    colorTextureSize = DefaultValues.colorTextureSize,
     autoRotate = DefaultValues.autoRotate,
   }: Props = $props()
 
@@ -173,6 +201,10 @@
     uHaloFalloff: { value: 1 },
     uHaloSize: { value: 1 },
     uHaloTurbulence: { value: 0 },
+  }
+
+  function clampSetting(key: StarRangeKey, value: number): number {
+    return Math.min(MaxValues[key], Math.max(MinValues[key], value))
   }
 
   function flipRows(source: Uint8Array, width: number, height: number): Uint8Array {
@@ -203,7 +235,15 @@
     canvas.height = target.height
     const context = canvas.getContext('2d')
     if (!context) return false
-    context.putImageData(new ImageData(new Uint8ClampedArray(flipRows(pixels, target.width, target.height)), target.width, target.height), 0, 0)
+    context.putImageData(
+      new ImageData(
+        new Uint8ClampedArray(flipRows(pixels, target.width, target.height)),
+        target.width,
+        target.height
+      ),
+      0,
+      0
+    )
     const link = document.createElement('a')
     link.href = canvas.toDataURL('image/png')
     link.download = fileName
@@ -215,21 +255,21 @@
     if (!renderer || !material) return
     const nextTexture = createStarColorTexture(
       renderer,
-      seed,
-      1024,
-      textureScale,
-      bandContrast,
-      bandSwirl,
-      granularity,
-      turbulence,
-      convection,
-      sunspotCount,
-      sunspotScale,
-      sunspotJaggedness,
-      sunspotNeighbours,
-      brightness,
-      saturation,
-      contrast,
+      clampSetting('seed', seed),
+      Math.floor(clampSetting('colorTextureSize', colorTextureSize)),
+      clampSetting('textureScale', textureScale),
+      clampSetting('bandContrast', bandContrast),
+      clampSetting('bandSwirl', bandSwirl),
+      clampSetting('granularity', granularity),
+      clampSetting('turbulence', turbulence),
+      clampSetting('convection', convection),
+      Math.floor(clampSetting('sunspotCount', sunspotCount)),
+      clampSetting('sunspotScale', sunspotScale),
+      clampSetting('sunspotJaggedness', sunspotJaggedness),
+      Math.floor(clampSetting('sunspotNeighbours', sunspotNeighbours)),
+      clampSetting('brightness', brightness),
+      clampSetting('saturation', saturation),
+      clampSetting('contrast', contrast),
       starPalettes[palette] ?? starPalettes.Orange
     )
     colorTexture = nextTexture

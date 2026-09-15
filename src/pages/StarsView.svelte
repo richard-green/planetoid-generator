@@ -45,6 +45,7 @@
   let haloFalloff = $state(DefaultValues.haloFalloff)
   let haloSize = $state(DefaultValues.haloSize)
   let haloTurbulence = $state(DefaultValues.haloTurbulence)
+  let colorTextureSize = $state(DefaultValues.colorTextureSize)
   let autoRotate = $state(DefaultValues.autoRotate)
   let isSaving = $state(false)
 
@@ -121,6 +122,7 @@
           {haloFalloff}
           {haloSize}
           {haloTurbulence}
+          {colorTextureSize}
           {autoRotate}
         />
       </Canvas>
@@ -130,8 +132,12 @@
       <fieldset>
         <legend>Export</legend>
         <div class="export-actions">
-          <button class="action" type="button" onclick={downloadRender} disabled={isSaving}>PNG</button>
-          <button class="action" type="button" onclick={downloadTexture} disabled={isSaving}>TEX</button>
+          <button class="action" type="button" onclick={downloadRender} disabled={isSaving}
+            >PNG</button
+          >
+          <button class="action" type="button" onclick={downloadTexture} disabled={isSaving}
+            >TEX</button
+          >
         </div>
       </fieldset>
 
@@ -139,7 +145,13 @@
         <legend>Stellar Surface</legend>
         <label class="compact-number-row">
           <span>Seed</span>
-          <input type="number" min={MinValues.seed} max={MaxValues.seed} step={StepValues.seed} bind:value={seed} />
+          <input
+            type="number"
+            min={MinValues.seed}
+            max={MaxValues.seed}
+            step={StepValues.seed}
+            bind:value={seed}
+          />
         </label>
         <button class="action" type="button" onclick={randomizeSeed}>New Seed</button>
         <label>
@@ -154,75 +166,193 @@
         </label>
         <label class="compact-number-row">
           <span>Brightness</span>
-          <input type="number" min={MinValues.brightness} max={MaxValues.brightness} step={StepValues.brightness} bind:value={brightness} />
+          <input
+            type="number"
+            min={MinValues.brightness}
+            max={MaxValues.brightness}
+            step={StepValues.brightness}
+            bind:value={brightness}
+          />
         </label>
         <label class="compact-number-row">
           <span>Saturation</span>
-          <input type="number" min={MinValues.saturation} max={MaxValues.saturation} step={StepValues.saturation} bind:value={saturation} />
+          <input
+            type="number"
+            min={MinValues.saturation}
+            max={MaxValues.saturation}
+            step={StepValues.saturation}
+            bind:value={saturation}
+          />
         </label>
         <label class="compact-number-row">
           <span>Contrast</span>
-          <input type="number" min={MinValues.contrast} max={MaxValues.contrast} step={StepValues.contrast} bind:value={contrast} />
+          <input
+            type="number"
+            min={MinValues.contrast}
+            max={MaxValues.contrast}
+            step={StepValues.contrast}
+            bind:value={contrast}
+          />
         </label>
         <label class="compact-number-row">
           <span>Limb brightness</span>
-          <input type="number" min={MinValues.limbBrightness} max={MaxValues.limbBrightness} step={StepValues.limbBrightness} bind:value={limbBrightness} />
+          <input
+            type="number"
+            min={MinValues.limbBrightness}
+            max={MaxValues.limbBrightness}
+            step={StepValues.limbBrightness}
+            bind:value={limbBrightness}
+          />
         </label>
         <label class="compact-number-row">
           <span>Halo brightness</span>
-          <input type="number" min={MinValues.haloIntensity} max={MaxValues.haloIntensity} step={StepValues.haloIntensity} bind:value={haloIntensity} />
+          <input
+            type="number"
+            min={MinValues.haloIntensity}
+            max={MaxValues.haloIntensity}
+            step={StepValues.haloIntensity}
+            bind:value={haloIntensity}
+          />
         </label>
         <label class="compact-number-row">
           <span>Halo dropoff</span>
-          <input type="number" min={MinValues.haloFalloff} max={MaxValues.haloFalloff} step={StepValues.haloFalloff} bind:value={haloFalloff} />
+          <input
+            type="number"
+            min={MinValues.haloFalloff}
+            max={MaxValues.haloFalloff}
+            step={StepValues.haloFalloff}
+            bind:value={haloFalloff}
+          />
         </label>
         <label class="compact-number-row">
           <span>Halo size</span>
-          <input type="number" min={MinValues.haloSize} max={MaxValues.haloSize} step={StepValues.haloSize} bind:value={haloSize} />
+          <input
+            type="number"
+            min={MinValues.haloSize}
+            max={MaxValues.haloSize}
+            step={StepValues.haloSize}
+            bind:value={haloSize}
+          />
         </label>
         <label class="compact-number-row">
           <span>Halo turbulence</span>
-          <input type="number" min={MinValues.haloTurbulence} max={MaxValues.haloTurbulence} step={StepValues.haloTurbulence} bind:value={haloTurbulence} />
+          <input
+            type="number"
+            min={MinValues.haloTurbulence}
+            max={MaxValues.haloTurbulence}
+            step={StepValues.haloTurbulence}
+            bind:value={haloTurbulence}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Color texture size</span>
+          <input
+            type="number"
+            min={MinValues.colorTextureSize}
+            max={MaxValues.colorTextureSize}
+            step={StepValues.colorTextureSize}
+            bind:value={colorTextureSize}
+          />
         </label>
         <label class="compact-number-row">
           <span>Band scale</span>
-          <input type="number" min={MinValues.textureScale} max={MaxValues.textureScale} step={StepValues.textureScale} bind:value={textureScale} />
+          <input
+            type="number"
+            min={MinValues.textureScale}
+            max={MaxValues.textureScale}
+            step={StepValues.textureScale}
+            bind:value={textureScale}
+          />
         </label>
         <label class="compact-number-row">
           <span>Band contrast</span>
-          <input type="number" min={MinValues.bandContrast} max={MaxValues.bandContrast} step={StepValues.bandContrast} bind:value={bandContrast} />
+          <input
+            type="number"
+            min={MinValues.bandContrast}
+            max={MaxValues.bandContrast}
+            step={StepValues.bandContrast}
+            bind:value={bandContrast}
+          />
         </label>
         <label class="compact-number-row">
           <span>Band swirl</span>
-          <input type="number" min={MinValues.bandSwirl} max={MaxValues.bandSwirl} step={StepValues.bandSwirl} bind:value={bandSwirl} />
+          <input
+            type="number"
+            min={MinValues.bandSwirl}
+            max={MaxValues.bandSwirl}
+            step={StepValues.bandSwirl}
+            bind:value={bandSwirl}
+          />
         </label>
         <label class="compact-number-row">
           <span>Granularity</span>
-          <input type="number" min={MinValues.granularity} max={MaxValues.granularity} step={StepValues.granularity} bind:value={granularity} />
+          <input
+            type="number"
+            min={MinValues.granularity}
+            max={MaxValues.granularity}
+            step={StepValues.granularity}
+            bind:value={granularity}
+          />
         </label>
         <label class="compact-number-row">
           <span>Turbulence</span>
-          <input type="number" min={MinValues.turbulence} max={MaxValues.turbulence} step={StepValues.turbulence} bind:value={turbulence} />
+          <input
+            type="number"
+            min={MinValues.turbulence}
+            max={MaxValues.turbulence}
+            step={StepValues.turbulence}
+            bind:value={turbulence}
+          />
         </label>
         <label class="compact-number-row">
           <span>Convection</span>
-          <input type="number" min={MinValues.convection} max={MaxValues.convection} step={StepValues.convection} bind:value={convection} />
+          <input
+            type="number"
+            min={MinValues.convection}
+            max={MaxValues.convection}
+            step={StepValues.convection}
+            bind:value={convection}
+          />
         </label>
         <label class="compact-number-row">
           <span>Sunspot groups</span>
-          <input type="number" min={MinValues.sunspotCount} max={MaxValues.sunspotCount} step={StepValues.sunspotCount} bind:value={sunspotCount} />
+          <input
+            type="number"
+            min={MinValues.sunspotCount}
+            max={MaxValues.sunspotCount}
+            step={StepValues.sunspotCount}
+            bind:value={sunspotCount}
+          />
         </label>
         <label class="compact-number-row">
           <span>Sunspot scale</span>
-          <input type="number" min={MinValues.sunspotScale} max={MaxValues.sunspotScale} step={StepValues.sunspotScale} bind:value={sunspotScale} />
+          <input
+            type="number"
+            min={MinValues.sunspotScale}
+            max={MaxValues.sunspotScale}
+            step={StepValues.sunspotScale}
+            bind:value={sunspotScale}
+          />
         </label>
         <label class="compact-number-row">
           <span>Sunspot jaggedness</span>
-          <input type="number" min={MinValues.sunspotJaggedness} max={MaxValues.sunspotJaggedness} step={StepValues.sunspotJaggedness} bind:value={sunspotJaggedness} />
+          <input
+            type="number"
+            min={MinValues.sunspotJaggedness}
+            max={MaxValues.sunspotJaggedness}
+            step={StepValues.sunspotJaggedness}
+            bind:value={sunspotJaggedness}
+          />
         </label>
         <label class="compact-number-row">
           <span>Max neighbours</span>
-          <input type="number" min={MinValues.sunspotNeighbours} max={MaxValues.sunspotNeighbours} step={StepValues.sunspotNeighbours} bind:value={sunspotNeighbours} />
+          <input
+            type="number"
+            min={MinValues.sunspotNeighbours}
+            max={MaxValues.sunspotNeighbours}
+            step={StepValues.sunspotNeighbours}
+            bind:value={sunspotNeighbours}
+          />
         </label>
         <label class="toggle-row">
           <span>Auto-rotate</span>

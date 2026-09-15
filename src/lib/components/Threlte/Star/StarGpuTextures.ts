@@ -182,19 +182,19 @@ export function createStarColorTexture(
     fragmentShader,
     uniforms: {
       uSeed: { value: new Vector3(seed * 0.0013, seed * 0.0021, seed * 0.0007) },
-      uScale: { value: Math.max(0.2, scale) },
-      uBandContrast: { value: Math.max(0, Math.min(1, bandContrast)) },
-      uBandSwirl: { value: Math.max(0, Math.min(1, bandSwirl)) },
-      uGranularity: { value: Math.max(0.2, Math.min(4, granularity)) },
-      uTurbulence: { value: Math.max(0, Math.min(2, turbulence)) },
-      uConvection: { value: Math.max(0, Math.min(1, convection)) },
-      uSunspotCount: { value: Math.max(0, Math.min(12, Math.floor(sunspotCount))) },
-      uSunspotScale: { value: Math.max(0.25, Math.min(3, sunspotScale)) },
-      uSunspotJaggedness: { value: Math.max(0, Math.min(2, sunspotJaggedness)) },
-      uSunspotNeighbours: { value: Math.max(0, Math.min(7, Math.floor(sunspotNeighbours))) },
-      uBrightness: { value: Math.max(0.1, Math.min(3, brightness)) },
-      uSaturation: { value: Math.max(0, Math.min(2, saturation)) },
-      uContrast: { value: Math.max(0, Math.min(2, contrast)) },
+      uScale: { value: scale },
+      uBandContrast: { value: bandContrast },
+      uBandSwirl: { value: bandSwirl },
+      uGranularity: { value: granularity },
+      uTurbulence: { value: turbulence },
+      uConvection: { value: convection },
+      uSunspotCount: { value: sunspotCount },
+      uSunspotScale: { value: sunspotScale },
+      uSunspotJaggedness: { value: sunspotJaggedness },
+      uSunspotNeighbours: { value: sunspotNeighbours },
+      uBrightness: { value: brightness },
+      uSaturation: { value: saturation },
+      uContrast: { value: contrast },
       uPaletteDeep: { value: new Vector3(...palette[0]) },
       uPaletteMid: { value: new Vector3(...palette[1]) },
       uPaletteHot: { value: new Vector3(...palette[2]) },
@@ -204,7 +204,10 @@ export function createStarColorTexture(
   const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
   const mesh = new Mesh(new PlaneGeometry(2, 2), material)
   scene.add(mesh)
-  const renderTarget = new WebGLRenderTarget(width, height, { depthBuffer: false, stencilBuffer: false })
+  const renderTarget = new WebGLRenderTarget(width, height, {
+    depthBuffer: false,
+    stencilBuffer: false,
+  })
   renderTarget.texture.wrapS = RepeatWrapping
   renderTarget.texture.wrapT = ClampToEdgeWrapping
   renderTarget.texture.minFilter = LinearFilter
