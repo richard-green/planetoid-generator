@@ -45,6 +45,11 @@
   let haloFalloff = $state(DefaultValues.haloFalloff)
   let haloSize = $state(DefaultValues.haloSize)
   let haloTurbulence = $state(DefaultValues.haloTurbulence)
+  let plasmaIntensity = $state(DefaultValues.plasmaIntensity)
+  let plasmaExtent = $state(DefaultValues.plasmaExtent)
+  let plasmaTurbulence = $state(DefaultValues.plasmaTurbulence)
+  let plasmaSharpness = $state(DefaultValues.plasmaSharpness)
+  let plasmaTextureScale = $state(DefaultValues.plasmaTextureScale)
   let colorTextureSize = $state(DefaultValues.colorTextureSize)
   let autoRotate = $state(DefaultValues.autoRotate)
   let isSaving = $state(false)
@@ -122,6 +127,11 @@
           {haloFalloff}
           {haloSize}
           {haloTurbulence}
+          {plasmaIntensity}
+          {plasmaExtent}
+          {plasmaTurbulence}
+          {plasmaSharpness}
+          {plasmaTextureScale}
           {colorTextureSize}
           {autoRotate}
         />
@@ -242,6 +252,56 @@
             max={MaxValues.haloTurbulence}
             step={StepValues.haloTurbulence}
             bind:value={haloTurbulence}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Plasma brightness</span>
+          <input
+            type="number"
+            min={MinValues.plasmaIntensity}
+            max={MaxValues.plasmaIntensity}
+            step={StepValues.plasmaIntensity}
+            bind:value={plasmaIntensity}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Plasma extent</span>
+          <input
+            type="number"
+            min={MinValues.plasmaExtent}
+            max={MaxValues.plasmaExtent}
+            step={StepValues.plasmaExtent}
+            bind:value={plasmaExtent}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Plasma turbulence</span>
+          <input
+            type="number"
+            min={MinValues.plasmaTurbulence}
+            max={MaxValues.plasmaTurbulence}
+            step={StepValues.plasmaTurbulence}
+            bind:value={plasmaTurbulence}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Plasma sharpness</span>
+          <input
+            type="number"
+            min={MinValues.plasmaSharpness}
+            max={MaxValues.plasmaSharpness}
+            step={StepValues.plasmaSharpness}
+            bind:value={plasmaSharpness}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Plasma texture scale</span>
+          <input
+            type="number"
+            min={MinValues.plasmaTextureScale}
+            max={MaxValues.plasmaTextureScale}
+            step={StepValues.plasmaTextureScale}
+            bind:value={plasmaTextureScale}
           />
         </label>
         <label class="compact-number-row">

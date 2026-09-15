@@ -130,6 +130,56 @@
     }
   `
 
+  const haloDetailFragmentShader = `
+    uniform vec3 uHaloColor;
+    uniform vec3 uSeed;
+    uniform float uHaloIntensity;
+    uniform float uHaloFalloff;
+    uniform float uHaloSize;
+    uniform float uHaloTurbulence;
+    uniform float uPlasmaIntensity;
+    uniform float uPlasmaExtent;
+    uniform float uPlasmaTurbulence;
+    uniform float uPlasmaSharpness;
+    uniform float uPlasmaTextureScale;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    float noise(vec3 p) {
+      return sin(p.x * 2.1 + sin(p.y * 3.4)) * sin(p.y * 2.7 + sin(p.z * 2.3)) * sin(p.z * 3.1);
+    }
+
+    float fbm(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
+      for (int index = 0; index < 4; index++) {
+        value += noise(p) * amplitude;
+        p = p * 2.07 + vec3(4.2, 8.7, 2.6);
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    void main() {
+      vec3 normal = normalize(vNormal);
+      vec3 viewDirection = normalize(vViewPosition);
+      float edge = 1.0 - abs(dot(normal, viewDirection));
+      float starEdge = 1.0 - sqrt(max(0.0, 1.0 - pow(2.0 / (2.05 * uHaloSize), 2.0)));
+      float haloDistance = clamp((edge - starEdge) / (1.0 - starEdge), 0.0, 1.0);
+      float broadStorm = fbm(normal * 3.2 * uPlasmaTextureScale + uSeed);
+      float fineStorm = fbm(normal * 12.0 * uPlasmaTextureScale + uSeed.zxy * 2.7);
+      float storm = broadStorm * 0.7 + fineStorm * 0.3;
+      float turbulenceAmount = min(uPlasmaTurbulence * 0.5, 1.0);
+      float distanceWarp = storm * turbulenceAmount * uPlasmaExtent * 0.45 * smoothstep(0.03, 0.25, haloDistance);
+      float plasmaDistance = clamp((haloDistance - distanceWarp) / uPlasmaExtent, 0.0, 1.0);
+      float outerFade = 1.0 - smoothstep(0.72, 1.0, plasmaDistance);
+      float plasmaBand = exp(-3.5 * plasmaDistance) * outerFade;
+      float filaments = pow(max(storm, 0.0), uPlasmaSharpness);
+      float opacity = plasmaBand * filaments * turbulenceAmount * uPlasmaIntensity * 0.2;
+      gl_FragColor = vec4(uHaloColor, opacity);
+    }
+  `
+
   type Props = {
     seed?: number
     textureScale?: number
@@ -151,6 +201,11 @@
     haloFalloff?: number
     haloSize?: number
     haloTurbulence?: number
+    plasmaIntensity?: number
+    plasmaExtent?: number
+    plasmaTurbulence?: number
+    plasmaSharpness?: number
+    plasmaTextureScale?: number
     colorTextureSize?: number
     autoRotate?: boolean
   }
@@ -176,6 +231,11 @@
     haloFalloff = DefaultValues.haloFalloff,
     haloSize = DefaultValues.haloSize,
     haloTurbulence = DefaultValues.haloTurbulence,
+    plasmaIntensity = DefaultValues.plasmaIntensity,
+    plasmaExtent = DefaultValues.plasmaExtent,
+    plasmaTurbulence = DefaultValues.plasmaTurbulence,
+    plasmaSharpness = DefaultValues.plasmaSharpness,
+    plasmaTextureScale = DefaultValues.plasmaTextureScale,
     colorTextureSize = DefaultValues.colorTextureSize,
     autoRotate = DefaultValues.autoRotate,
   }: Props = $props()
@@ -201,6 +261,11 @@
     uHaloFalloff: { value: 1 },
     uHaloSize: { value: 1 },
     uHaloTurbulence: { value: 0 },
+    uPlasmaIntensity: { value: 0 },
+    uPlasmaExtent: { value: 1 },
+    uPlasmaTurbulence: { value: 0 },
+    uPlasmaSharpness: { value: 1 },
+    uPlasmaTextureScale: { value: 1 },
   }
 
   function clampSetting(key: StarRangeKey, value: number): number {
@@ -291,6 +356,11 @@
     haloMaterial.uniforms.uHaloFalloff.value = haloFalloff
     haloMaterial.uniforms.uHaloSize.value = haloSize
     haloMaterial.uniforms.uHaloTurbulence.value = haloTurbulence
+    haloMaterial.uniforms.uPlasmaIntensity.value = plasmaIntensity
+    haloMaterial.uniforms.uPlasmaExtent.value = plasmaExtent
+    haloMaterial.uniforms.uPlasmaTurbulence.value = plasmaTurbulence
+    haloMaterial.uniforms.uPlasmaSharpness.value = plasmaSharpness
+    haloMaterial.uniforms.uPlasmaTextureScale.value = plasmaTextureScale
   })
 
   useTask((delta) => {
@@ -322,6 +392,19 @@
     bind:ref={haloMaterial}
     vertexShader={haloVertexShader}
     fragmentShader={haloFragmentShader}
+    uniforms={haloUniforms}
+    side={BackSide}
+    transparent={true}
+    depthWrite={false}
+    blending={AdditiveBlending}
+    toneMapped={false}
+  />
+</T.Mesh>
+
+<T.Mesh geometry={haloGeometry} scale={[haloSize, haloSize, haloSize]}>
+  <T.ShaderMaterial
+    vertexShader={haloVertexShader}
+    fragmentShader={haloDetailFragmentShader}
     uniforms={haloUniforms}
     side={BackSide}
     transparent={true}

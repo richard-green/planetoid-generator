@@ -11,6 +11,11 @@ export type StarSettings = {
   haloFalloff: number
   haloSize: number
   haloTurbulence: number
+  plasmaIntensity: number
+  plasmaExtent: number
+  plasmaTurbulence: number
+  plasmaSharpness: number
+  plasmaTextureScale: number
   colorTextureSize: number
   textureScale: number
   bandContrast: number
@@ -36,6 +41,11 @@ export type StarRangeValues = Pick<
   | 'haloFalloff'
   | 'haloSize'
   | 'haloTurbulence'
+  | 'plasmaIntensity'
+  | 'plasmaExtent'
+  | 'plasmaTurbulence'
+  | 'plasmaSharpness'
+  | 'plasmaTextureScale'
   | 'colorTextureSize'
   | 'textureScale'
   | 'bandContrast'
@@ -62,7 +72,12 @@ export const DefaultValues: StarSettings = {
   haloFalloff: 7,
   haloSize: 1.27,
   haloTurbulence: 2,
-  colorTextureSize: 1024,
+  plasmaIntensity: 10,
+  plasmaExtent: 0.04,
+  plasmaTurbulence: 2,
+  plasmaSharpness: 3,
+  plasmaTextureScale: 2.3,
+  colorTextureSize: 2048,
   textureScale: 4,
   bandContrast: 0.35,
   bandSwirl: 1,
@@ -86,6 +101,11 @@ export const MinValues: StarRangeValues = {
   haloFalloff: 0.5,
   haloSize: 1,
   haloTurbulence: 0,
+  plasmaIntensity: 1,
+  plasmaExtent: 0.02,
+  plasmaTurbulence: 0,
+  plasmaSharpness: 1,
+  plasmaTextureScale: 0.2,
   colorTextureSize: 64,
   textureScale: 0.2,
   bandContrast: 0,
@@ -109,6 +129,11 @@ export const MaxValues: StarRangeValues = {
   haloFalloff: 10,
   haloSize: 1.4,
   haloTurbulence: 2,
+  plasmaIntensity: 10,
+  plasmaExtent: 0.6,
+  plasmaTurbulence: 2,
+  plasmaSharpness: 12,
+  plasmaTextureScale: 4,
   colorTextureSize: 4096,
   textureScale: 4,
   bandContrast: 1,
@@ -132,6 +157,11 @@ export const StepValues: StarRangeValues = {
   haloFalloff: 0.25,
   haloSize: 0.01,
   haloTurbulence: 0.1,
+  plasmaIntensity: 0.1,
+  plasmaExtent: 0.01,
+  plasmaTurbulence: 0.1,
+  plasmaSharpness: 0.25,
+  plasmaTextureScale: 0.1,
   colorTextureSize: 1,
   textureScale: 0.1,
   bandContrast: 0.05,
