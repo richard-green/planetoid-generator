@@ -30,5 +30,5 @@ export default [
     rules: {
       // Override or add rule settings here.
     },
-  }
+  },
 ]

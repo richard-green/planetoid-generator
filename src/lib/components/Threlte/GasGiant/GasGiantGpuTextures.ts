@@ -19,7 +19,7 @@ import {
 } from 'three'
 
 import { DefaultValues, MaxValues, MinValues } from '../GasGiant/GasGiantSettings'
-import type { Palette } from '../../../types/palette';
+import type { Palette } from '../../../types/palette'
 
 type NoiseOffset = { x: number; y: number; z: number }
 
