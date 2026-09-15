@@ -192,6 +192,7 @@
     sunspotScale?: number
     sunspotJaggedness?: number
     sunspotNeighbours?: number
+    sunspotDarkness?: number
     brightness?: number
     saturation?: number
     contrast?: number
@@ -222,6 +223,7 @@
     sunspotScale = DefaultValues.sunspotScale,
     sunspotJaggedness = DefaultValues.sunspotJaggedness,
     sunspotNeighbours = DefaultValues.sunspotNeighbours,
+    sunspotDarkness = DefaultValues.sunspotDarkness,
     brightness = DefaultValues.brightness,
     saturation = DefaultValues.saturation,
     contrast = DefaultValues.contrast,
@@ -332,6 +334,7 @@
       clampSetting('sunspotScale', sunspotScale),
       clampSetting('sunspotJaggedness', sunspotJaggedness),
       Math.floor(clampSetting('sunspotNeighbours', sunspotNeighbours)),
+      clampSetting('sunspotDarkness', sunspotDarkness),
       clampSetting('brightness', brightness),
       clampSetting('saturation', saturation),
       clampSetting('contrast', contrast),

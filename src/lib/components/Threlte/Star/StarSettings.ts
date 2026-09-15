@@ -27,6 +27,7 @@ export type StarSettings = {
   sunspotScale: number
   sunspotJaggedness: number
   sunspotNeighbours: number
+  sunspotDarkness: number
   autoRotate: boolean
 }
 
@@ -57,17 +58,18 @@ export type StarRangeValues = Pick<
   | 'sunspotScale'
   | 'sunspotJaggedness'
   | 'sunspotNeighbours'
+  | 'sunspotDarkness'
 >
 
 export type StarRangeKey = keyof StarRangeValues
 
 export const DefaultValues: StarSettings = {
-  seed: 1842,
+  seed: 20069,
   palette: 'Yellow',
-  brightness: 1.4,
-  saturation: 0.8,
-  contrast: 1.3,
-  limbBrightness: 0.8,
+  brightness: 1.5,
+  saturation: 1.3,
+  contrast: 1.4,
+  limbBrightness: 0.7,
   haloIntensity: 2.8,
   haloFalloff: 7,
   haloSize: 1.27,
@@ -78,16 +80,17 @@ export const DefaultValues: StarSettings = {
   plasmaSharpness: 3,
   plasmaTextureScale: 2.3,
   colorTextureSize: 2048,
-  textureScale: 4,
-  bandContrast: 0.35,
-  bandSwirl: 1,
-  granularity: 4,
-  turbulence: 1.7,
-  convection: 0.6,
+  textureScale: 2,
+  bandContrast: 5,
+  bandSwirl: 5,
+  granularity: 8,
+  turbulence: 8,
+  convection: 0.3,
   sunspotCount: 12,
   sunspotScale: 0.5,
   sunspotJaggedness: 0.3,
   sunspotNeighbours: 5,
+  sunspotDarkness: 1,
   autoRotate: true,
 }
 
@@ -117,6 +120,7 @@ export const MinValues: StarRangeValues = {
   sunspotScale: 0.25,
   sunspotJaggedness: 0,
   sunspotNeighbours: 0,
+  sunspotDarkness: 0,
 }
 
 export const MaxValues: StarRangeValues = {
@@ -138,13 +142,14 @@ export const MaxValues: StarRangeValues = {
   textureScale: 4,
   bandContrast: 1,
   bandSwirl: 4,
-  granularity: 6,
-  turbulence: 2,
-  convection: 1,
+  granularity: 8,
+  turbulence: 8,
+  convection: 8,
   sunspotCount: 12,
   sunspotScale: 3,
   sunspotJaggedness: 2,
   sunspotNeighbours: 7,
+  sunspotDarkness: 1,
 }
 
 export const StepValues: StarRangeValues = {
@@ -173,6 +178,7 @@ export const StepValues: StarRangeValues = {
   sunspotScale: 0.1,
   sunspotJaggedness: 0.1,
   sunspotNeighbours: 1,
+  sunspotDarkness: 0.05,
 }
 
 export const DefaultStarSettings = DefaultValues

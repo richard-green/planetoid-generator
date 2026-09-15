@@ -36,6 +36,7 @@
   let sunspotScale = $state(DefaultValues.sunspotScale)
   let sunspotJaggedness = $state(DefaultValues.sunspotJaggedness)
   let sunspotNeighbours = $state(DefaultValues.sunspotNeighbours)
+  let sunspotDarkness = $state(DefaultValues.sunspotDarkness)
   let brightness = $state(DefaultValues.brightness)
   let saturation = $state(DefaultValues.saturation)
   let contrast = $state(DefaultValues.contrast)
@@ -118,6 +119,7 @@
           {sunspotScale}
           {sunspotJaggedness}
           {sunspotNeighbours}
+          {sunspotDarkness}
           {brightness}
           {saturation}
           {contrast}
@@ -412,6 +414,16 @@
             max={MaxValues.sunspotNeighbours}
             step={StepValues.sunspotNeighbours}
             bind:value={sunspotNeighbours}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Sunspot darkness</span>
+          <input
+            type="number"
+            min={MinValues.sunspotDarkness}
+            max={MaxValues.sunspotDarkness}
+            step={StepValues.sunspotDarkness}
+            bind:value={sunspotDarkness}
           />
         </label>
         <label class="toggle-row">

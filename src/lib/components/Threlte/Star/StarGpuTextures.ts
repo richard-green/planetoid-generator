@@ -38,6 +38,7 @@ const fragmentShader = `
   uniform float uSunspotScale;
   uniform float uSunspotJaggedness;
   uniform int uSunspotNeighbours;
+  uniform float uSunspotDarkness;
   uniform float uBrightness;
   uniform float uSaturation;
   uniform float uContrast;
@@ -46,10 +47,20 @@ const fragmentShader = `
   uniform vec3 uPaletteHot;
 
   float noise(vec3 p) {
-    return
-      sin(p.x * 2.3 + sin(p.y * 3.7)) *
-      sin(p.y * 2.1 + sin(p.z * 2.9)) *
-      sin(p.z * 2.7 + sin(p.x * 3.1));
+    vec3 cell = floor(p);
+    vec3 local = fract(p);
+    vec3 blend = local * local * (3.0 - 2.0 * local);
+    float corner000 = fract(sin(dot(cell, vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner100 = fract(sin(dot(cell + vec3(1.0, 0.0, 0.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner010 = fract(sin(dot(cell + vec3(0.0, 1.0, 0.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner110 = fract(sin(dot(cell + vec3(1.0, 1.0, 0.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner001 = fract(sin(dot(cell + vec3(0.0, 0.0, 1.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner101 = fract(sin(dot(cell + vec3(1.0, 0.0, 1.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner011 = fract(sin(dot(cell + vec3(0.0, 1.0, 1.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float corner111 = fract(sin(dot(cell + vec3(1.0, 1.0, 1.0), vec3(127.1, 311.7, 74.7))) * 43758.5453123);
+    float lower = mix(mix(corner000, corner100, blend.x), mix(corner010, corner110, blend.x), blend.y);
+    float upper = mix(mix(corner001, corner101, blend.x), mix(corner011, corner111, blend.x), blend.y);
+    return mix(lower, upper, blend.z) * 2.0 - 1.0;
   }
 
   float fbm(vec3 p) {
@@ -61,6 +72,38 @@ const fragmentShader = `
       amplitude *= 0.5;
     }
     return value;
+  }
+
+  vec3 hash33(vec3 p) {
+    p = vec3(
+      dot(p, vec3(127.1, 311.7, 74.7)),
+      dot(p, vec3(269.5, 183.3, 246.1)),
+      dot(p, vec3(113.5, 271.9, 124.6))
+    );
+    return fract(sin(p) * 43758.5453123);
+  }
+
+  vec2 cellular(vec3 p) {
+    vec3 cell = floor(p);
+    vec3 local = fract(p);
+    float nearest = 10.0;
+    float nextNearest = 10.0;
+    for (int z = -1; z <= 1; z++) {
+      for (int y = -1; y <= 1; y++) {
+        for (int x = -1; x <= 1; x++) {
+          vec3 offset = vec3(float(x), float(y), float(z));
+          vec3 feature = offset + hash33(cell + offset);
+          float distanceToFeature = length(local - feature);
+          if (distanceToFeature < nearest) {
+            nextNearest = nearest;
+            nearest = distanceToFeature;
+          } else if (distanceToFeature < nextNearest) {
+            nextNearest = distanceToFeature;
+          }
+        }
+      }
+    }
+    return vec2(nearest, nextNearest);
   }
 
   float hash(float value) {
@@ -112,7 +155,15 @@ const fragmentShader = `
     float swirledLatitude = latitude + (largeScaleFlow + longitudeFlow) * uBandSwirl * 0.42;
     float bands = sin(swirledLatitude * (5.0 + uScale * 2.0) + flow * 2.8 + uSeed.z);
     float detail = fbm(warpedPosition * uGranularity * 5.0 + uSeed.yzx * 1.7);
-    float convection = smoothstep(0.1, 0.65, fbm(spherePosition * (2.2 + uGranularity * 1.8) + uSeed.zxy * 2.1) + 0.5);
+    vec3 granuleWarp = vec3(
+      fbm(spherePosition * 2.7 + uSeed),
+      fbm(spherePosition * 3.1 + uSeed.yzx),
+      fbm(spherePosition * 2.3 + uSeed.zxy)
+    ) * uTurbulence * 0.035;
+    vec2 granuleCell = cellular((spherePosition + granuleWarp) * (16.0 + uGranularity * 7.0) + uSeed * 2.3);
+    float cellCore = 1.0 - smoothstep(0.14, 0.5, granuleCell.x);
+    float cellLane = smoothstep(0.035, 0.1, granuleCell.y - granuleCell.x);
+    float granulation = cellCore * cellLane;
     float sunspotOuter = 0.0;
     float sunspotCore = 0.0;
     float sunspotRidges = 0.0;
@@ -140,7 +191,7 @@ const fragmentShader = `
     }
     float penumbra = clamp(sunspotOuter - sunspotCore, 0.0, 1.0);
     float penumbraRidges = clamp(sunspotRidges, 0.0, 1.0);
-    float heat = clamp(0.54 + flow * 0.19 + bands * 0.12 * uBandContrast + detail * 0.15 + convection * uConvection * 0.2 - sunspotOuter * 0.2 - sunspotCore * 0.76, 0.0, 1.0);
+    float heat = clamp(0.54 + flow * 0.11 + bands * 0.015 * uBandContrast + detail * 0.1 + (granulation - 0.32) * uConvection * 0.27 - sunspotOuter * 0.2 * uSunspotDarkness - sunspotCore * 0.76 * uSunspotDarkness, 0.0, 1.0);
     vec3 color = mix(uPaletteDeep, uPaletteMid, smoothstep(0.2, 0.72, heat));
     color = mix(color, uPaletteHot, smoothstep(0.66, 1.0, heat));
     color *= min(uBrightness, 1.0);
@@ -149,9 +200,9 @@ const fragmentShader = `
     float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
     color = mix(vec3(luminance), color, uSaturation);
     color = mix(vec3(0.5), color, uContrast);
-    float penumbraShade = penumbra * (0.38 + penumbraRidges * 0.3);
+    float penumbraShade = penumbra * (0.38 + penumbraRidges * 0.3) * uSunspotDarkness;
     color = mix(color, color * vec3(0.42, 0.14, 0.04), penumbraShade);
-    color = mix(color, vec3(0.008), clamp(sunspotCore, 0.0, 1.0));
+    color = mix(color, vec3(0.008), clamp(sunspotCore * uSunspotDarkness, 0.0, 1.0));
     gl_FragColor = vec4(color, 1.0);
   }
 `
@@ -170,6 +221,7 @@ export function createStarColorTexture(
   sunspotScale: number,
   sunspotJaggedness: number,
   sunspotNeighbours: number,
+  sunspotDarkness: number,
   brightness: number,
   saturation: number,
   contrast: number,
@@ -192,6 +244,7 @@ export function createStarColorTexture(
       uSunspotScale: { value: sunspotScale },
       uSunspotJaggedness: { value: sunspotJaggedness },
       uSunspotNeighbours: { value: sunspotNeighbours },
+      uSunspotDarkness: { value: sunspotDarkness },
       uBrightness: { value: brightness },
       uSaturation: { value: saturation },
       uContrast: { value: contrast },
