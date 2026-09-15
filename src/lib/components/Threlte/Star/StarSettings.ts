@@ -7,6 +7,10 @@ export type StarSettings = {
   saturation: number
   contrast: number
   limbBrightness: number
+  haloIntensity: number
+  haloFalloff: number
+  haloSize: number
+  haloTurbulence: number
   textureScale: number
   bandContrast: number
   bandSwirl: number
@@ -27,6 +31,10 @@ export type StarRangeValues = Pick<
   | 'saturation'
   | 'contrast'
   | 'limbBrightness'
+  | 'haloIntensity'
+  | 'haloFalloff'
+  | 'haloSize'
+  | 'haloTurbulence'
   | 'textureScale'
   | 'bandContrast'
   | 'bandSwirl'
@@ -43,11 +51,15 @@ export type StarRangeKey = keyof StarRangeValues
 
 export const CurrentStarSettingsBackup: Readonly<StarSettings> = {
   seed: 1842,
-  palette: 'Blue',
-  brightness: 1.7,
-  saturation: 1,
-  contrast: 1,
+  palette: 'Yellow',
+  brightness: 1.4,
+  saturation: 0.8,
+  contrast: 1.3,
   limbBrightness: 0.8,
+  haloIntensity: 2.8,
+  haloFalloff: 7,
+  haloSize: 1.27,
+  haloTurbulence: 2,
   textureScale: 4,
   bandContrast: 0.35,
   bandSwirl: 1,
@@ -69,6 +81,10 @@ export const MinValues: StarRangeValues = {
   saturation: 0,
   contrast: 0,
   limbBrightness: 0,
+  haloIntensity: 0,
+  haloFalloff: 0.5,
+  haloSize: 1,
+  haloTurbulence: 0,
   textureScale: 0.2,
   bandContrast: 0,
   bandSwirl: 0,
@@ -87,6 +103,10 @@ export const MaxValues: StarRangeValues = {
   saturation: 2,
   contrast: 2,
   limbBrightness: 3,
+  haloIntensity: 3,
+  haloFalloff: 10,
+  haloSize: 1.4,
+  haloTurbulence: 2,
   textureScale: 4,
   bandContrast: 1,
   bandSwirl: 1,
@@ -105,6 +125,10 @@ export const StepValues: StarRangeValues = {
   saturation: 0.1,
   contrast: 0.1,
   limbBrightness: 0.1,
+  haloIntensity: 0.1,
+  haloFalloff: 0.25,
+  haloSize: 0.01,
+  haloTurbulence: 0.1,
   textureScale: 0.1,
   bandContrast: 0.05,
   bandSwirl: 0.05,

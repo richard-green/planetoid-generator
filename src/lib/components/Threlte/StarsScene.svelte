@@ -2,6 +2,8 @@
   import { T, useTask, useThrelte } from '@threlte/core'
   import { OrbitControls } from '@threlte/extras'
   import {
+    AdditiveBlending,
+    BackSide,
     Color,
     Mesh,
     ShaderMaterial,
@@ -51,6 +53,57 @@
     }
   `
 
+  const haloVertexShader = `
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -modelViewPosition.xyz;
+      gl_Position = projectionMatrix * modelViewPosition;
+    }
+  `
+
+  const haloFragmentShader = `
+    uniform vec3 uHaloColor;
+    uniform vec3 uSeed;
+    uniform float uHaloIntensity;
+    uniform float uHaloFalloff;
+    uniform float uHaloSize;
+    uniform float uHaloTurbulence;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+
+    float noise(vec3 p) {
+      return sin(p.x * 2.1 + sin(p.y * 3.4)) * sin(p.y * 2.7 + sin(p.z * 2.3)) * sin(p.z * 3.1);
+    }
+
+    float fbm(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
+      for (int index = 0; index < 4; index++) {
+        value += noise(p) * amplitude;
+        p = p * 2.07 + vec3(4.2, 8.7, 2.6);
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    void main() {
+      vec3 normal = normalize(vNormal);
+      vec3 viewDirection = normalize(vViewPosition);
+      float edge = 1.0 - abs(dot(normal, viewDirection));
+      float starEdge = 1.0 - sqrt(max(0.0, 1.0 - pow(2.0 / (2.05 * uHaloSize), 2.0)));
+      float haloDistance = clamp((edge - starEdge) / (1.0 - starEdge), 0.0, 1.0);
+      float outerFade = 1.0 - smoothstep(0.88, 1.0, haloDistance);
+      float coronaBand = exp(-uHaloFalloff * haloDistance) * outerFade;
+      float wisps = 0.5 + 0.5 * fbm(normal * 5.0 + uSeed);
+      float structure = mix(1.0, 0.6 + wisps * 0.4, min(uHaloTurbulence * 0.5, 1.0));
+      float opacity = coronaBand * structure * uHaloIntensity * 0.24;
+      gl_FragColor = vec4(uHaloColor, opacity);
+    }
+  `
+
   type Props = {
     seed?: number
     textureScale?: number
@@ -68,6 +121,10 @@
     contrast?: number
     palette?: StarPaletteName
     limbBrightness?: number
+    haloIntensity?: number
+    haloFalloff?: number
+    haloSize?: number
+    haloTurbulence?: number
     autoRotate?: boolean
   }
 
@@ -88,12 +145,18 @@
     contrast = DefaultValues.contrast,
     palette = DefaultValues.palette,
     limbBrightness = DefaultValues.limbBrightness,
+    haloIntensity = DefaultValues.haloIntensity,
+    haloFalloff = DefaultValues.haloFalloff,
+    haloSize = DefaultValues.haloSize,
+    haloTurbulence = DefaultValues.haloTurbulence,
     autoRotate = DefaultValues.autoRotate,
   }: Props = $props()
 
   const geometry = new SphereGeometry(2, 128, 64)
+  const haloGeometry = new SphereGeometry(2.05, 128, 64)
   let mesh = $state<Mesh | undefined>(undefined)
   let material = $state<ShaderMaterial | undefined>(undefined)
+  let haloMaterial = $state<ShaderMaterial | undefined>(undefined)
   let colorTexture = $state<Texture | undefined>(undefined)
   const { renderer, scene } = useThrelte()
   scene.background = new Color('#030005')
@@ -102,6 +165,14 @@
     uMap: { value: null },
     uLimbColor: { value: new Color('#ffffff') },
     uLimbIntensity: { value: 0 },
+  }
+  const haloUniforms = {
+    uHaloColor: { value: new Color('#ffffff') },
+    uSeed: { value: new Color() },
+    uHaloIntensity: { value: 0 },
+    uHaloFalloff: { value: 1 },
+    uHaloSize: { value: 1 },
+    uHaloTurbulence: { value: 0 },
   }
 
   function flipRows(source: Uint8Array, width: number, height: number): Uint8Array {
@@ -172,11 +243,24 @@
     }
   })
 
+  $effect(() => {
+    if (!haloMaterial) return
+    haloMaterial.uniforms.uHaloColor.value = limbColor
+    haloMaterial.uniforms.uSeed.value.set(seed * 0.0013, seed * 0.0021, seed * 0.0007)
+    haloMaterial.uniforms.uHaloIntensity.value = haloIntensity
+    haloMaterial.uniforms.uHaloFalloff.value = haloFalloff
+    haloMaterial.uniforms.uHaloSize.value = haloSize
+    haloMaterial.uniforms.uHaloTurbulence.value = haloTurbulence
+  })
+
   useTask((delta) => {
     if (mesh && autoRotate) mesh.rotation.y += delta * 0.07
   })
 
-  onDestroy(() => geometry.dispose())
+  onDestroy(() => {
+    geometry.dispose()
+    haloGeometry.dispose()
+  })
 </script>
 
 <T.PerspectiveCamera makeDefault position={[0, 0, 6.5]}>
@@ -189,6 +273,20 @@
     vertexShader={surfaceVertexShader}
     fragmentShader={surfaceFragmentShader}
     uniforms={surfaceUniforms}
+    toneMapped={false}
+  />
+</T.Mesh>
+
+<T.Mesh geometry={haloGeometry} scale={[haloSize, haloSize, haloSize]}>
+  <T.ShaderMaterial
+    bind:ref={haloMaterial}
+    vertexShader={haloVertexShader}
+    fragmentShader={haloFragmentShader}
+    uniforms={haloUniforms}
+    side={BackSide}
+    transparent={true}
+    depthWrite={false}
+    blending={AdditiveBlending}
     toneMapped={false}
   />
 </T.Mesh>

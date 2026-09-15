@@ -41,6 +41,10 @@
   let contrast = $state(DefaultValues.contrast)
   let palette = $state<StarPaletteName>(DefaultValues.palette)
   let limbBrightness = $state(DefaultValues.limbBrightness)
+  let haloIntensity = $state(DefaultValues.haloIntensity)
+  let haloFalloff = $state(DefaultValues.haloFalloff)
+  let haloSize = $state(DefaultValues.haloSize)
+  let haloTurbulence = $state(DefaultValues.haloTurbulence)
   let autoRotate = $state(DefaultValues.autoRotate)
   let isSaving = $state(false)
 
@@ -113,6 +117,10 @@
           {contrast}
           {palette}
           {limbBrightness}
+          {haloIntensity}
+          {haloFalloff}
+          {haloSize}
+          {haloTurbulence}
           {autoRotate}
         />
       </Canvas>
@@ -159,6 +167,22 @@
         <label class="compact-number-row">
           <span>Limb brightness</span>
           <input type="number" min={MinValues.limbBrightness} max={MaxValues.limbBrightness} step={StepValues.limbBrightness} bind:value={limbBrightness} />
+        </label>
+        <label class="compact-number-row">
+          <span>Halo brightness</span>
+          <input type="number" min={MinValues.haloIntensity} max={MaxValues.haloIntensity} step={StepValues.haloIntensity} bind:value={haloIntensity} />
+        </label>
+        <label class="compact-number-row">
+          <span>Halo dropoff</span>
+          <input type="number" min={MinValues.haloFalloff} max={MaxValues.haloFalloff} step={StepValues.haloFalloff} bind:value={haloFalloff} />
+        </label>
+        <label class="compact-number-row">
+          <span>Halo size</span>
+          <input type="number" min={MinValues.haloSize} max={MaxValues.haloSize} step={StepValues.haloSize} bind:value={haloSize} />
+        </label>
+        <label class="compact-number-row">
+          <span>Halo turbulence</span>
+          <input type="number" min={MinValues.haloTurbulence} max={MaxValues.haloTurbulence} step={StepValues.haloTurbulence} bind:value={haloTurbulence} />
         </label>
         <label class="compact-number-row">
           <span>Band scale</span>
