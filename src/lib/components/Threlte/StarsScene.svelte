@@ -64,6 +64,8 @@
     sunspotJaggedness?: number
     sunspotNeighbours?: number
     brightness?: number
+    saturation?: number
+    contrast?: number
     palette?: StarPaletteName
     limbBrightness?: number
     autoRotate?: boolean
@@ -82,6 +84,8 @@
     sunspotJaggedness = DefaultValues.sunspotJaggedness,
     sunspotNeighbours = DefaultValues.sunspotNeighbours,
     brightness = DefaultValues.brightness,
+    saturation = DefaultValues.saturation,
+    contrast = DefaultValues.contrast,
     palette = DefaultValues.palette,
     limbBrightness = DefaultValues.limbBrightness,
     autoRotate = DefaultValues.autoRotate,
@@ -153,6 +157,8 @@
       sunspotJaggedness,
       sunspotNeighbours,
       brightness,
+      saturation,
+      contrast,
       starPalettes[palette] ?? starPalettes.Orange
     )
     colorTexture = nextTexture

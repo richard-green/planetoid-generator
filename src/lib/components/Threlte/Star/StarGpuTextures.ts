@@ -39,6 +39,8 @@ const fragmentShader = `
   uniform float uSunspotJaggedness;
   uniform int uSunspotNeighbours;
   uniform float uBrightness;
+  uniform float uSaturation;
+  uniform float uContrast;
   uniform vec3 uPaletteDeep;
   uniform vec3 uPaletteMid;
   uniform vec3 uPaletteHot;
@@ -141,7 +143,12 @@ const fragmentShader = `
     float heat = clamp(0.54 + flow * 0.19 + bands * 0.12 * uBandContrast + detail * 0.15 + convection * uConvection * 0.2 - sunspotOuter * 0.2 - sunspotCore * 0.76, 0.0, 1.0);
     vec3 color = mix(uPaletteDeep, uPaletteMid, smoothstep(0.2, 0.72, heat));
     color = mix(color, uPaletteHot, smoothstep(0.66, 1.0, heat));
-    color *= uBrightness;
+    color *= min(uBrightness, 1.0);
+    float whiteHotness = clamp((uBrightness - 1.0) * 0.5, 0.0, 1.0);
+    color = mix(color, vec3(1.0), whiteHotness);
+    float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
+    color = mix(vec3(luminance), color, uSaturation);
+    color = mix(vec3(0.5), color, uContrast);
     float penumbraShade = penumbra * (0.38 + penumbraRidges * 0.3);
     color = mix(color, color * vec3(0.42, 0.14, 0.04), penumbraShade);
     color = mix(color, vec3(0.008), clamp(sunspotCore, 0.0, 1.0));
@@ -164,6 +171,8 @@ export function createStarColorTexture(
   sunspotJaggedness: number,
   sunspotNeighbours: number,
   brightness: number,
+  saturation: number,
+  contrast: number,
   palette: readonly [number, number, number][]
 ): Texture {
   const height = Math.max(2, Math.floor(textureHeight))
@@ -184,6 +193,8 @@ export function createStarColorTexture(
       uSunspotJaggedness: { value: Math.max(0, Math.min(2, sunspotJaggedness)) },
       uSunspotNeighbours: { value: Math.max(0, Math.min(7, Math.floor(sunspotNeighbours))) },
       uBrightness: { value: Math.max(0.1, Math.min(3, brightness)) },
+      uSaturation: { value: Math.max(0, Math.min(2, saturation)) },
+      uContrast: { value: Math.max(0, Math.min(2, contrast)) },
       uPaletteDeep: { value: new Vector3(...palette[0]) },
       uPaletteMid: { value: new Vector3(...palette[1]) },
       uPaletteHot: { value: new Vector3(...palette[2]) },

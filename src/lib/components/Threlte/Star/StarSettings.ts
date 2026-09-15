@@ -4,6 +4,8 @@ export type StarSettings = {
   seed: number
   palette: StarPaletteName
   brightness: number
+  saturation: number
+  contrast: number
   limbBrightness: number
   textureScale: number
   bandContrast: number
@@ -22,6 +24,8 @@ export type StarRangeValues = Pick<
   StarSettings,
   | 'seed'
   | 'brightness'
+  | 'saturation'
+  | 'contrast'
   | 'limbBrightness'
   | 'textureScale'
   | 'bandContrast'
@@ -41,6 +45,8 @@ export const CurrentStarSettingsBackup: Readonly<StarSettings> = {
   seed: 1842,
   palette: 'Blue',
   brightness: 1.7,
+  saturation: 1,
+  contrast: 1,
   limbBrightness: 0.8,
   textureScale: 4,
   bandContrast: 0.35,
@@ -60,6 +66,8 @@ export const DefaultValues: StarSettings = { ...CurrentStarSettingsBackup }
 export const MinValues: StarRangeValues = {
   seed: 0,
   brightness: 0.1,
+  saturation: 0,
+  contrast: 0,
   limbBrightness: 0,
   textureScale: 0.2,
   bandContrast: 0,
@@ -76,6 +84,8 @@ export const MinValues: StarRangeValues = {
 export const MaxValues: StarRangeValues = {
   seed: 100000,
   brightness: 3,
+  saturation: 2,
+  contrast: 2,
   limbBrightness: 3,
   textureScale: 4,
   bandContrast: 1,
@@ -92,6 +102,8 @@ export const MaxValues: StarRangeValues = {
 export const StepValues: StarRangeValues = {
   seed: 1,
   brightness: 0.1,
+  saturation: 0.1,
+  contrast: 0.1,
   limbBrightness: 0.1,
   textureScale: 0.1,
   bandContrast: 0.05,

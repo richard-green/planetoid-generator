@@ -37,6 +37,8 @@
   let sunspotJaggedness = $state(DefaultValues.sunspotJaggedness)
   let sunspotNeighbours = $state(DefaultValues.sunspotNeighbours)
   let brightness = $state(DefaultValues.brightness)
+  let saturation = $state(DefaultValues.saturation)
+  let contrast = $state(DefaultValues.contrast)
   let palette = $state<StarPaletteName>(DefaultValues.palette)
   let limbBrightness = $state(DefaultValues.limbBrightness)
   let autoRotate = $state(DefaultValues.autoRotate)
@@ -107,6 +109,8 @@
           {sunspotJaggedness}
           {sunspotNeighbours}
           {brightness}
+          {saturation}
+          {contrast}
           {palette}
           {limbBrightness}
           {autoRotate}
@@ -143,6 +147,14 @@
         <label class="compact-number-row">
           <span>Brightness</span>
           <input type="number" min={MinValues.brightness} max={MaxValues.brightness} step={StepValues.brightness} bind:value={brightness} />
+        </label>
+        <label class="compact-number-row">
+          <span>Saturation</span>
+          <input type="number" min={MinValues.saturation} max={MaxValues.saturation} step={StepValues.saturation} bind:value={saturation} />
+        </label>
+        <label class="compact-number-row">
+          <span>Contrast</span>
+          <input type="number" min={MinValues.contrast} max={MaxValues.contrast} step={StepValues.contrast} bind:value={contrast} />
         </label>
         <label class="compact-number-row">
           <span>Limb brightness</span>
