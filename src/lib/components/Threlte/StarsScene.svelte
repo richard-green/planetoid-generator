@@ -81,9 +81,11 @@
 
   const haloVertexShader = `
     varying vec3 vNormal;
+    varying vec3 vObjectNormal;
     varying vec3 vViewPosition;
     void main() {
       vNormal = normalize(normalMatrix * normal);
+      vObjectNormal = normalize(normal);
       vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
       vViewPosition = -modelViewPosition.xyz;
       gl_Position = projectionMatrix * modelViewPosition;
@@ -124,9 +126,11 @@
       float outerFade = 1.0 - smoothstep(0.88, 1.0, haloDistance);
       float coronaBand = exp(-uHaloFalloff * haloDistance) * outerFade;
       float wisps = 0.5 + 0.5 * fbm(normal * 5.0 + uSeed);
-      float structure = mix(1.0, 0.6 + wisps * 0.4, min(uHaloTurbulence * 0.5, 1.0));
+      float structure = mix(1.0, 0.6 + wisps * 0.4, uHaloTurbulence * 0.5);
       float opacity = coronaBand * structure * uHaloIntensity * 0.24;
-      gl_FragColor = vec4(uHaloColor, opacity);
+      float colorize = mix(0.72, 1.0, smoothstep(0.0, 0.25, haloDistance));
+      vec3 haloColor = mix(vec3(1.0), uHaloColor, colorize);
+      gl_FragColor = vec4(haloColor, opacity);
     }
   `
 
@@ -143,6 +147,7 @@
     uniform float uPlasmaSharpness;
     uniform float uPlasmaTextureScale;
     varying vec3 vNormal;
+    varying vec3 vObjectNormal;
     varying vec3 vViewPosition;
 
     float noise(vec3 p) {
@@ -162,21 +167,28 @@
 
     void main() {
       vec3 normal = normalize(vNormal);
+      vec3 objectNormal = normalize(vObjectNormal);
       vec3 viewDirection = normalize(vViewPosition);
       float edge = 1.0 - abs(dot(normal, viewDirection));
       float starEdge = 1.0 - sqrt(max(0.0, 1.0 - pow(2.0 / (2.05 * uHaloSize), 2.0)));
       float haloDistance = clamp((edge - starEdge) / (1.0 - starEdge), 0.0, 1.0);
-      float broadStorm = fbm(normal * 3.2 * uPlasmaTextureScale + uSeed);
-      float fineStorm = fbm(normal * 12.0 * uPlasmaTextureScale + uSeed.zxy * 2.7);
+      float broadStorm = fbm(objectNormal * 3.2 * uPlasmaTextureScale + uSeed);
+      float fineStorm = fbm(objectNormal * 12.0 * uPlasmaTextureScale + uSeed.zxy * 2.7);
       float storm = broadStorm * 0.7 + fineStorm * 0.3;
-      float turbulenceAmount = min(uPlasmaTurbulence * 0.5, 1.0);
-      float distanceWarp = storm * turbulenceAmount * uPlasmaExtent * 0.45 * smoothstep(0.03, 0.25, haloDistance);
-      float plasmaDistance = clamp((haloDistance - distanceWarp) / uPlasmaExtent, 0.0, 1.0);
+      float turbulenceAmount = uPlasmaTurbulence * 0.5;
+      float distanceWarp = storm * turbulenceAmount * 0.018 * smoothstep(0.03, 0.25, haloDistance);
+      float plasmaDistance = clamp((haloDistance - distanceWarp) / 0.04, 0.0, 1.0);
       float outerFade = 1.0 - smoothstep(0.72, 1.0, plasmaDistance);
-      float plasmaBand = exp(-3.5 * plasmaDistance) * outerFade;
-      float filaments = pow(max(storm, 0.0), uPlasmaSharpness);
-      float opacity = plasmaBand * filaments * turbulenceAmount * uPlasmaIntensity * 0.2;
-      gl_FragColor = vec4(uHaloColor, opacity);
+      float plasmaBand = exp(-8.0 * plasmaDistance) * outerFade;
+      float sharpness = (uPlasmaSharpness - 1.0) / 11.0;
+      float filamentField = clamp(storm * 0.75 + 0.25, 0.0, 1.0);
+      float filamentThreshold = mix(0.22, 0.62, sharpness);
+      float filaments = smoothstep(filamentThreshold, 0.9, filamentField);
+      float filamentBrightness = mix(1.0, 3.0, sharpness);
+      float opacity = plasmaBand * filaments * filamentBrightness * turbulenceAmount * uPlasmaIntensity * 0.2;
+      float colorize = mix(0.82, 1.0, smoothstep(0.0, 0.35, plasmaDistance));
+      vec3 haloColor = mix(vec3(1.0), uHaloColor, colorize);
+      gl_FragColor = vec4(haloColor, opacity);
     }
   `
 
@@ -249,18 +261,35 @@
   const geometry = createIcosphere(2, 20)
   const haloGeometry = createIcosphere(2.05, 5)
   let mesh = $state<Mesh | undefined>(undefined)
+  let plasmaMesh = $state<Mesh | undefined>(undefined)
   let material = $state<ShaderMaterial | undefined>(undefined)
   let haloMaterial = $state<ShaderMaterial | undefined>(undefined)
   let colorTexture = $state<Texture | undefined>(undefined)
   const { renderer, scene } = useThrelte()
   scene.background = null
-  const limbColor = $derived(new Color(...(starPalettes[palette] ?? starPalettes.Orange)[2]))
+  const activePalette = $derived(starPalettes[palette] ?? starPalettes.Orange)
+  const limbColor = $derived(new Color(...activePalette[2]))
+  const haloColor = $derived(new Color(...activePalette[1]))
+  const plasmaShellScale = $derived(1 + plasmaExtent)
   const surfaceUniforms = {
     uMap: { value: null },
     uLimbColor: { value: new Color('#ffffff') },
     uLimbIntensity: { value: 0 },
   }
   const haloUniforms = {
+    uHaloColor: { value: new Color('#ffffff') },
+    uSeed: { value: new Color() },
+    uHaloIntensity: { value: 0 },
+    uHaloFalloff: { value: 1 },
+    uHaloSize: { value: 1 },
+    uHaloTurbulence: { value: 0 },
+    uPlasmaIntensity: { value: 0 },
+    uPlasmaExtent: { value: 1 },
+    uPlasmaTurbulence: { value: 0 },
+    uPlasmaSharpness: { value: 1 },
+    uPlasmaTextureScale: { value: 1 },
+  }
+  const plasmaUniforms = {
     uHaloColor: { value: new Color('#ffffff') },
     uSeed: { value: new Color() },
     uHaloIntensity: { value: 0 },
@@ -359,7 +388,7 @@
 
   $effect(() => {
     if (!haloMaterial) return
-    haloMaterial.uniforms.uHaloColor.value = limbColor
+    haloMaterial.uniforms.uHaloColor.value = haloColor
     haloMaterial.uniforms.uSeed.value.set(seed * 0.0013, seed * 0.0021, seed * 0.0007)
     haloMaterial.uniforms.uHaloIntensity.value = haloIntensity
     haloMaterial.uniforms.uHaloFalloff.value = haloFalloff
@@ -370,10 +399,25 @@
     haloMaterial.uniforms.uPlasmaTurbulence.value = plasmaTurbulence
     haloMaterial.uniforms.uPlasmaSharpness.value = plasmaSharpness
     haloMaterial.uniforms.uPlasmaTextureScale.value = plasmaTextureScale
+
+    plasmaUniforms.uHaloColor.value = haloColor
+    plasmaUniforms.uSeed.value.set(seed * 0.0013, seed * 0.0021, seed * 0.0007)
+    plasmaUniforms.uHaloIntensity.value = haloIntensity
+    plasmaUniforms.uHaloFalloff.value = haloFalloff
+    plasmaUniforms.uHaloSize.value = plasmaShellScale
+    plasmaUniforms.uHaloTurbulence.value = haloTurbulence
+    plasmaUniforms.uPlasmaIntensity.value = plasmaIntensity
+    plasmaUniforms.uPlasmaExtent.value = plasmaExtent
+    plasmaUniforms.uPlasmaTurbulence.value = plasmaTurbulence
+    plasmaUniforms.uPlasmaSharpness.value = plasmaSharpness
+    plasmaUniforms.uPlasmaTextureScale.value = plasmaTextureScale
   })
 
   useTask((delta) => {
-    if (mesh && autoRotate) mesh.rotation.y += delta * 0.07
+    if (!autoRotate) return
+    const rotation = delta * 0.07
+    if (mesh) mesh.rotation.y += rotation
+    if (plasmaMesh) plasmaMesh.rotation.y += rotation
   })
 
   onDestroy(() => {
@@ -410,11 +454,11 @@
   />
 </T.Mesh>
 
-<T.Mesh geometry={haloGeometry} scale={[haloSize, haloSize, haloSize]}>
+<T.Mesh bind:ref={plasmaMesh} geometry={haloGeometry} scale={[plasmaShellScale, plasmaShellScale, plasmaShellScale]}>
   <T.ShaderMaterial
     vertexShader={haloVertexShader}
     fragmentShader={haloDetailFragmentShader}
-    uniforms={haloUniforms}
+    uniforms={plasmaUniforms}
     side={BackSide}
     transparent={true}
     depthWrite={false}
