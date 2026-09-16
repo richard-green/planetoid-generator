@@ -3,8 +3,6 @@
   import {
     BufferGeometry,
     Color,
-    Float32BufferAttribute,
-    IcosahedronGeometry,
     MathUtils,
     Mesh,
     MeshBasicMaterial,
@@ -15,8 +13,8 @@
     WebGLRenderTarget,
     type Texture,
   } from 'three'
-  import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
   import { onDestroy } from 'svelte'
+  import { createIcosphere } from '../../../utils/geometry'
   import { DefaultValues, MaxValues, MinValues, type PlanetoidViewMode } from './PlanetoidSettings'
   import {
     createPlanetoidColorTexture,
@@ -139,7 +137,7 @@
     ReturnType<typeof createPlanetoidPaletteGradientTexture> | undefined
   >(undefined)
   let color = $derived(new Color('#ffffff'))
-  const initialGeometry = createIcosphere(5)
+  const initialGeometry = createIcosphere(2, 5)
   let geometry = $state<BufferGeometry>(initialGeometry)
   let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
   let normalWeldGroups = $state<number[][]>(
@@ -243,76 +241,12 @@
     return downloadRenderTexture(normalMap, fileName, { convertLinearToSrgb: true })
   }
 
-  function applySphericalUVs(geometry: BufferGeometry) {
-    const position = geometry.attributes.position
-    const uv = new Float32Array(position.count * 2)
-    const vertex = new Vector3()
-
-    for (let i = 0; i < position.count; i += 3) {
-      let u0 = 0
-      let u1 = 0
-      let u2 = 0
-      let v0 = 0
-      let v1 = 0
-      let v2 = 0
-
-      vertex.fromBufferAttribute(position, i).normalize()
-      u0 = 0.5 + Math.atan2(vertex.z, vertex.x) / (Math.PI * 2)
-      v0 = 0.5 - Math.asin(MathUtils.clamp(vertex.y, -1, 1)) / Math.PI
-
-      vertex.fromBufferAttribute(position, i + 1).normalize()
-      u1 = 0.5 + Math.atan2(vertex.z, vertex.x) / (Math.PI * 2)
-      v1 = 0.5 - Math.asin(MathUtils.clamp(vertex.y, -1, 1)) / Math.PI
-
-      vertex.fromBufferAttribute(position, i + 2).normalize()
-      u2 = 0.5 + Math.atan2(vertex.z, vertex.x) / (Math.PI * 2)
-      v2 = 0.5 - Math.asin(MathUtils.clamp(vertex.y, -1, 1)) / Math.PI
-
-      const maxU = Math.max(u0, u1, u2)
-      const minU = Math.min(u0, u1, u2)
-
-      // If a triangle crosses the seam, push low-U vertices into the next repeat
-      // so interpolation stays local instead of stretching across the texture.
-      if (maxU - minU > 0.5) {
-        if (u0 < 0.5) u0 += 1
-        if (u1 < 0.5) u1 += 1
-        if (u2 < 0.5) u2 += 1
-      }
-
-      const uvIndex0 = i * 2
-      const uvIndex1 = (i + 1) * 2
-      const uvIndex2 = (i + 2) * 2
-
-      uv[uvIndex0] = u0
-      uv[uvIndex0 + 1] = v0
-      uv[uvIndex1] = u1
-      uv[uvIndex1 + 1] = v1
-      uv[uvIndex2] = u2
-      uv[uvIndex2 + 1] = v2
-    }
-
-    geometry.setAttribute('uv', new Float32BufferAttribute(uv, 2))
-  }
-
-  function createIcosphere(detail: number) {
+  function clampTriangleDetail(detail: number) {
     const clampedDetail = Math.max(
       MinValues.triangleDetail,
       Math.min(MaxValues.triangleDetail, Math.round(detail))
     )
-    const indexedGeometry = new IcosahedronGeometry(2, clampedDetail)
-    const rawGeometry = indexedGeometry.index ? indexedGeometry.toNonIndexed() : indexedGeometry
-
-    if (indexedGeometry !== rawGeometry) {
-      indexedGeometry.dispose()
-    }
-
-    applySphericalUVs(rawGeometry)
-
-    // Merge duplicate vertices so normals can be smooth between faces.
-    const smoothGeometry = mergeVertices(rawGeometry)
-    rawGeometry.dispose()
-
-    return smoothGeometry
+    return clampedDetail
   }
 
   function copyPositionArray(source: BufferGeometry) {
@@ -343,8 +277,8 @@
   }
 
   $effect(() => {
-    const detail = triangleDetail
-    const nextGeometry = createIcosphere(detail)
+    const detail = clampTriangleDetail(triangleDetail)
+    const nextGeometry = createIcosphere(2, detail)
     const nextBasePositions = copyPositionArray(nextGeometry)
     const previousGeometry = disposableGeometry
 

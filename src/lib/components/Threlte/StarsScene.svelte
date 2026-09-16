@@ -7,11 +7,11 @@
     Color,
     Mesh,
     ShaderMaterial,
-    SphereGeometry,
     WebGLRenderTarget,
     type Texture,
   } from 'three'
   import { onDestroy } from 'svelte'
+  import { createIcosphere } from '../../utils/geometry'
   import { createStarColorTexture, disposeStarTexture } from './Star/StarGpuTextures'
   import {
     DefaultValues,
@@ -246,8 +246,8 @@
     autoRotate = DefaultValues.autoRotate,
   }: Props = $props()
 
-  const geometry = new SphereGeometry(2, 128, 64)
-  const haloGeometry = new SphereGeometry(2.05, 128, 64)
+  const geometry = createIcosphere(2, 20)
+  const haloGeometry = createIcosphere(2.05, 5)
   let mesh = $state<Mesh | undefined>(undefined)
   let material = $state<ShaderMaterial | undefined>(undefined)
   let haloMaterial = $state<ShaderMaterial | undefined>(undefined)

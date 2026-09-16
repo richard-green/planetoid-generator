@@ -8,7 +8,13 @@ import {
 
 export type StarPaletteName = 'White' | 'Blue' | 'Yellow' | 'Orange' | 'Red'
 
-export const StarPaletteNames: readonly StarPaletteName[] = ['White', 'Blue', 'Yellow', 'Orange', 'Red']
+export const StarPaletteNames: readonly StarPaletteName[] = [
+  'White',
+  'Blue',
+  'Yellow',
+  'Orange',
+  'Red',
+]
 
 export type StarSettings = {
   seed: number
