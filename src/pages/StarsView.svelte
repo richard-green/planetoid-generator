@@ -18,7 +18,7 @@
   const STAR_SETTINGS_STORAGE_KEY = 'star-view-settings-v1'
 
   type StarsSceneExports = {
-    downloadTextureMapPng: (fileName?: string) => Promise<boolean>
+    downloadTextureMapPng: (fileName?: string) => boolean
   }
 
   const pageTitleLinks = [
@@ -37,8 +37,10 @@
   let convection = $state(DefaultValues.convection)
   let sunspotCount = $state(DefaultValues.sunspotCount)
   let sunspotScale = $state(DefaultValues.sunspotScale)
+  let sunspotPower = $state(DefaultValues.sunspotPower)
   let sunspotJaggedness = $state(DefaultValues.sunspotJaggedness)
   let sunspotNeighbours = $state(DefaultValues.sunspotNeighbours)
+  let penumbraScale = $state(DefaultValues.penumbraScale)
   let sunspotDarkness = $state(DefaultValues.sunspotDarkness)
   let brightness = $state(DefaultValues.brightness)
   let saturation = $state(DefaultValues.saturation)
@@ -84,8 +86,10 @@
     convection = settings.convection
     sunspotCount = settings.sunspotCount
     sunspotScale = settings.sunspotScale
+    sunspotPower = settings.sunspotPower
     sunspotJaggedness = settings.sunspotJaggedness
     sunspotNeighbours = settings.sunspotNeighbours
+    penumbraScale = settings.penumbraScale
     sunspotDarkness = settings.sunspotDarkness
     autoRotate = settings.autoRotate
   }
@@ -116,8 +120,10 @@
       convection,
       sunspotCount,
       sunspotScale,
+      sunspotPower,
       sunspotJaggedness,
       sunspotNeighbours,
+      penumbraScale,
       sunspotDarkness,
       autoRotate,
     }
@@ -208,8 +214,10 @@
           {convection}
           {sunspotCount}
           {sunspotScale}
+          {sunspotPower}
           {sunspotJaggedness}
           {sunspotNeighbours}
+          {penumbraScale}
           {sunspotDarkness}
           {brightness}
           {saturation}
@@ -488,6 +496,16 @@
           />
         </label>
         <label class="compact-number-row">
+          <span>Spot size power</span>
+          <input
+            type="number"
+            min={MinValues.sunspotPower}
+            max={MaxValues.sunspotPower}
+            step={StepValues.sunspotPower}
+            bind:value={sunspotPower}
+          />
+        </label>
+        <label class="compact-number-row">
           <span>Sunspot jaggedness</span>
           <input
             type="number"
@@ -505,6 +523,16 @@
             max={MaxValues.sunspotNeighbours}
             step={StepValues.sunspotNeighbours}
             bind:value={sunspotNeighbours}
+          />
+        </label>
+        <label class="compact-number-row">
+          <span>Penumbra scale</span>
+          <input
+            type="number"
+            min={MinValues.penumbraScale}
+            max={MaxValues.penumbraScale}
+            step={StepValues.penumbraScale}
+            bind:value={penumbraScale}
           />
         </label>
         <label class="compact-number-row">

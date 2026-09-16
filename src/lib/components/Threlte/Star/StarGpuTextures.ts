@@ -36,8 +36,10 @@ const fragmentShader = `
   uniform float uConvection;
   uniform int uSunspotCount;
   uniform float uSunspotScale;
+  uniform float uSunspotPower;
   uniform float uSunspotJaggedness;
   uniform int uSunspotNeighbours;
+  uniform float uPenumbraScale;
   uniform float uSunspotDarkness;
   uniform float uBrightness;
   uniform float uSaturation;
@@ -122,20 +124,34 @@ const fragmentShader = `
     return normalize(cross(reference, direction));
   }
 
-  vec3 splatterProfile(vec3 position, vec3 center, float radius, float seedOffset) {
+  float irregularSpotRadius(vec3 center, float radius, float seedOffset, vec3 position) {
     vec3 tangentX = tangentAxis(center);
     vec3 tangentY = cross(center, tangentX);
     vec2 local = vec2(dot(position, tangentX), dot(position, tangentY));
     float angle = atan(local.y, local.x);
     float lobeA = sin(angle * (3.0 + hash(seedOffset) * 3.0) + seedOffset);
     float lobeB = sin(angle * (7.0 + hash(seedOffset + 4.0) * 4.0) - seedOffset * 1.7);
-    float irregularRadius = radius * (1.0 + (lobeA * 0.24 + lobeB * 0.12) * uSunspotJaggedness);
-    float closeness = dot(position, center);
-    float outer = smoothstep(cos(irregularRadius), cos(irregularRadius * 0.32), closeness);
-    float core = smoothstep(cos(irregularRadius * 0.44), cos(irregularRadius * 0.14), closeness);
-    float ridges = 0.5 + 0.5 * sin(
-      length(local) / max(irregularRadius, 0.001) * 19.0 + angle * 3.0 + seedOffset
-    );
+    return radius * (1.0 + (lobeA * 0.24 + lobeB * 0.12) * uSunspotJaggedness);
+  }
+
+  float smoothUnion(float firstDistance, float secondDistance, float blendRadius) {
+    float blend = clamp(0.5 + 0.5 * (secondDistance - firstDistance) / blendRadius, 0.0, 1.0);
+    return mix(secondDistance, firstDistance, blend) - blendRadius * blend * (1.0 - blend);
+  }
+
+  vec3 splatterProfile(vec3 position, vec3 center, float radius, float seedOffset) {
+    vec3 tangentX = tangentAxis(center);
+    vec3 tangentY = cross(center, tangentX);
+    vec2 local = vec2(dot(position, tangentX), dot(position, tangentY));
+    float angle = atan(local.y, local.x);
+    float irregularRadius = irregularSpotRadius(center, radius, seedOffset, position);
+    float distanceToCenter = acos(clamp(dot(position, center), -1.0, 1.0));
+    float edgeFeather = 0.0025;
+    float outer = 1.0 - smoothstep(irregularRadius - edgeFeather, irregularRadius + edgeFeather, distanceToCenter);
+    float coreRadius = irregularRadius * 0.29;
+    float core = 1.0 - smoothstep(coreRadius - edgeFeather, coreRadius + edgeFeather, distanceToCenter);
+    float ridgePhase = length(local) / max(irregularRadius, 0.001) * 14.0 + seedOffset;
+    float ridges = 0.5 + 0.5 * sin(ridgePhase);
     return vec3(outer, core, ridges);
   }
 
@@ -167,6 +183,8 @@ const fragmentShader = `
     float sunspotOuter = 0.0;
     float sunspotCore = 0.0;
     float sunspotRidges = 0.0;
+    float penumbraDistance = 10.0;
+    float coreDistance = 10.0;
     for (int index = 0; index < 12; index++) {
       if (index >= uSunspotCount) break;
       float spotIndex = float(index);
@@ -182,13 +200,21 @@ const fragmentShader = `
         float angle = hash(spotIndex * 41.3 + lobeIndex * 7.1 + uSeed.y) * 6.2831853;
         float distance = lobe == 0 ? 0.0 : radius * mix(0.12, 0.78, hash(spotIndex * 29.1 + lobeIndex + uSeed.z));
         vec3 lobeCenter = normalize(center + (tangentX * cos(angle) + tangentY * sin(angle)) * distance);
-        float lobeRadius = radius * mix(0.38, 0.82, hash(spotIndex * 53.7 + lobeIndex + uSeed.x));
-        vec3 profile = splatterProfile(spherePosition, lobeCenter, lobeRadius, spotIndex * 23.9 + lobeIndex);
-        sunspotOuter += profile.x;
-        sunspotCore += profile.y;
-        sunspotRidges += (profile.x - profile.y) * profile.z;
+        float lobeSize = pow(hash(spotIndex * 53.7 + lobeIndex + uSeed.x), uSunspotPower);
+        float lobeRadius = radius * mix(0.18, 0.82, lobeSize);
+        vec3 penumbraProfile = splatterProfile(spherePosition, lobeCenter, lobeRadius * uPenumbraScale, spotIndex * 23.9 + lobeIndex);
+        float distanceToLobe = acos(clamp(dot(spherePosition, lobeCenter), -1.0, 1.0));
+        float coreRadius = irregularSpotRadius(lobeCenter, lobeRadius, spotIndex * 23.9 + lobeIndex, spherePosition) * 0.29;
+        float lobeCoreDistance = distanceToLobe - coreRadius;
+        coreDistance = smoothUnion(coreDistance, lobeCoreDistance, coreRadius * 0.5);
+        float penumbraRadius = irregularSpotRadius(lobeCenter, lobeRadius * uPenumbraScale * 0.55, spotIndex * 23.9 + lobeIndex, spherePosition);
+        float lobePenumbraDistance = distanceToLobe - penumbraRadius;
+        penumbraDistance = smoothUnion(penumbraDistance, lobePenumbraDistance, penumbraRadius * 0.5);
+        sunspotRidges = max(sunspotRidges, penumbraProfile.x * penumbraProfile.z);
       }
     }
+    sunspotOuter = 1.0 - smoothstep(-0.002, 0.004, penumbraDistance);
+    sunspotCore = 1.0 - smoothstep(-0.0025, 0.0025, coreDistance);
     float penumbra = clamp(sunspotOuter - sunspotCore, 0.0, 1.0);
     float penumbraRidges = clamp(sunspotRidges, 0.0, 1.0);
     float heat = clamp(0.54 + flow * 0.11 + bands * 0.015 * uBandContrast + detail * 0.1 + (granulation - 0.32) * uConvection * 0.27 - sunspotOuter * 0.2 * uSunspotDarkness - sunspotCore * 0.76 * uSunspotDarkness, 0.0, 1.0);
@@ -200,8 +226,8 @@ const fragmentShader = `
     float luminance = dot(color, vec3(0.2126, 0.7152, 0.0722));
     color = mix(vec3(luminance), color, uSaturation);
     color = mix(vec3(0.5), color, uContrast);
-    float penumbraShade = penumbra * (0.38 + penumbraRidges * 0.3) * uSunspotDarkness;
-    color = mix(color, color * vec3(0.42, 0.14, 0.04), penumbraShade);
+    float penumbraShade = penumbra * (0.42 + penumbraRidges * 0.08) * uSunspotDarkness;
+    color = mix(color, color * 0.22, penumbraShade);
     color = mix(color, vec3(0.008), clamp(sunspotCore * uSunspotDarkness, 0.0, 1.0));
     gl_FragColor = vec4(color, 1.0);
   }
@@ -219,8 +245,10 @@ export function createStarColorTexture(
   convection: number,
   sunspotCount: number,
   sunspotScale: number,
+  sunspotPower: number,
   sunspotJaggedness: number,
   sunspotNeighbours: number,
+  penumbraScale: number,
   sunspotDarkness: number,
   brightness: number,
   saturation: number,
@@ -242,8 +270,10 @@ export function createStarColorTexture(
       uConvection: { value: convection },
       uSunspotCount: { value: sunspotCount },
       uSunspotScale: { value: sunspotScale },
+      uSunspotPower: { value: sunspotPower },
       uSunspotJaggedness: { value: sunspotJaggedness },
       uSunspotNeighbours: { value: sunspotNeighbours },
+      uPenumbraScale: { value: penumbraScale },
       uSunspotDarkness: { value: sunspotDarkness },
       uBrightness: { value: brightness },
       uSaturation: { value: saturation },

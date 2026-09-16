@@ -35,8 +35,10 @@ export type StarSettings = {
   convection: number
   sunspotCount: number
   sunspotScale: number
+  sunspotPower: number
   sunspotJaggedness: number
   sunspotNeighbours: number
+  penumbraScale: number
   sunspotDarkness: number
   autoRotate: boolean
 }
@@ -66,8 +68,10 @@ export type StarRangeValues = Pick<
   | 'convection'
   | 'sunspotCount'
   | 'sunspotScale'
+  | 'sunspotPower'
   | 'sunspotJaggedness'
   | 'sunspotNeighbours'
+  | 'penumbraScale'
   | 'sunspotDarkness'
 >
 
@@ -98,8 +102,10 @@ export const DefaultValues: StarSettings = {
   convection: 0.3,
   sunspotCount: 12,
   sunspotScale: 0.5,
+  sunspotPower: 2.2,
   sunspotJaggedness: 0.3,
   sunspotNeighbours: 5,
+  penumbraScale: 1,
   sunspotDarkness: 1,
   autoRotate: true,
 }
@@ -128,8 +134,10 @@ export const MinValues: StarRangeValues = {
   convection: 0,
   sunspotCount: 0,
   sunspotScale: 0.25,
+  sunspotPower: 0.25,
   sunspotJaggedness: 0,
   sunspotNeighbours: 0,
+  penumbraScale: 0.25,
   sunspotDarkness: 0,
 }
 
@@ -157,8 +165,10 @@ export const MaxValues: StarRangeValues = {
   convection: 8,
   sunspotCount: 12,
   sunspotScale: 3,
+  sunspotPower: 4,
   sunspotJaggedness: 2,
   sunspotNeighbours: 7,
+  penumbraScale: 3,
   sunspotDarkness: 1,
 }
 
@@ -186,8 +196,10 @@ export const StepValues: StarRangeValues = {
   convection: 0.1,
   sunspotCount: 1,
   sunspotScale: 0.1,
+  sunspotPower: 0.1,
   sunspotJaggedness: 0.1,
   sunspotNeighbours: 1,
+  penumbraScale: 0.1,
   sunspotDarkness: 0.05,
 }
 

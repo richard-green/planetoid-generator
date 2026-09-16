@@ -53,6 +53,10 @@
       href: '#/giants',
       label: 'Gas and Ice Giants',
     },
+    {
+      href: '#/stars',
+      label: 'Stars',
+    },
   ]
 
   type PlanetoidUiState = {

@@ -25,14 +25,14 @@
 
   const starPalettes: Record<StarPaletteName, readonly [number, number, number][]> = {
     White: [
-      [0.38, 0.42, 0.5],
-      [0.84, 0.9, 1],
-      [1, 0.98, 0.83],
+      [0.15, 0.17, 0.2],
+      [0.55, 0.6, 0.67],
+      [1, 0.91, 0.65],
     ],
     Blue: [
-      [0.03, 0.1, 0.38],
-      [0.12, 0.45, 1],
-      [0.78, 0.92, 1],
+      [0.05, 0.15, 0.58],
+      [0.15, 0.68, 1],
+      [0.78, 0.93, 1],
     ],
     Yellow: [
       [0.32, 0.13, 0.002],
@@ -40,14 +40,14 @@
       [1, 0.94, 0.38],
     ],
     Orange: [
-      [0.4, 0.055, 0.001],
-      [1, 0.28, 0.006],
-      [1, 0.78, 0.12],
+      [0.52, 0.071, 0.001],
+      [1, 0.5, 0.22],
+      [1, 0.9, 0.71],
     ],
     Red: [
-      [0.28, 0.002, 0.001],
-      [0.8, 0.025, 0.008],
-      [1, 0.25, 0.04],
+      [0.74, 0.005, 0.003],
+      [1, 0.47, 0.44],
+      [1, 0.88, 0.86],
     ],
   }
 
@@ -190,8 +190,10 @@
     convection?: number
     sunspotCount?: number
     sunspotScale?: number
+    sunspotPower?: number
     sunspotJaggedness?: number
     sunspotNeighbours?: number
+    penumbraScale?: number
     sunspotDarkness?: number
     brightness?: number
     saturation?: number
@@ -221,8 +223,10 @@
     convection = DefaultValues.convection,
     sunspotCount = DefaultValues.sunspotCount,
     sunspotScale = DefaultValues.sunspotScale,
+    sunspotPower = DefaultValues.sunspotPower,
     sunspotJaggedness = DefaultValues.sunspotJaggedness,
     sunspotNeighbours = DefaultValues.sunspotNeighbours,
+    penumbraScale = DefaultValues.penumbraScale,
     sunspotDarkness = DefaultValues.sunspotDarkness,
     brightness = DefaultValues.brightness,
     saturation = DefaultValues.saturation,
@@ -332,8 +336,10 @@
       clampSetting('convection', convection),
       Math.floor(clampSetting('sunspotCount', sunspotCount)),
       clampSetting('sunspotScale', sunspotScale),
+      clampSetting('sunspotPower', sunspotPower),
       clampSetting('sunspotJaggedness', sunspotJaggedness),
       Math.floor(clampSetting('sunspotNeighbours', sunspotNeighbours)),
+      clampSetting('penumbraScale', penumbraScale),
       clampSetting('sunspotDarkness', sunspotDarkness),
       clampSetting('brightness', brightness),
       clampSetting('saturation', saturation),
