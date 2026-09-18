@@ -23,11 +23,6 @@
     downloadTextureMapPng: (fileName?: string) => boolean
   }
 
-  const pageTitleLinks = [
-    { href: '#/planetoids', label: 'Planetoids' },
-    { href: '#/giants', label: 'Gas and Ice Giants' },
-  ]
-
   let canvasShell = $state<HTMLDivElement | undefined>(undefined)
   let starScene = $state<StarsSceneExports | undefined>(undefined)
   let seed = $state(DefaultValues.seed)
@@ -192,7 +187,7 @@
 </script>
 
 <div class="page">
-  <PageTitle title="Star Generator" links={pageTitleLinks} {onOpenWelcome} />
+  <PageTitle title="Star Generator" activeHref="#/stars" {onOpenWelcome} />
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>

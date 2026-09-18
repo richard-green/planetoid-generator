@@ -49,17 +49,6 @@
   const PLANETOID_UI_STORAGE_KEY = 'planetoid-view-ui-v1'
   const PLANETOID_PRESETS_STORAGE_KEY = 'planetoid-view-presets-v1'
 
-  const pageTitleLinks = [
-    {
-      href: '#/giants',
-      label: 'Gas and Ice Giants',
-    },
-    {
-      href: '#/stars',
-      label: 'Stars',
-    },
-  ]
-
   type PlanetoidUiState = {
     viewMode: PlanetoidViewMode
     viewModeSectionOpen: boolean
@@ -764,7 +753,7 @@
 <svelte:window onpointerdown={onWindowPointerDown} />
 
 <div class="page">
-  <PageTitle title="Planetoid Generator" links={pageTitleLinks} {onOpenWelcome} />
+  <PageTitle title="Planetoid Generator" activeHref="#/planetoids" {onOpenWelcome} />
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>

@@ -1,46 +1,49 @@
 <script lang="ts">
-  export type PageTitleLink = {
-    href: string
-    label: string
-    target?: '_self' | '_blank' | '_parent' | '_top'
-    rel?: string
-    ariaLabel?: string
-    title?: string
-    className?: string
-  }
-
   type Props = {
     title: string
-    links?: PageTitleLink[]
+    activeHref: string
     onOpenWelcome?: () => void
   }
 
-  let { title, links = [], onOpenWelcome = () => {} }: Props = $props()
+  let { title, activeHref, onOpenWelcome = () => {} }: Props = $props()
+  let mobileMenuOpen = $state(false)
 
-  const getLinkRel = (link: PageTitleLink): string | undefined => {
-    if (link.rel) {
-      return link.rel
-    }
-
-    return link.target === '_blank' ? 'noopener noreferrer' : undefined
-  }
+  const navigationLinks = [
+    { href: '#/planetoids', label: 'Planetoids' },
+    { href: '#/giants', label: 'Gas and Ice Giants' },
+    { href: '#/stars', label: 'Stars' },
+  ] as const
 </script>
 
-<h1 class="page-title">
-  <span>{title}</span>
+<header class="page-title">
+  <h1>{title}</h1>
   <div class="page-title-actions">
-    {#each links as link (link.href + link.label)}
-      <a
-        class={link.className ?? 'page-title-link'}
-        href={link.href}
-        target={link.target}
-        rel={getLinkRel(link)}
-        aria-label={link.ariaLabel}
-        title={link.title}
-      >
-        {link.label}
-      </a>
-    {/each}
+    <nav class="desktop-nav" aria-label="Generators">
+      {#each navigationLinks as link (link.href)}
+        <a
+          class="page-title-link"
+          href={link.href}
+          aria-current={activeHref === link.href ? 'page' : undefined}
+        >
+          {link.label}
+        </a>
+      {/each}
+    </nav>
+    <details class="mobile-nav" bind:open={mobileMenuOpen}>
+      <summary aria-label="Open generator menu" title="Generators">☰</summary>
+      <nav aria-label="Generators">
+        {#each navigationLinks as link (link.href)}
+          <a
+            class="page-title-link"
+            href={link.href}
+            aria-current={activeHref === link.href ? 'page' : undefined}
+            onclick={() => (mobileMenuOpen = false)}
+          >
+            {link.label}
+          </a>
+        {/each}
+      </nav>
+    </details>
     <button
       type="button"
       class="page-title-help-button"
@@ -66,7 +69,7 @@
       </svg>
     </a>
   </div>
-</h1>
+</header>
 
 <style>
   .page-title {
@@ -77,11 +80,6 @@
     justify-content: space-between;
     gap: 0.8rem;
     color: #f2f8ff;
-    font-size: clamp(1.2rem, 2vw, 1.9rem);
-    font-weight: 760;
-    letter-spacing: 0.03em;
-    line-height: 1.1;
-    text-transform: uppercase;
     border-top: 1px solid rgba(176, 208, 239, 0.35);
     border-bottom: 1px solid rgba(176, 208, 239, 0.26);
     background:
@@ -93,7 +91,22 @@
     backdrop-filter: blur(4px);
   }
 
+  h1 {
+    margin: 0;
+    font-size: clamp(1.2rem, 2vw, 1.9rem);
+    font-weight: 760;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+
   .page-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  .desktop-nav {
     display: flex;
     align-items: center;
     gap: 0.55rem;
@@ -117,6 +130,11 @@
   .page-title-link:hover {
     border-color: rgba(222, 238, 255, 0.85);
     background: rgba(10, 24, 49, 0.82);
+  }
+
+  .page-title-link[aria-current='page'] {
+    border-color: rgba(222, 238, 255, 0.9);
+    background: rgba(60, 112, 172, 0.72);
   }
 
   .page-title-link:focus-visible {
@@ -182,16 +200,71 @@
     outline-offset: 2px;
   }
 
+  .mobile-nav {
+    display: none;
+    position: relative;
+  }
+
+  .mobile-nav summary {
+    width: 2rem;
+    height: 2rem;
+    display: inline-grid;
+    place-items: center;
+    list-style: none;
+    border: 1px solid rgba(176, 208, 239, 0.45);
+    border-radius: 999px;
+    color: #eaf3ff;
+    background: rgba(5, 14, 30, 0.55);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .mobile-nav summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-nav summary:focus-visible {
+    outline: 2px solid #6cb3ff;
+    outline-offset: 2px;
+  }
+
+  .mobile-nav nav {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    right: 0;
+    z-index: 30;
+    width: max-content;
+    min-width: 12rem;
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.45rem;
+    border: 1px solid rgba(176, 208, 239, 0.45);
+    border-radius: 10px;
+    background: rgba(7, 14, 28, 0.98);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .mobile-nav .page-title-link {
+    border-radius: 7px;
+  }
+
   @media (max-width: 900px) {
     .page-title {
-      flex-wrap: wrap;
       gap: 0.6rem;
       padding: 0.95rem 1rem;
     }
 
     .page-title-actions {
-      width: 100%;
-      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    .desktop-nav {
+      display: none;
+    }
+
+    .mobile-nav {
+      display: block;
     }
   }
 </style>

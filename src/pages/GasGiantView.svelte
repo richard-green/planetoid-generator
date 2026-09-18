@@ -51,17 +51,6 @@
   const GAS_GIANT_UI_STORAGE_KEY = 'gas-giant-view-ui-v1'
   const GAS_GIANT_PRESETS_STORAGE_KEY = 'gas-giant-view-presets-v1'
 
-  const pageTitleLinks = [
-    {
-      href: '#/planetoids',
-      label: 'Planetoid Generator',
-    },
-    {
-      href: '#/stars',
-      label: 'Stars',
-    },
-  ]
-
   const DEFAULT_GAS_GIANT_SETTINGS: GasGiantSettings = { ...DefaultValues }
   const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
     (key) => key !== 'seed'
@@ -551,7 +540,7 @@
 <svelte:window onpointerdown={onWindowPointerDown} />
 
 <div class="page">
-  <PageTitle title="Gas and Ice Giant Generator" links={pageTitleLinks} {onOpenWelcome} />
+  <PageTitle title="Gas and Ice Giant Generator" activeHref="#/giants" {onOpenWelcome} />
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
