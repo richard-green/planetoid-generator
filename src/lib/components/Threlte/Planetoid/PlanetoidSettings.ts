@@ -116,7 +116,7 @@ export const DefaultValues: PlanetoidSettings = {
   enableVolcanoes: false,
   seed: 1,
   palette: 'rocky',
-  surfaceTint: '#fff',
+  surfaceTint: '#ffffff',
   colorScale: 1,
   tintShadowFloor: 0.18,
   swirliness: 1,
