@@ -1,4 +1,5 @@
 import { GasGiantPaletteNames, type GasGiantPaletteName } from './GasGiantPalettes'
+import { DefaultRingValues, sanitizeRingSettings, type RingSettings } from '../Rings/RingSettings'
 import {
   sanitizeBoolean,
   sanitizeEnum,
@@ -8,7 +9,7 @@ import {
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
 
-export type GasGiantSettings = {
+export type GasGiantSettings = RingSettings & {
   seed: number
   autoRotate: boolean
   palette: GasGiantPaletteName
@@ -54,6 +55,7 @@ export type GasGiantRangeValues = Pick<
 export type GasGiantRangeKey = keyof GasGiantRangeValues
 
 export const DefaultValues: GasGiantSettings = {
+  ...DefaultRingValues,
   seed: 21,
   autoRotate: true,
   palette: 'jovianBands',
@@ -229,6 +231,7 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
   const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
 
   return {
+    ...sanitizeRingSettings(raw),
     seed: numeric.seed,
     autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate),
     palette,

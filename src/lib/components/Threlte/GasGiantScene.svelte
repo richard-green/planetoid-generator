@@ -6,6 +6,8 @@
   import { onDestroy } from 'svelte'
   import GasGiant from './GasGiant/GasGiant.svelte'
   import { DefaultValues, type GasGiantSettings } from './GasGiant/GasGiantSettings'
+  import PlanetaryRings from './Rings/PlanetaryRings.svelte'
+  import type { RingSettings } from './Rings/RingSettings'
 
   type Props = Partial<GasGiantSettings>
 
@@ -30,6 +32,17 @@
     autoRotate = DefaultValues.autoRotate,
     bumpTextureSize = DefaultValues.bumpTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
+    enableRings = DefaultValues.enableRings,
+    ringPalette = DefaultValues.ringPalette,
+    ringInnerRadius = DefaultValues.ringInnerRadius,
+    ringOuterRadius = DefaultValues.ringOuterRadius,
+    ringTilt = DefaultValues.ringTilt,
+    ringBandCount = DefaultValues.ringBandCount,
+    ringBandSharpness = DefaultValues.ringBandSharpness,
+    ringDensity = DefaultValues.ringDensity,
+    ringTextureScale = DefaultValues.ringTextureScale,
+    ringGranularity = DefaultValues.ringGranularity,
+    ringOpacity = DefaultValues.ringOpacity,
   }: Props = $props()
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
@@ -87,6 +100,31 @@
     autoRotate,
     bumpTextureSize,
     colorTextureSize,
+    enableRings,
+    ringPalette,
+    ringInnerRadius,
+    ringOuterRadius,
+    ringTilt,
+    ringBandCount,
+    ringBandSharpness,
+    ringDensity,
+    ringTextureScale,
+    ringGranularity,
+    ringOpacity,
+  })
+
+  const ringSettings: RingSettings = $derived({
+    enableRings,
+    ringPalette,
+    ringInnerRadius,
+    ringOuterRadius,
+    ringTilt,
+    ringBandCount,
+    ringBandSharpness,
+    ringDensity,
+    ringTextureScale,
+    ringGranularity,
+    ringOpacity,
   })
 </script>
 
@@ -109,3 +147,4 @@
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
 <GasGiant bind:this={gasGiantRef} {settings} />
+<PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />

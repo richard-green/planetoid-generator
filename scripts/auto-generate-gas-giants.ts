@@ -17,6 +17,18 @@ import {
   MinValues,
   type GasGiantRangeKey,
 } from '../src/lib/components/Threlte/GasGiant/GasGiantSettings'
+import {
+  RingPaletteNames,
+  type RingPaletteName,
+} from '../src/lib/components/Threlte/Rings/RingPalettes'
+import {
+  RingCliFlagByRangeKey,
+  RingCliFlags,
+  RingMaxValues,
+  RingMinValues,
+  RingRangeLabels,
+  type RingRangeKey,
+} from '../src/lib/components/Threlte/Rings/RingSettings'
 
 const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
   (key) => key !== 'seed'
@@ -32,6 +44,15 @@ const NUMERIC_HELP_LINES = NUMERIC_RANGE_KEYS.map((key) => {
   const label = GasGiantRangeLabels[key]
   return `  ${flag} <n> ${label} (range: ${MinValues[key]} to ${MaxValues[key]})`
 })
+const RING_RANGE_KEYS = Object.keys(RingMinValues) as RingRangeKey[]
+const CLI_FLAG_TO_RING_RANGE_KEY = new Map<string, RingRangeKey>()
+for (const key of RING_RANGE_KEYS) {
+  CLI_FLAG_TO_RING_RANGE_KEY.set(RingCliFlagByRangeKey[key], key)
+}
+const RING_HELP_LINES = RING_RANGE_KEYS.map(
+  (key) =>
+    `  ${RingCliFlagByRangeKey[key]} <n> ${RingRangeLabels[key]} (range: ${RingMinValues[key]} to ${RingMaxValues[key]})`
+)
 
 type ScriptOptions = {
   count: number
@@ -41,10 +62,12 @@ type ScriptOptions = {
   surfaceTint?: string
   autoRotate?: boolean
   stormsEnabled?: boolean
+  ringsEnabled?: boolean
+  ringPalette?: string
   baseUrl: string
   outputDir: string
   frameSettleMs: number
-} & Partial<Record<GasGiantRangeKey, number>>
+} & Partial<Record<GasGiantRangeKey | RingRangeKey, number>>
 
 type Logger = {
   info: (message: string) => void
@@ -60,6 +83,8 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   surfaceTint: undefined,
   autoRotate: undefined,
   stormsEnabled: undefined,
+  ringsEnabled: undefined,
+  ringPalette: undefined,
   seed: undefined,
   colorScale: undefined,
   tintShadowFloor: undefined,
@@ -101,7 +126,10 @@ type ScriptLocators = {
   surfaceTintInput: Locator
   autoRotateToggle: Locator
   stormsEnabledToggle: Locator
+  ringsEnabledToggle: Locator
+  ringPaletteSelect: Locator
   numericInputByKey: Record<GasGiantRangeKey, Locator>
+  ringNumericInputByKey: Record<RingRangeKey, Locator>
   canvas: Locator
 }
 
@@ -119,12 +147,20 @@ function buildLocators(page: Page): ScriptLocators {
     stormsEnabledToggle: page
       .locator(selectors.sectionToggleBySummaryLabel(GasGiantUiLabels.stormSystems))
       .first(),
+    ringsEnabledToggle: page.locator(selectors.sectionToggleBySummaryLabel('Rings')).first(),
+    ringPaletteSelect: page.locator(selectors.selectByLabel('Ring palette')).first(),
     numericInputByKey: Object.fromEntries(
       (Object.keys(MinValues) as GasGiantRangeKey[]).map((key) => [
         key,
         page.locator(selectors.numberInputByLabel(GasGiantRangeLabels[key])).first(),
       ])
     ) as Record<GasGiantRangeKey, Locator>,
+    ringNumericInputByKey: Object.fromEntries(
+      RING_RANGE_KEYS.map((key) => [
+        key,
+        page.locator(selectors.numberInputByLabel(RingRangeLabels[key])).first(),
+      ])
+    ) as Record<RingRangeKey, Locator>,
     canvas: page.locator(selectors.canvas),
   }
 }
@@ -189,6 +225,13 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    const ringRangeKey = CLI_FLAG_TO_RING_RANGE_KEY.get(arg)
+    if (ringRangeKey && next) {
+      options[ringRangeKey] = parseNumber(next, arg.slice(2))
+      i++
+      continue
+    }
+
     if (arg === '--count' && next) {
       options.count = parseNumber(next, 'count')
       i++
@@ -215,6 +258,12 @@ function parseArgs(argv: string[]): ScriptOptions {
 
     if (arg === '--surface-tint' && next) {
       options.surfaceTint = next
+      i++
+      continue
+    }
+
+    if (arg === RingCliFlags.palette && next) {
+      options.ringPalette = next
       i++
       continue
     }
@@ -249,6 +298,12 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === RingCliFlags.enabled && next) {
+      options.ringsEnabled = parseBoolean(next, 'rings-enabled')
+      i++
+      continue
+    }
+
     if (arg === '--help') {
       console.log(
         [
@@ -261,8 +316,11 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --palette <name>        Palette name',
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
           ...NUMERIC_HELP_LINES,
+          `  ${RingCliFlags.palette} <name> Ring palette name`,
+          ...RING_HELP_LINES,
           `  ${GasGiantCliToggleFlags.autoRotate} <bool> Enable/disable auto-rotate`,
           `  ${GasGiantCliToggleFlags.stormsEnabled} <bool> Enable/disable storm systems`,
+          `  ${RingCliFlags.enabled} <bool> Enable/disable rings`,
           '  --base-url <url>        Giant page URL (default: http://127.0.0.1:5173/giants)',
           '  --output-dir <path>     Output directory (default: public/generated/giants)',
           '  --frame-settle-ms <n>   Delay after updates in ms (default: 50)',
@@ -286,6 +344,12 @@ function normalizePalette(input: string | undefined): PaletteName | undefined {
   const normalized = input.trim().toLowerCase()
   const matched = GasGiantPaletteNames.find((value) => value.toLowerCase() === normalized)
   return matched
+}
+
+function normalizeRingPalette(input: string | undefined): RingPaletteName | undefined {
+  if (!input) return undefined
+  const normalized = input.trim().toLowerCase()
+  return RingPaletteNames.find((value) => value.toLowerCase() === normalized)
 }
 
 function assertRange(name: string, value: number | undefined, min: number, max: number) {
@@ -353,12 +417,29 @@ async function main() {
     )
   }
 
+  for (const key of RING_RANGE_KEYS) {
+    const value = options[key]
+    assertRange(
+      RingCliFlagByRangeKey[key].slice(2),
+      typeof value === 'number' ? value : undefined,
+      RingMinValues[key],
+      RingMaxValues[key]
+    )
+  }
+
   const normalizedSurfaceTint = normalizeHexColor(options.surfaceTint)
 
   const requestedPalette = normalizePalette(options.palette)
   if (options.palette && !requestedPalette) {
     throw new Error(
       `palette is invalid. Received: ${options.palette}. Valid values: ${GasGiantPaletteNames.join(', ')}`
+    )
+  }
+
+  const requestedRingPalette = normalizeRingPalette(options.ringPalette)
+  if (options.ringPalette && !requestedRingPalette) {
+    throw new Error(
+      `ring-palette is invalid. Received: ${options.ringPalette}. Valid values: ${RingPaletteNames.join(', ')}`
     )
   }
 
@@ -379,7 +460,10 @@ async function main() {
       surfaceTintInput,
       autoRotateToggle,
       stormsEnabledToggle,
+      ringsEnabledToggle,
+      ringPaletteSelect,
       numericInputByKey,
+      ringNumericInputByKey,
       canvas,
     } = locators
 
@@ -389,6 +473,7 @@ async function main() {
     await surfaceTintInput.waitFor({ state: 'visible' })
     await autoRotateToggle.waitFor({ state: 'visible' })
     await stormsEnabledToggle.waitFor({ state: 'visible' })
+    await ringsEnabledToggle.waitFor({ state: 'visible' })
     await canvas.waitFor({ state: 'visible' })
 
     async function ensureLocatorVisible(locator: Locator) {
@@ -452,12 +537,25 @@ async function main() {
 
     await applyToggleOverride('auto rotate', autoRotateToggle, options.autoRotate)
     await applyToggleOverride('storms enabled', stormsEnabledToggle, options.stormsEnabled)
+    await applyToggleOverride('rings enabled', ringsEnabledToggle, options.ringsEnabled)
+
+    if (requestedRingPalette) {
+      await ensureLocatorVisible(ringPaletteSelect)
+      await ringPaletteSelect.selectOption(requestedRingPalette)
+    }
+
+    for (const key of RING_RANGE_KEYS) {
+      await applyNumericOverride(RingRangeLabels[key], ringNumericInputByKey[key], options[key])
+    }
 
     if (
       normalizedSurfaceTint ||
       NUMERIC_RANGE_KEYS.some((key) => typeof options[key] === 'number') ||
       options.autoRotate !== undefined ||
-      options.stormsEnabled !== undefined
+      options.stormsEnabled !== undefined ||
+      options.ringsEnabled !== undefined ||
+      requestedRingPalette ||
+      RING_RANGE_KEYS.some((key) => typeof options[key] === 'number')
     ) {
       await page.waitForTimeout(options.frameSettleMs)
     }
