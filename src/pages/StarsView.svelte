@@ -2,6 +2,7 @@
   import { Canvas } from '@threlte/core'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
+  import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
@@ -280,11 +281,7 @@
 
       <fieldset>
         <legend>Texture</legend>
-        <details class="control-section" bind:open={stellarSurfaceSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Color settings</span>
-          </summary>
+        <CollapsibleControl title="Color settings" bind:open={stellarSurfaceSectionOpen}>
           <div class="control-grid">
             <PaletteControl
               id="star-palette"
@@ -334,12 +331,8 @@
               />
             </label>
           </div>
-        </details>
-        <details class="control-section" bind:open={textureSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Surface pattern</span>
-          </summary>
+        </CollapsibleControl>
+        <CollapsibleControl title="Surface pattern" bind:open={textureSectionOpen}>
           <div class="control-grid">
             <label class="compact-number-row">
               <span>Band scale</span>
@@ -402,12 +395,8 @@
               />
             </label>
           </div>
-        </details>
-        <details class="control-section" bind:open={textureResolutionSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Texture resolution</span>
-          </summary>
+        </CollapsibleControl>
+        <CollapsibleControl title="Texture resolution" bind:open={textureResolutionSectionOpen}>
           <div class="control-grid">
             <label class="compact-number-row">
               <span>Color texture size</span>
@@ -420,16 +409,12 @@
               />
             </label>
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>Features</legend>
-        <details class="control-section" bind:open={sunspotSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Sunspots</span>
-          </summary>
+        <CollapsibleControl title="Sunspots" bind:open={sunspotSectionOpen}>
           <div class="control-grid">
             <label class="compact-number-row">
               <span>Sunspot groups</span>
@@ -502,16 +487,12 @@
               />
             </label>
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>Atmosphere</legend>
-        <details class="control-section" bind:open={haloSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Halo</span>
-          </summary>
+        <CollapsibleControl title="Halo" bind:open={haloSectionOpen}>
           <div class="control-grid">
             <label class="compact-number-row">
               <span>Halo brightness</span>
@@ -554,13 +535,9 @@
               />
             </label>
           </div>
-        </details>
+        </CollapsibleControl>
 
-        <details class="control-section" bind:open={plasmaSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Plasma</span>
-          </summary>
+        <CollapsibleControl title="Plasma" bind:open={plasmaSectionOpen}>
           <div class="control-grid">
             <label class="compact-number-row">
               <span>Plasma brightness</span>
@@ -613,7 +590,7 @@
               />
             </label>
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
     </div>
   </section>

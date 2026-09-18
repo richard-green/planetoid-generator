@@ -3,6 +3,7 @@
   import { tick } from 'svelte'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
+  import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
@@ -664,11 +665,10 @@
 
       <fieldset>
         <legend>{GasGiantUiLabels.texture}</legend>
-        <details class="control-section" bind:open={colorSettingsSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{GasGiantUiLabels.colorSettings}</span>
-          </summary>
+        <CollapsibleControl
+          title={GasGiantUiLabels.colorSettings}
+          bind:open={colorSettingsSectionOpen}
+        >
           <PaletteControl
             id="gas-giant-palette"
             title={GasGiantUiLabels.palette}
@@ -697,13 +697,12 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
 
-        <details class="control-section" bind:open={textureResolutionSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{GasGiantUiLabels.textureResolution}</span>
-          </summary>
+        <CollapsibleControl
+          title={GasGiantUiLabels.textureResolution}
+          bind:open={textureResolutionSectionOpen}
+        >
           <div class="control-grid">
             {#each textureResolutionControls as control (control)}
               <label class="compact-number-row">
@@ -718,16 +717,15 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>{GasGiantUiLabels.material}</legend>
-        <details class="control-section" bind:open={materialPropertiesSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{GasGiantUiLabels.properties}</span>
-          </summary>
+        <CollapsibleControl
+          title={GasGiantUiLabels.properties}
+          bind:open={materialPropertiesSectionOpen}
+        >
           <div class="control-grid">
             {#each materialControls as control (control)}
               <label class="compact-number-row">
@@ -742,17 +740,16 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>{GasGiantUiLabels.features}</legend>
 
-        <details class="control-section" bind:open={cloudSettingsSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{GasGiantUiLabels.cloudBands}</span>
-          </summary>
+        <CollapsibleControl
+          title={GasGiantUiLabels.cloudBands}
+          bind:open={cloudSettingsSectionOpen}
+        >
           <div class="control-grid">
             {#each cloudControls as control (control)}
               <label class="compact-number-row">
@@ -767,25 +764,13 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
 
-        <details class="control-section" bind:open={stormSectionOpen}>
-          <summary
-            class="summary-with-toggle"
-            onclick={(event) => !effectiveStormsEnabled && event.preventDefault()}
-          >
-            <span class="summary-main">
-              <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{GasGiantUiLabels.stormSystems}</span>
-            </span>
-            <label class="summary-toggle">
-              <input
-                type="checkbox"
-                bind:checked={stormsEnabled}
-                onclick={(event) => event.stopPropagation()}
-              />
-            </label>
-          </summary>
+        <CollapsibleControl
+          title={GasGiantUiLabels.stormSystems}
+          bind:open={stormSectionOpen}
+          bind:enabled={stormsEnabled}
+        >
           <div class="control-grid">
             {#each stormControls as control (control)}
               <label class="compact-number-row">
@@ -801,7 +786,7 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
     </div>
   </section>

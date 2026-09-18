@@ -3,6 +3,7 @@
   import { tick } from 'svelte'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
+  import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
@@ -889,11 +890,7 @@
         <div id={ACTION_POPOVER_ID} class="scene-action-popover" popover="manual" role="tooltip">
           {activePopoverText}
         </div>
-        <details class="control-section" bind:open={viewModeSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{PlanetoidUiLabels.viewMode}</span>
-          </summary>
+        <CollapsibleControl title={PlanetoidUiLabels.viewMode} bind:open={viewModeSectionOpen}>
           <div class="view-mode-group" role="radiogroup" aria-label="Scene view mode">
             <label class="radio-row">
               <input type="radio" name="scene-view-mode" value="mesh" bind:group={sceneViewMode} />
@@ -918,7 +915,7 @@
               <span>Texture map</span>
             </label>
           </div>
-        </details>
+        </CollapsibleControl>
         <label class="toggle-row">
           <span>{PlanetoidUiLabels.autoRotate}</span>
           <input type="checkbox" bind:checked={planetoid.autoRotate} />
@@ -943,11 +940,10 @@
 
       <fieldset>
         <legend>{PlanetoidUiLabels.texture}</legend>
-        <details class="control-section" bind:open={colorSettingsSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{PlanetoidUiLabels.colorSettings}</span>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.colorSettings}
+          bind:open={colorSettingsSectionOpen}
+        >
           <PaletteControl
             id="planetoid-palette"
             title={PlanetoidUiLabels.palette}
@@ -976,12 +972,11 @@
               </label>
             {/each}
           </div>
-        </details>
-        <details class="control-section" bind:open={textureResolutionSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{PlanetoidUiLabels.textureResolution}</span>
-          </summary>
+        </CollapsibleControl>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.textureResolution}
+          bind:open={textureResolutionSectionOpen}
+        >
           <div class="control-grid">
             {#each textureResolutionControls as control (control)}
               <label class="compact-number-row">
@@ -996,16 +991,15 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>{PlanetoidUiLabels.material}</legend>
-        <details class="control-section" bind:open={materialPropertiesSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{PlanetoidUiLabels.properties}</span>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.properties}
+          bind:open={materialPropertiesSectionOpen}
+        >
           <div class="control-grid">
             {#each materialControls as control (control)}
               <label class="compact-number-row">
@@ -1020,28 +1014,16 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>{PlanetoidUiLabels.features}</legend>
-        <details class="control-section" bind:open={craterSectionOpen}>
-          <summary
-            class="summary-with-toggle"
-            onclick={(event) => !effectiveCratersEnabled && event.preventDefault()}
-          >
-            <span class="summary-main">
-              <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.craters}</span>
-            </span>
-            <label class="summary-toggle">
-              <input
-                type="checkbox"
-                bind:checked={cratersEnabled}
-                onclick={(event) => event.stopPropagation()}
-              />
-            </label>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.craters}
+          bind:open={craterSectionOpen}
+          bind:enabled={cratersEnabled}
+        >
           <div class="control-grid">
             {#each craterControls as control (control)}
               <label class="compact-number-row">
@@ -1057,25 +1039,13 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
 
-        <details class="control-section" bind:open={volcanoSectionOpen}>
-          <summary
-            class="summary-with-toggle"
-            onclick={(event) => !volcanoSectionEnabled && event.preventDefault()}
-          >
-            <span class="summary-main">
-              <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.volcanoes}</span>
-            </span>
-            <label class="summary-toggle">
-              <input
-                type="checkbox"
-                bind:checked={volcanoesEnabled}
-                onclick={(event) => event.stopPropagation()}
-              />
-            </label>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.volcanoes}
+          bind:open={volcanoSectionOpen}
+          bind:enabled={volcanoesEnabled}
+        >
           <div class="control-grid">
             {#each volcanoControls as control (control)}
               <label class="compact-number-row">
@@ -1091,25 +1061,13 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
 
-        <details class="control-section" bind:open={ridgeSectionOpen}>
-          <summary
-            class="summary-with-toggle"
-            onclick={(event) => !ridgeSectionEnabled && event.preventDefault()}
-          >
-            <span class="summary-main">
-              <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.ridges}</span>
-            </span>
-            <label class="summary-toggle">
-              <input
-                type="checkbox"
-                bind:checked={ridgesEnabled}
-                onclick={(event) => event.stopPropagation()}
-              />
-            </label>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.ridges}
+          bind:open={ridgeSectionOpen}
+          bind:enabled={ridgesEnabled}
+        >
           <div class="control-grid">
             {#each ridgeControls as control (control)}
               <label class="compact-number-row">
@@ -1125,25 +1083,13 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
 
-        <details class="control-section" bind:open={riftSectionOpen}>
-          <summary
-            class="summary-with-toggle"
-            onclick={(event) => !riftSectionEnabled && event.preventDefault()}
-          >
-            <span class="summary-main">
-              <span class="summary-chevron" aria-hidden="true"></span>
-              <span>{PlanetoidUiLabels.rifts}</span>
-            </span>
-            <label class="summary-toggle">
-              <input
-                type="checkbox"
-                bind:checked={riftsEnabled}
-                onclick={(event) => event.stopPropagation()}
-              />
-            </label>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.rifts}
+          bind:open={riftSectionOpen}
+          bind:enabled={riftsEnabled}
+        >
           <div class="control-grid">
             {#each riftControls as control (control)}
               <label class="compact-number-row">
@@ -1159,16 +1105,15 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
 
       <fieldset>
         <legend>{PlanetoidUiLabels.geometry}</legend>
-        <details class="control-section" bind:open={geometryPropertiesSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{PlanetoidUiLabels.deformation}</span>
-          </summary>
+        <CollapsibleControl
+          title={PlanetoidUiLabels.deformation}
+          bind:open={geometryPropertiesSectionOpen}
+        >
           <div class="control-grid">
             {#each geometryControls as control (control)}
               <label class="compact-number-row">
@@ -1183,7 +1128,7 @@
               </label>
             {/each}
           </div>
-        </details>
+        </CollapsibleControl>
       </fieldset>
     </div>
   </section>
