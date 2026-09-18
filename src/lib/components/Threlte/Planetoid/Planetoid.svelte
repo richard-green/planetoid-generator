@@ -15,7 +15,12 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
-  import { DefaultValues, MaxValues, MinValues, type PlanetoidViewMode } from './PlanetoidSettings'
+  import {
+    MaxValues,
+    MinValues,
+    type PlanetoidSettings,
+    type PlanetoidViewMode,
+  } from './PlanetoidSettings'
   import {
     createPlanetoidColorTexture,
     createPlanetoidNormalTexture,
@@ -23,99 +28,59 @@
     disposeGeneratedTexture,
   } from './PlanetoidGpuTextures'
   import { SvelteMap } from 'svelte/reactivity'
-  import { PlanetoidPalettes, type PlanetoidPaletteName } from './PlanetoidPalettes'
+  import { PlanetoidPalettes } from './PlanetoidPalettes'
 
   type Props = {
-    viewMode?: PlanetoidViewMode
-    palette?: PlanetoidPaletteName
-    surfaceTint?: string
-    colorScale?: number
-    tintShadowFloor?: number
-    swirliness?: number
-    seed?: number
-    largeScale?: number
-    mediumScale?: number
-    smallScale?: number
-    mediumFrequency?: number
-    smallFrequency?: number
-    normalStrength?: number
-    enableCraters?: boolean
-    craterCount?: number
-    craterScale?: number
-    craterStrength?: number
-    craterSharpness?: number
-    craterColorStrength?: number
-    enableVolcanoes?: boolean
-    volcanoCount?: number
-    volcanoScale?: number
-    volcanoStrength?: number
-    volcanoColorStrength?: number
-    ridgeColorWeight?: number
-    riftColorWeight?: number
-    enableRidges?: boolean
-    enableRifts?: boolean
-    ridgeStrength?: number
-    ridgeFrequency?: number
-    ridgeSharpness?: number
-    riftStrength?: number
-    riftFrequency?: number
-    riftWidth?: number
-    riftSharpness?: number
-    ridgesRiftsBlend?: number
-    roughness?: number
-    metalness?: number
-    autoRotate?: boolean
-    showDebugMeshes?: boolean
-    triangleDetail?: number
-    normalTextureSize?: number
-    colorTextureSize?: number
+    settings: PlanetoidSettings & { viewMode: PlanetoidViewMode }
   }
 
+  let { settings }: Props = $props()
+
   let {
-    viewMode = 'mesh',
-    palette = DefaultValues.palette,
-    surfaceTint = DefaultValues.surfaceTint,
-    colorScale = DefaultValues.colorScale,
-    tintShadowFloor = DefaultValues.tintShadowFloor,
-    swirliness = DefaultValues.swirliness,
-    seed = DefaultValues.seed,
-    largeScale = DefaultValues.largeScale,
-    mediumScale = DefaultValues.mediumScale,
-    smallScale = DefaultValues.smallScale,
-    mediumFrequency = DefaultValues.mediumFrequency,
-    smallFrequency = DefaultValues.smallFrequency,
-    normalStrength = DefaultValues.normalStrength,
-    enableCraters = DefaultValues.enableCraters,
-    craterCount = DefaultValues.craterCount,
-    craterScale = DefaultValues.craterScale,
-    craterStrength = DefaultValues.craterStrength,
-    craterSharpness = DefaultValues.craterSharpness,
-    craterColorStrength = DefaultValues.craterColorStrength,
-    enableVolcanoes = DefaultValues.enableVolcanoes,
-    volcanoCount = DefaultValues.volcanoCount,
-    volcanoScale = DefaultValues.volcanoScale,
-    volcanoStrength = DefaultValues.volcanoStrength,
-    volcanoColorStrength = DefaultValues.volcanoColorStrength,
-    ridgeColorWeight = DefaultValues.ridgeColorWeight,
-    riftColorWeight = DefaultValues.riftColorWeight,
-    enableRidges = DefaultValues.enableRidges,
-    enableRifts = DefaultValues.enableRifts,
-    ridgeStrength = DefaultValues.ridgeStrength,
-    ridgeFrequency = DefaultValues.ridgeFrequency,
-    ridgeSharpness = DefaultValues.ridgeSharpness,
-    riftStrength = DefaultValues.riftStrength,
-    riftFrequency = DefaultValues.riftFrequency,
-    riftWidth = DefaultValues.riftWidth,
-    riftSharpness = DefaultValues.riftSharpness,
-    ridgesRiftsBlend = DefaultValues.ridgesRiftsBlend,
-    roughness = DefaultValues.roughness,
-    metalness = DefaultValues.metalness,
-    autoRotate = DefaultValues.autoRotate,
-    showDebugMeshes = DefaultValues.showDebugMeshes,
-    triangleDetail = DefaultValues.triangleDetail,
-    normalTextureSize = DefaultValues.normalTextureSize,
-    colorTextureSize = DefaultValues.colorTextureSize,
-  }: Props = $props()
+    viewMode,
+    palette,
+    surfaceTint,
+    colorScale,
+    tintShadowFloor,
+    swirliness,
+    seed,
+    largeScale,
+    mediumScale,
+    smallScale,
+    mediumFrequency,
+    smallFrequency,
+    normalStrength,
+    enableCraters,
+    craterCount,
+    craterScale,
+    craterStrength,
+    craterSharpness,
+    craterColorStrength,
+    enableVolcanoes,
+    volcanoCount,
+    volcanoScale,
+    volcanoStrength,
+    volcanoColorStrength,
+    ridgeColorWeight,
+    riftColorWeight,
+    enableRidges,
+    enableRifts,
+    ridgeStrength,
+    ridgeFrequency,
+    ridgeSharpness,
+    riftStrength,
+    riftFrequency,
+    riftWidth,
+    riftSharpness,
+    ridgesRiftsBlend,
+    roughness,
+    metalness,
+    autoRotate,
+    showDebugMeshes,
+    triangleDetail,
+    normalTextureSize,
+    colorTextureSize,
+  } = $derived(settings)
 
   let mesh = $state<Mesh | undefined>(undefined)
   let mapPreviewMesh = $state<Mesh | undefined>(undefined)
