@@ -100,6 +100,52 @@
     colorTextureSize = DefaultValues.colorTextureSize,
   }: Props = $props()
 
+  const settings = $derived({
+    viewMode,
+    palette,
+    surfaceTint,
+    colorScale,
+    tintShadowFloor,
+    swirliness,
+    seed,
+    largeScale,
+    mediumScale,
+    smallScale,
+    mediumFrequency,
+    smallFrequency,
+    normalStrength,
+    enableCraters,
+    craterCount,
+    craterScale,
+    craterStrength,
+    craterSharpness,
+    craterColorStrength,
+    enableVolcanoes,
+    volcanoCount,
+    volcanoScale,
+    volcanoStrength,
+    volcanoColorStrength,
+    ridgeColorWeight,
+    riftColorWeight,
+    enableRidges,
+    enableRifts,
+    ridgeStrength,
+    ridgeFrequency,
+    ridgeSharpness,
+    riftStrength,
+    riftFrequency,
+    riftWidth,
+    riftSharpness,
+    ridgesRiftsBlend,
+    roughness,
+    metalness,
+    autoRotate,
+    showDebugMeshes,
+    triangleDetail,
+    normalTextureSize,
+    colorTextureSize,
+  })
+
   type PlanetoidExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
@@ -224,49 +270,4 @@
 <T.AmbientLight intensity={0.05} />
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
-<Planetoid
-  bind:this={planetoidRef}
-  {palette}
-  {surfaceTint}
-  {colorScale}
-  {tintShadowFloor}
-  {swirliness}
-  {seed}
-  {largeScale}
-  {mediumScale}
-  {smallScale}
-  {mediumFrequency}
-  {smallFrequency}
-  {normalStrength}
-  {enableCraters}
-  {craterCount}
-  {craterScale}
-  {craterStrength}
-  {craterSharpness}
-  {craterColorStrength}
-  {enableVolcanoes}
-  {volcanoCount}
-  {volcanoScale}
-  {volcanoStrength}
-  {volcanoColorStrength}
-  {ridgeColorWeight}
-  {riftColorWeight}
-  {enableRidges}
-  {enableRifts}
-  {ridgeStrength}
-  {ridgeFrequency}
-  {ridgeSharpness}
-  {riftStrength}
-  {riftFrequency}
-  {riftWidth}
-  {riftSharpness}
-  {ridgesRiftsBlend}
-  {roughness}
-  {metalness}
-  {autoRotate}
-  {showDebugMeshes}
-  {viewMode}
-  {triangleDetail}
-  {normalTextureSize}
-  {colorTextureSize}
-/>
+<Planetoid bind:this={planetoidRef} {settings} />
