@@ -10,37 +10,40 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
-  import { DefaultValues, type GasGiantSettings } from '../GasGiant/GasGiantSettings'
+  import type { GasGiantSettings } from '../GasGiant/GasGiantSettings'
   import {
     createGasGiantBumpTexture,
     createGasGiantColorTexture,
     disposeGeneratedTexture,
   } from '../GasGiant/GasGiantGpuTextures'
 
-  type Props = Partial<GasGiantSettings>
+  type Props = {
+    settings: GasGiantSettings
+  }
 
+  let { settings }: Props = $props()
   let {
-    palette = DefaultValues.palette,
-    surfaceTint = DefaultValues.surfaceTint,
-    colorScale = DefaultValues.colorScale,
-    tintShadowFloor = DefaultValues.tintShadowFloor,
-    seed = DefaultValues.seed,
-    cloudBandCount = DefaultValues.cloudBandCount,
-    cloudBandSharpness = DefaultValues.cloudBandSharpness,
-    cloudChaos = DefaultValues.cloudChaos,
-    enableStorms = DefaultValues.enableStorms,
-    stormCount = DefaultValues.stormCount,
-    stormScale = DefaultValues.stormScale,
-    stormPower = DefaultValues.stormPower,
-    stormStrength = DefaultValues.stormStrength,
-    stormColorStrength = DefaultValues.stormColorStrength,
-    bumpScale = DefaultValues.bumpScale,
-    roughness = DefaultValues.roughness,
-    metalness = DefaultValues.metalness,
-    autoRotate = DefaultValues.autoRotate,
-    bumpTextureSize = DefaultValues.bumpTextureSize,
-    colorTextureSize = DefaultValues.colorTextureSize,
-  }: Props = $props()
+    palette,
+    surfaceTint,
+    colorScale,
+    tintShadowFloor,
+    seed,
+    cloudBandCount,
+    cloudBandSharpness,
+    cloudChaos,
+    enableStorms,
+    stormCount,
+    stormScale,
+    stormPower,
+    stormStrength,
+    stormColorStrength,
+    bumpScale,
+    roughness,
+    metalness,
+    autoRotate,
+    bumpTextureSize,
+    colorTextureSize,
+  } = $derived(settings)
 
   let mesh = $state<Mesh | undefined>(undefined)
   let material = $state<MeshStandardMaterial | undefined>(undefined)

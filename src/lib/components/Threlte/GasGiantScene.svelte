@@ -65,6 +65,29 @@
   export async function downloadBumpMapPng(fileName?: string) {
     return (await gasGiantRef?.downloadBumpMapPng(fileName)) ?? false
   }
+
+  const settings: GasGiantSettings = $derived({
+    palette,
+    surfaceTint,
+    colorScale,
+    tintShadowFloor,
+    seed,
+    cloudBandCount,
+    cloudBandSharpness,
+    cloudChaos,
+    enableStorms,
+    stormCount,
+    stormScale,
+    stormPower,
+    stormStrength,
+    stormColorStrength,
+    bumpScale,
+    roughness,
+    metalness,
+    autoRotate,
+    bumpTextureSize,
+    colorTextureSize,
+  })
 </script>
 
 <T.PerspectiveCamera makeDefault position={[0, 2, 7]}>
@@ -85,26 +108,4 @@
 <T.AmbientLight intensity={0.08} />
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
-<GasGiant
-  bind:this={gasGiantRef}
-  {palette}
-  {surfaceTint}
-  {colorScale}
-  {tintShadowFloor}
-  {seed}
-  {cloudBandCount}
-  {cloudBandSharpness}
-  {cloudChaos}
-  {enableStorms}
-  {stormCount}
-  {stormScale}
-  {stormPower}
-  {stormStrength}
-  {stormColorStrength}
-  {bumpScale}
-  {roughness}
-  {metalness}
-  {autoRotate}
-  {bumpTextureSize}
-  {colorTextureSize}
-/>
+<GasGiant bind:this={gasGiantRef} {settings} />
