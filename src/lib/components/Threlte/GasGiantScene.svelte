@@ -4,6 +4,7 @@
   import { Group, MOUSE, Vector3 } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
+  import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import GasGiant from './GasGiant/GasGiant.svelte'
   import { DefaultValues, type GasGiantSettings } from './GasGiant/GasGiantSettings'
   import PlanetaryRingShadow from './Rings/PlanetaryRingShadow.svelte'
@@ -54,7 +55,7 @@
     downloadBumpMapPng: (fileName?: string) => Promise<boolean>
   }
   let gasGiantRef: GasGiantExports | undefined = $state(undefined)
-  const { scene } = useThrelte()
+  const { camera, renderer, scene } = useThrelte()
 
   interactivity()
 
@@ -80,6 +81,10 @@
 
   export async function downloadBumpMapPng(fileName?: string) {
     return (await gasGiantRef?.downloadBumpMapPng(fileName)) ?? false
+  }
+
+  export function downloadScenePng(fileName = 'gas-giant-render.png') {
+    return downloadScenePngFile(renderer, scene, $camera, fileName)
   }
 
   const settings: GasGiantSettings = $derived({
@@ -152,7 +157,7 @@
     enablePan={false}
     zoomToCursor={false}
     minDistance={4}
-    maxDistance={10}
+    maxDistance={14}
     zoomSpeed={1.2}
     enableDamping={true}
     dampingFactor={0.2}
@@ -164,11 +169,6 @@
 
 <T.Group bind:ref={planetarySystem}>
   <GasGiant bind:this={gasGiantRef} settings={planetSettings} />
-  <PlanetaryRingShadow
-    settings={ringSettings}
-    {seed}
-    planetRadius={2}
-    lightPosition={[-5, 1, 2]}
-  />
+  <PlanetaryRingShadow settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
   <PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
 </T.Group>

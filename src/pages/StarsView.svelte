@@ -23,6 +23,7 @@
   const STAR_SETTINGS_STORAGE_KEY = 'star-view-settings-v1'
 
   type StarsSceneExports = {
+    downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => boolean
   }
 
@@ -163,15 +164,11 @@
   }
 
   function downloadRender(): void {
-    const canvas = canvasShell?.querySelector('canvas')
-    if (!(canvas instanceof HTMLCanvasElement) || isSaving) return
+    if (!starScene || isSaving) return
 
     isSaving = true
     try {
-      const link = document.createElement('a')
-      link.href = canvas.toDataURL('image/png')
-      link.download = `generated-star-render-${timestamp()}.png`
-      link.click()
+      starScene.downloadScenePng(`generated-star-render-${timestamp()}.png`)
     } finally {
       isSaving = false
     }

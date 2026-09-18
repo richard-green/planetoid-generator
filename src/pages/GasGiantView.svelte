@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Canvas } from '@threlte/core'
-  import { tick } from 'svelte'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
@@ -57,6 +56,7 @@
   }
 
   type GasGiantSceneExports = {
+    downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadBumpMapPng: (fileName?: string) => Promise<boolean>
   }
@@ -162,12 +162,6 @@
     const ss = String(now.getSeconds()).padStart(2, '0')
 
     return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
-  }
-
-  function nextAnimationFrame() {
-    return new Promise<void>((resolve) => {
-      requestAnimationFrame(() => resolve())
-    })
   }
 
   function sanitizePresetName(input: unknown) {
@@ -536,25 +530,12 @@
   })
 
   async function saveScenePng() {
-    if (!canvasShell || isSaving) return
-
-    const canvas = canvasShell.querySelector('canvas')
-    if (!(canvas instanceof HTMLCanvasElement)) {
-      return
-    }
+    if (!gasGiantScene || isSaving) return
 
     isSaving = true
     try {
-      await tick()
-      await nextAnimationFrame()
-
       const fileName = `generated-gas-giant-${getTimestamp()}.png`
-      const dataUrl = canvas.toDataURL('image/png')
-      const downloadLink = document.createElement('a')
-
-      downloadLink.href = dataUrl
-      downloadLink.download = fileName
-      downloadLink.click()
+      gasGiantScene.downloadScenePng(fileName)
     } catch (error) {
       console.error(error)
     } finally {

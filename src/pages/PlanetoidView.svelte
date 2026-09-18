@@ -113,6 +113,7 @@
   let settingsHydrated = $state(false)
 
   type PlanetoidSceneExports = {
+    downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
   }
@@ -626,12 +627,6 @@
     return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
   }
 
-  function nextAnimationFrame() {
-    return new Promise<void>((resolve) => {
-      requestAnimationFrame(() => resolve())
-    })
-  }
-
   const ACTION_POPOVER_ID = 'scene-action-popover'
   let activePopoverText = $state('')
 
@@ -668,13 +663,7 @@
   }
 
   async function saveScenePng() {
-    if (!canvasShell || isSaving) return
-
-    const canvas = canvasShell.querySelector('canvas')
-
-    if (!(canvas instanceof HTMLCanvasElement)) {
-      return
-    }
+    if (!planetoidScene || isSaving) return
 
     isSaving = true
     const wasShowingDebugMeshes = planetoid.showDebugMeshes
@@ -683,16 +672,10 @@
       if (wasShowingDebugMeshes) {
         planetoid.showDebugMeshes = false
         await tick()
-        await nextAnimationFrame()
       }
 
       const fileName = `generated-planetoid-${getTimestamp()}.png`
-      const dataUrl = canvas.toDataURL('image/png')
-      const downloadLink = document.createElement('a')
-
-      downloadLink.href = dataUrl
-      downloadLink.download = fileName
-      downloadLink.click()
+      planetoidScene.downloadScenePng(fileName)
     } catch (error) {
       console.error(error)
     } finally {

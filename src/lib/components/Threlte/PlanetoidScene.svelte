@@ -4,6 +4,7 @@
   import { MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
+  import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import Planetoid from './Planetoid/Planetoid.svelte'
   import { DefaultValues, type PlanetoidViewMode } from './Planetoid/PlanetoidSettings'
   import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
@@ -172,7 +173,7 @@
     },
   }
 
-  const { camera, scene } = useThrelte()
+  const { camera, renderer, scene } = useThrelte()
 
   interactivity()
 
@@ -237,7 +238,7 @@
     controlsRef.enablePan = !isMeshMode
     controlsRef.screenSpacePanning = true
     controlsRef.minDistance = isMeshMode ? 4 : 0.5
-    controlsRef.maxDistance = isMeshMode ? 10 : 8
+    controlsRef.maxDistance = isMeshMode ? 14 : 8
     controlsRef.zoomToCursor = !isMeshMode
     controlsRef.mouseButtons.LEFT = isMeshMode ? MOUSE.ROTATE : MOUSE.PAN
     controlsRef.mouseButtons.RIGHT = isMeshMode ? MOUSE.ROTATE : MOUSE.PAN
@@ -251,6 +252,10 @@
   export async function downloadNormalMapPng(fileName?: string) {
     return (await planetoidRef?.downloadNormalMapPng(fileName)) ?? false
   }
+
+  export function downloadScenePng(fileName = 'planetoid-render.png') {
+    return downloadScenePngFile(renderer, scene, $camera, fileName)
+  }
 </script>
 
 <T.PerspectiveCamera makeDefault position={[0, 0, 7]}>
@@ -261,7 +266,7 @@
     enablePan={viewMode !== 'mesh'}
     zoomToCursor={false}
     minDistance={4}
-    maxDistance={20}
+    maxDistance={14}
     zoomSpeed={1.2}
     enableDamping={true}
     dampingFactor={0.2}

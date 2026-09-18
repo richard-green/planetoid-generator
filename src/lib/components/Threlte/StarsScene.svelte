@@ -1,6 +1,7 @@
 <script lang="ts">
   import { T, useThrelte } from '@threlte/core'
   import { OrbitControls } from '@threlte/extras'
+  import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import Star from './Star/Star.svelte'
   import { DefaultValues, type StarPaletteName, type StarSettings } from './Star/StarSettings'
 
@@ -110,16 +111,20 @@
   }
 
   let starRef: StarExports | undefined = $state(undefined)
-  const { scene } = useThrelte()
+  const { camera, renderer, scene } = useThrelte()
   scene.background = null
 
   export function downloadTextureMapPng(fileName?: string) {
     return starRef?.downloadTextureMapPng(fileName) ?? false
   }
+
+  export function downloadScenePng(fileName = 'star-render.png') {
+    return downloadScenePngFile(renderer, scene, $camera, fileName)
+  }
 </script>
 
 <T.PerspectiveCamera makeDefault position={[0, 0, 6.5]}>
-  <OrbitControls enableDamping={true} dampingFactor={0.08} minDistance={3.5} maxDistance={12} />
+  <OrbitControls enableDamping={true} dampingFactor={0.08} minDistance={3.5} maxDistance={14} />
 </T.PerspectiveCamera>
 
 <Star bind:this={starRef} {settings} />
