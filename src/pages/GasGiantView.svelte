@@ -6,6 +6,7 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
+  import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
@@ -529,12 +530,6 @@
       isSaving = false
     }
   }
-
-  const selectedPaletteGradient = $derived(
-    `linear-gradient(90deg, ${GasGiantPalettes[gasGiant.palette]
-      .map((entry) => `rgb(${entry.r}, ${entry.g}, ${entry.b})`)
-      .join(', ')})`
-  )
 </script>
 
 <svelte:window onpointerdown={onWindowPointerDown} />
@@ -674,19 +669,13 @@
             <span class="summary-chevron" aria-hidden="true"></span>
             <span>{GasGiantUiLabels.colorSettings}</span>
           </summary>
-          <label>
-            {GasGiantUiLabels.palette}
-            <select bind:value={gasGiant.palette}>
-              {#each GasGiantPaletteNames as option (option)}
-                <option value={option}>{option}</option>
-              {/each}
-            </select>
-          </label>
-          <div
-            class="palette-preview"
-            style:background={selectedPaletteGradient}
-            aria-label="Selected giant palette gradient"
-          ></div>
+          <PaletteControl
+            id="gas-giant-palette"
+            title={GasGiantUiLabels.palette}
+            options={GasGiantPaletteNames}
+            palettes={GasGiantPalettes}
+            bind:value={gasGiant.palette}
+          />
           <label class="extra-pad">
             <span class="label-row">
               <span>{GasGiantUiLabels.surfaceTint}</span>

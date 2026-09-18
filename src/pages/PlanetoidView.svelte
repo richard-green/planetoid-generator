@@ -6,6 +6,7 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
+  import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
@@ -196,26 +197,6 @@
   const riftSectionEnabled = $derived(riftsEnabled)
   const effectiveRidgesEnabled = $derived(ridgeSectionEnabled)
   const effectiveRiftsEnabled = $derived(riftSectionEnabled)
-
-  function toHex(value: number) {
-    return Math.max(0, Math.min(255, Math.round(value)))
-      .toString(16)
-      .padStart(2, '0')
-  }
-
-  const selectedPaletteStops = $derived(PlanetoidPalettes[planetoid.palette])
-
-  const selectedPaletteGradient = $derived.by(() => {
-    const stops = selectedPaletteStops
-    const lastIndex = Math.max(1, stops.length - 1)
-    const parts = stops.map((color, index) => {
-      const hex = `#${toHex(color.r)}${toHex(color.g)}${toHex(color.b)}`
-      const position = (index / lastIndex) * 100
-      return `${hex} ${position.toFixed(2)}%`
-    })
-
-    return `linear-gradient(90deg, ${parts.join(', ')})`
-  })
 
   function sanitizePresetName(input: unknown) {
     if (typeof input !== 'string') return ''
@@ -967,19 +948,13 @@
             <span class="summary-chevron" aria-hidden="true"></span>
             <span>{PlanetoidUiLabels.colorSettings}</span>
           </summary>
-          <label>
-            {PlanetoidUiLabels.palette}
-            <select bind:value={planetoid.palette}>
-              {#each PlanetoidPaletteNames as option (option)}
-                <option value={option}>{option}</option>
-              {/each}
-            </select>
-          </label>
-          <div
-            class="palette-preview"
-            style:background={selectedPaletteGradient}
-            aria-label="Selected palette gradient"
-          ></div>
+          <PaletteControl
+            id="planetoid-palette"
+            title={PlanetoidUiLabels.palette}
+            options={PlanetoidPaletteNames}
+            palettes={PlanetoidPalettes}
+            bind:value={planetoid.palette}
+          />
           <label class="extra-pad">
             <span class="label-row">
               <span>{PlanetoidUiLabels.surfaceTint}</span>

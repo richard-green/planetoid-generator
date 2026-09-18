@@ -2,9 +2,11 @@
   import { Canvas } from '@threlte/core'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
+  import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import StarsScene from '../lib/components/Threlte/StarsScene.svelte'
+  import { StarPalettes } from '../lib/components/Threlte/Star/StarPalettes'
   import {
     DefaultValues,
     MaxValues,
@@ -284,14 +286,13 @@
             <span>Color settings</span>
           </summary>
           <div class="control-grid">
-            <label>
-              <span>Stellar class</span>
-              <select bind:value={palette}>
-                {#each StarPaletteNames as option (option)}
-                  <option value={option}>{option}</option>
-                {/each}
-              </select>
-            </label>
+            <PaletteControl
+              id="star-palette"
+              title="Stellar class"
+              options={StarPaletteNames}
+              palettes={StarPalettes}
+              bind:value={palette}
+            />
             <label class="compact-number-row">
               <span>Brightness</span>
               <input
