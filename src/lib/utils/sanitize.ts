@@ -29,9 +29,15 @@ export function sanitizeEnum<T extends string>(
 
 export function sanitizeHexColor(raw: UnknownRecord, key: string, fallback: string) {
   const value = raw[key]
-  return typeof value === 'string' && /^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(value)
-    ? value
-    : fallback
+  if (typeof value !== 'string') return fallback
+  if (/^#[0-9a-fA-F]{6}$/.test(value)) return value
+  if (!/^#[0-9a-fA-F]{3}$/.test(value)) return fallback
+
+  return `#${value
+    .slice(1)
+    .split('')
+    .map((channel) => `${channel}${channel}`)
+    .join('')}`
 }
 
 export function sanitizeNumber(raw: UnknownRecord, key: string, spec: NumericSanitizeSpec) {
