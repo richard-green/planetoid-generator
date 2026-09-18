@@ -153,7 +153,7 @@ export const DefaultValues: PlanetoidSettings = {
 }
 
 export const MinValues: PlanetoidRangeValues = {
-  seed: 0,
+  seed: 1,
   colorScale: 0.0,
   tintShadowFloor: 0,
   swirliness: 0,
@@ -190,7 +190,7 @@ export const MinValues: PlanetoidRangeValues = {
 }
 
 export const MaxValues: PlanetoidRangeValues = {
-  seed: 1000000000,
+  seed: 999999,
   colorScale: 2,
   tintShadowFloor: 0.8,
   swirliness: 2,

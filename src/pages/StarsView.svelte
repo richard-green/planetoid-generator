@@ -2,6 +2,7 @@
   import { Canvas } from '@threlte/core'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
+  import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import StarsScene from '../lib/components/Threlte/StarsScene.svelte'
   import {
@@ -9,6 +10,7 @@
     MaxValues,
     MinValues,
     sanitizeStarSettings,
+    StarPaletteNames,
     StepValues,
     type StarPaletteName,
     type StarSettings,
@@ -64,8 +66,8 @@
   let haloSectionOpen = $state(true)
   let plasmaSectionOpen = $state(true)
   let textureSectionOpen = $state(true)
+  let textureResolutionSectionOpen = $state(false)
   let sunspotSectionOpen = $state(false)
-  let animationSectionOpen = $state(true)
 
   function applyStarSettings(settings: StarSettings): void {
     seed = settings.seed
@@ -162,10 +164,6 @@
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   }
 
-  function randomizeSeed(): void {
-    seed = Math.floor(Math.random() * 100_000)
-  }
-
   function downloadRender(): void {
     const canvas = canvasShell?.querySelector('canvas')
     if (!(canvas instanceof HTMLCanvasElement) || isSaving) return
@@ -247,44 +245,56 @@
 
     <div class="controls">
       <fieldset>
-        <legend>Export</legend>
-        <div class="export-actions">
-          <button class="action" type="button" onclick={downloadRender} disabled={isSaving}
-            >PNG</button
-          >
-          <button class="action" type="button" onclick={downloadTexture} disabled={isSaving}
-            >TEX</button
-          >
+        <legend>Scene</legend>
+        <div class="save-actions" aria-label="Save and export actions">
+          <div class="export-actions">
+            <button
+              class="action"
+              type="button"
+              onclick={downloadRender}
+              disabled={isSaving}
+              aria-label="Save scene PNG"
+            >
+              PNG
+            </button>
+            <button
+              class="action"
+              type="button"
+              onclick={downloadTexture}
+              disabled={isSaving}
+              aria-label="Download texture map"
+            >
+              TEX
+            </button>
+          </div>
         </div>
+        <label class="toggle-row">
+          <span>Auto-rotate</span>
+          <input type="checkbox" bind:checked={autoRotate} />
+        </label>
+        <SeedControl
+          id="star-seed"
+          min={MinValues.seed}
+          max={MaxValues.seed}
+          step={StepValues.seed}
+          bind:value={seed}
+        />
       </fieldset>
 
       <fieldset>
-        <legend>Surface</legend>
+        <legend>Texture</legend>
         <details class="control-section" bind:open={stellarSurfaceSectionOpen}>
           <summary>
             <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Stellar Surface</span>
+            <span>Color settings</span>
           </summary>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Seed</span>
-              <input
-                type="number"
-                min={MinValues.seed}
-                max={MaxValues.seed}
-                step={StepValues.seed}
-                bind:value={seed}
-              />
-            </label>
-            <button class="action" type="button" onclick={randomizeSeed}>New Seed</button>
             <label>
               <span>Stellar class</span>
               <select bind:value={palette}>
-                <option value="White">White</option>
-                <option value="Blue">Blue</option>
-                <option value="Yellow">Yellow</option>
-                <option value="Orange">Orange</option>
-                <option value="Red">Red</option>
+                {#each StarPaletteNames as option (option)}
+                  <option value={option}>{option}</option>
+                {/each}
               </select>
             </label>
             <label class="compact-number-row">
@@ -325,6 +335,174 @@
                 max={MaxValues.limbBrightness}
                 step={StepValues.limbBrightness}
                 bind:value={limbBrightness}
+              />
+            </label>
+          </div>
+        </details>
+        <details class="control-section" bind:open={textureSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Surface pattern</span>
+          </summary>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Band scale</span>
+              <input
+                type="number"
+                min={MinValues.textureScale}
+                max={MaxValues.textureScale}
+                step={StepValues.textureScale}
+                bind:value={textureScale}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Band contrast</span>
+              <input
+                type="number"
+                min={MinValues.bandContrast}
+                max={MaxValues.bandContrast}
+                step={StepValues.bandContrast}
+                bind:value={bandContrast}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Band swirl</span>
+              <input
+                type="number"
+                min={MinValues.bandSwirl}
+                max={MaxValues.bandSwirl}
+                step={StepValues.bandSwirl}
+                bind:value={bandSwirl}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Granularity</span>
+              <input
+                type="number"
+                min={MinValues.granularity}
+                max={MaxValues.granularity}
+                step={StepValues.granularity}
+                bind:value={granularity}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Turbulence</span>
+              <input
+                type="number"
+                min={MinValues.turbulence}
+                max={MaxValues.turbulence}
+                step={StepValues.turbulence}
+                bind:value={turbulence}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Convection</span>
+              <input
+                type="number"
+                min={MinValues.convection}
+                max={MaxValues.convection}
+                step={StepValues.convection}
+                bind:value={convection}
+              />
+            </label>
+          </div>
+        </details>
+        <details class="control-section" bind:open={textureResolutionSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Texture resolution</span>
+          </summary>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Color texture size</span>
+              <input
+                type="number"
+                min={MinValues.colorTextureSize}
+                max={MaxValues.colorTextureSize}
+                step={StepValues.colorTextureSize}
+                bind:value={colorTextureSize}
+              />
+            </label>
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset>
+        <legend>Features</legend>
+        <details class="control-section" bind:open={sunspotSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>Sunspots</span>
+          </summary>
+          <div class="control-grid">
+            <label class="compact-number-row">
+              <span>Sunspot groups</span>
+              <input
+                type="number"
+                min={MinValues.sunspotCount}
+                max={MaxValues.sunspotCount}
+                step={StepValues.sunspotCount}
+                bind:value={sunspotCount}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Sunspot scale</span>
+              <input
+                type="number"
+                min={MinValues.sunspotScale}
+                max={MaxValues.sunspotScale}
+                step={StepValues.sunspotScale}
+                bind:value={sunspotScale}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Spot size power</span>
+              <input
+                type="number"
+                min={MinValues.sunspotPower}
+                max={MaxValues.sunspotPower}
+                step={StepValues.sunspotPower}
+                bind:value={sunspotPower}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Sunspot jaggedness</span>
+              <input
+                type="number"
+                min={MinValues.sunspotJaggedness}
+                max={MaxValues.sunspotJaggedness}
+                step={StepValues.sunspotJaggedness}
+                bind:value={sunspotJaggedness}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Max neighbours</span>
+              <input
+                type="number"
+                min={MinValues.sunspotNeighbours}
+                max={MaxValues.sunspotNeighbours}
+                step={StepValues.sunspotNeighbours}
+                bind:value={sunspotNeighbours}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Penumbra scale</span>
+              <input
+                type="number"
+                min={MinValues.penumbraScale}
+                max={MaxValues.penumbraScale}
+                step={StepValues.penumbraScale}
+                bind:value={penumbraScale}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Sunspot darkness</span>
+              <input
+                type="number"
+                min={MinValues.sunspotDarkness}
+                max={MaxValues.sunspotDarkness}
+                step={StepValues.sunspotDarkness}
+                bind:value={sunspotDarkness}
               />
             </label>
           </div>
@@ -437,186 +615,6 @@
                 step={StepValues.plasmaTextureScale}
                 bind:value={plasmaTextureScale}
               />
-            </label>
-          </div>
-        </details>
-      </fieldset>
-
-      <fieldset>
-        <legend>Texture</legend>
-        <details class="control-section" bind:open={textureSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Surface Pattern</span>
-          </summary>
-          <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Color texture size</span>
-              <input
-                type="number"
-                min={MinValues.colorTextureSize}
-                max={MaxValues.colorTextureSize}
-                step={StepValues.colorTextureSize}
-                bind:value={colorTextureSize}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Band scale</span>
-              <input
-                type="number"
-                min={MinValues.textureScale}
-                max={MaxValues.textureScale}
-                step={StepValues.textureScale}
-                bind:value={textureScale}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Band contrast</span>
-              <input
-                type="number"
-                min={MinValues.bandContrast}
-                max={MaxValues.bandContrast}
-                step={StepValues.bandContrast}
-                bind:value={bandContrast}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Band swirl</span>
-              <input
-                type="number"
-                min={MinValues.bandSwirl}
-                max={MaxValues.bandSwirl}
-                step={StepValues.bandSwirl}
-                bind:value={bandSwirl}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Granularity</span>
-              <input
-                type="number"
-                min={MinValues.granularity}
-                max={MaxValues.granularity}
-                step={StepValues.granularity}
-                bind:value={granularity}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Turbulence</span>
-              <input
-                type="number"
-                min={MinValues.turbulence}
-                max={MaxValues.turbulence}
-                step={StepValues.turbulence}
-                bind:value={turbulence}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Convection</span>
-              <input
-                type="number"
-                min={MinValues.convection}
-                max={MaxValues.convection}
-                step={StepValues.convection}
-                bind:value={convection}
-              />
-            </label>
-          </div>
-        </details>
-      </fieldset>
-
-      <fieldset>
-        <legend>Features</legend>
-        <details class="control-section" bind:open={sunspotSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Sunspots</span>
-          </summary>
-          <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Sunspot groups</span>
-              <input
-                type="number"
-                min={MinValues.sunspotCount}
-                max={MaxValues.sunspotCount}
-                step={StepValues.sunspotCount}
-                bind:value={sunspotCount}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Sunspot scale</span>
-              <input
-                type="number"
-                min={MinValues.sunspotScale}
-                max={MaxValues.sunspotScale}
-                step={StepValues.sunspotScale}
-                bind:value={sunspotScale}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Spot size power</span>
-              <input
-                type="number"
-                min={MinValues.sunspotPower}
-                max={MaxValues.sunspotPower}
-                step={StepValues.sunspotPower}
-                bind:value={sunspotPower}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Sunspot jaggedness</span>
-              <input
-                type="number"
-                min={MinValues.sunspotJaggedness}
-                max={MaxValues.sunspotJaggedness}
-                step={StepValues.sunspotJaggedness}
-                bind:value={sunspotJaggedness}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Max neighbours</span>
-              <input
-                type="number"
-                min={MinValues.sunspotNeighbours}
-                max={MaxValues.sunspotNeighbours}
-                step={StepValues.sunspotNeighbours}
-                bind:value={sunspotNeighbours}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Penumbra scale</span>
-              <input
-                type="number"
-                min={MinValues.penumbraScale}
-                max={MaxValues.penumbraScale}
-                step={StepValues.penumbraScale}
-                bind:value={penumbraScale}
-              />
-            </label>
-            <label class="compact-number-row">
-              <span>Sunspot darkness</span>
-              <input
-                type="number"
-                min={MinValues.sunspotDarkness}
-                max={MaxValues.sunspotDarkness}
-                step={StepValues.sunspotDarkness}
-                bind:value={sunspotDarkness}
-              />
-            </label>
-          </div>
-        </details>
-      </fieldset>
-
-      <fieldset>
-        <legend>Scene</legend>
-        <details class="control-section" bind:open={animationSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>Animation</span>
-          </summary>
-          <div class="control-grid">
-            <label class="toggle-row">
-              <span>Auto-rotate</span>
-              <input type="checkbox" bind:checked={autoRotate} />
             </label>
           </div>
         </details>

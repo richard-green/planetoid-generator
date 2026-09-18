@@ -77,7 +77,7 @@ export const DefaultValues: GasGiantSettings = {
 }
 
 export const MinValues: GasGiantRangeValues = {
-  seed: 0,
+  seed: 1,
   colorScale: 0,
   tintShadowFloor: 0,
   cloudBandCount: 1,
@@ -96,7 +96,7 @@ export const MinValues: GasGiantRangeValues = {
 }
 
 export const MaxValues: GasGiantRangeValues = {
-  seed: 1000000000,
+  seed: 999999,
   colorScale: 2,
   tintShadowFloor: 0.9,
   cloudBandCount: 28,

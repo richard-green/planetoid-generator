@@ -117,7 +117,7 @@ export const DefaultValues: StarSettings = {
 }
 
 export const MinValues: StarRangeValues = {
-  seed: 0,
+  seed: 1,
   brightness: 0.1,
   saturation: 0,
   contrast: 0,
@@ -148,7 +148,7 @@ export const MinValues: StarRangeValues = {
 }
 
 export const MaxValues: StarRangeValues = {
-  seed: 100000,
+  seed: 999999,
   brightness: 3,
   saturation: 2,
   contrast: 2,

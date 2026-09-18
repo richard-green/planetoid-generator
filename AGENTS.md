@@ -24,14 +24,14 @@ linting, type-checking, and building. **Always use these scripts instead of
 invoking the underlying tools (`prettier`, `eslint`, `tsc`, `vite`) directly**,
 so agents and contributors get consistent flags/config every time.
 
-| Task | Command | Notes |
-| --- | --- | --- |
-| Format code | `npm run format` | Runs `prettier --write .` |
-| Lint | `npm run lint` | Runs `eslint` over `src/**/*.{ts,js,svelte}` |
-| Type-check | `npm run typecheck:node` | Runs `tsc -p tsconfig.node.json` |
-| Build | `npm run build` | Runs `typecheck:node` then `vite build` |
-| Dev server | `npm run dev` | Starts Vite dev server |
-| Preview build | `npm run preview` | Serves the production build locally |
+| Task          | Command                  | Notes                                        |
+| ------------- | ------------------------ | -------------------------------------------- |
+| Format code   | `npm run format`         | Runs `prettier --write .`                    |
+| Lint          | `npm run lint`           | Runs `eslint` over `src/**/*.{ts,js,svelte}` |
+| Type-check    | `npm run typecheck:node` | Runs `tsc -p tsconfig.node.json`             |
+| Build         | `npm run build`          | Runs `typecheck:node` then `vite build`      |
+| Dev server    | `npm run dev`            | Starts Vite dev server                       |
+| Preview build | `npm run preview`        | Serves the production build locally          |
 
 Before finishing a change, run the smallest combination of these that covers
 what you touched (e.g. `npm run lint` and `npm run typecheck:node` for a

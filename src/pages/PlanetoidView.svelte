@@ -6,6 +6,7 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
+  import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
   import {
@@ -960,16 +961,14 @@
             disabled={sceneViewMode !== 'mesh'}
           />
         </label>
-        <label class="compact-number-row">
-          <span>{PlanetoidRangeLabels.seed}</span>
-          <input
-            type="number"
-            min={MinValues.seed}
-            max={MaxValues.seed}
-            step={StepValues.seed}
-            bind:value={planetoid.seed}
-          />
-        </label>
+        <SeedControl
+          id="planetoid-seed"
+          label={PlanetoidRangeLabels.seed}
+          min={MinValues.seed}
+          max={MaxValues.seed}
+          step={StepValues.seed}
+          bind:value={planetoid.seed}
+        />
       </fieldset>
 
       <fieldset>

@@ -1,6 +1,14 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from '@threlte/core'
-  import { AdditiveBlending, BackSide, Color, Mesh, ShaderMaterial, WebGLRenderTarget, type Texture } from 'three'
+  import {
+    AdditiveBlending,
+    BackSide,
+    Color,
+    Mesh,
+    ShaderMaterial,
+    WebGLRenderTarget,
+    type Texture,
+  } from 'three'
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
   import { createStarColorTexture, disposeStarTexture } from './StarGpuTextures'
@@ -354,7 +362,11 @@
   />
 </T.Mesh>
 
-<T.Mesh bind:ref={plasmaMesh} geometry={haloGeometry} scale={[plasmaShellScale, plasmaShellScale, plasmaShellScale]}>
+<T.Mesh
+  bind:ref={plasmaMesh}
+  geometry={haloGeometry}
+  scale={[plasmaShellScale, plasmaShellScale, plasmaShellScale]}
+>
   <T.ShaderMaterial
     vertexShader={haloVertexShader}
     fragmentShader={haloDetailFragmentShader}

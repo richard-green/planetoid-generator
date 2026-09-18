@@ -6,6 +6,7 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
+  import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
   import {
@@ -667,16 +668,14 @@
           <span>{GasGiantUiLabels.autoRotate}</span>
           <input type="checkbox" bind:checked={gasGiant.autoRotate} />
         </label>
-        <label class="compact-number-row">
-          <span>{GasGiantUiLabels.seed}</span>
-          <input
-            type="number"
-            min={MinValues.seed}
-            max={MaxValues.seed}
-            step={StepValues.seed}
-            bind:value={gasGiant.seed}
-          />
-        </label>
+        <SeedControl
+          id="gas-giant-seed"
+          label={GasGiantUiLabels.seed}
+          min={MinValues.seed}
+          max={MaxValues.seed}
+          step={StepValues.seed}
+          bind:value={gasGiant.seed}
+        />
       </fieldset>
 
       <fieldset>
@@ -745,6 +744,30 @@
       </fieldset>
 
       <fieldset>
+        <legend>{GasGiantUiLabels.material}</legend>
+        <details class="control-section" bind:open={materialPropertiesSectionOpen}>
+          <summary>
+            <span class="summary-chevron" aria-hidden="true"></span>
+            <span>{GasGiantUiLabels.properties}</span>
+          </summary>
+          <div class="control-grid">
+            {#each materialControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                />
+              </label>
+            {/each}
+          </div>
+        </details>
+      </fieldset>
+
+      <fieldset>
         <legend>{GasGiantUiLabels.features}</legend>
 
         <details class="control-section" bind:open={cloudSettingsSectionOpen}>
@@ -796,30 +819,6 @@
                   step={StepValues[control]}
                   bind:value={gasGiant[control]}
                   disabled={!effectiveStormsEnabled}
-                />
-              </label>
-            {/each}
-          </div>
-        </details>
-      </fieldset>
-
-      <fieldset>
-        <legend>{GasGiantUiLabels.material}</legend>
-        <details class="control-section" bind:open={materialPropertiesSectionOpen}>
-          <summary>
-            <span class="summary-chevron" aria-hidden="true"></span>
-            <span>{GasGiantUiLabels.properties}</span>
-          </summary>
-          <div class="control-grid">
-            {#each materialControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
                 />
               </label>
             {/each}
