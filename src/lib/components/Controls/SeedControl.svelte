@@ -18,7 +18,6 @@
 <div class="seed-control">
   <label for={id}>{label}</label>
   <div class="seed-input-group">
-    <input {id} type="number" {min} {max} {step} bind:value />
     <button
       type="button"
       onclick={randomizeSeed}
@@ -27,6 +26,7 @@
     >
       🎲
     </button>
+    <input {id} type="number" {min} {max} {step} bind:value />
   </div>
 </div>
 
