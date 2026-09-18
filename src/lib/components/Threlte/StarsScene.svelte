@@ -454,7 +454,11 @@
   />
 </T.Mesh>
 
-<T.Mesh bind:ref={plasmaMesh} geometry={haloGeometry} scale={[plasmaShellScale, plasmaShellScale, plasmaShellScale]}>
+<T.Mesh
+  bind:ref={plasmaMesh}
+  geometry={haloGeometry}
+  scale={[plasmaShellScale, plasmaShellScale, plasmaShellScale]}
+>
   <T.ShaderMaterial
     vertexShader={haloVertexShader}
     fragmentShader={haloDetailFragmentShader}
