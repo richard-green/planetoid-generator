@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { T, useThrelte } from '@threlte/core'
+  import { T, useTask, useThrelte } from '@threlte/core'
   import { OrbitControls, interactivity } from '@threlte/extras'
-  import { MOUSE } from 'three'
+  import { Group, MOUSE, Vector3 } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import GasGiant from './GasGiant/GasGiant.svelte'
   import { DefaultValues, type GasGiantSettings } from './GasGiant/GasGiantSettings'
+  import PlanetaryRingShadow from './Rings/PlanetaryRingShadow.svelte'
   import PlanetaryRings from './Rings/PlanetaryRings.svelte'
   import type { RingSettings } from './Rings/RingSettings'
 
@@ -42,10 +43,12 @@
     ringDensity = DefaultValues.ringDensity,
     ringTextureScale = DefaultValues.ringTextureScale,
     ringGranularity = DefaultValues.ringGranularity,
+    ringSolarization = DefaultValues.ringSolarization,
     ringOpacity = DefaultValues.ringOpacity,
   }: Props = $props()
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
+  let planetarySystem: Group | undefined = $state(undefined)
   type GasGiantExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadBumpMapPng: (fileName?: string) => Promise<boolean>
@@ -110,6 +113,7 @@
     ringDensity,
     ringTextureScale,
     ringGranularity,
+    ringSolarization,
     ringOpacity,
   })
 
@@ -124,7 +128,19 @@
     ringDensity,
     ringTextureScale,
     ringGranularity,
+    ringSolarization,
     ringOpacity,
+  })
+
+  const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })
+  const rotationAxis = $derived.by(() => {
+    const tilt = (ringTilt * Math.PI) / 180
+    return new Vector3(-Math.sin(tilt), Math.cos(tilt), 0).normalize()
+  })
+
+  useTask((delta) => {
+    if (!autoRotate || !planetarySystem) return
+    planetarySystem.rotateOnAxis(rotationAxis, delta * 0.18)
   })
 </script>
 
@@ -146,5 +162,13 @@
 <T.AmbientLight intensity={0.08} />
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
-<GasGiant bind:this={gasGiantRef} {settings} />
-<PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
+<T.Group bind:ref={planetarySystem}>
+  <GasGiant bind:this={gasGiantRef} settings={planetSettings} />
+  <PlanetaryRingShadow
+    settings={ringSettings}
+    {seed}
+    planetRadius={2}
+    lightPosition={[-5, 1, 2]}
+  />
+  <PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
+</T.Group>

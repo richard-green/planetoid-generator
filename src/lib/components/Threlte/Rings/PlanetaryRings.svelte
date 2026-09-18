@@ -25,6 +25,7 @@
     uDensity: new Uniform(0),
     uTextureScale: new Uniform(0),
     uGranularity: new Uniform(0),
+    uSolarization: new Uniform(0),
     uOpacity: new Uniform(0),
     uPaletteSize: new Uniform(0),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => new Vector3())),
@@ -54,6 +55,7 @@
     uniforms.uDensity.value = settings.ringDensity
     uniforms.uTextureScale.value = settings.ringTextureScale
     uniforms.uGranularity.value = settings.ringGranularity
+    uniforms.uSolarization.value = settings.ringSolarization
     uniforms.uOpacity.value = settings.ringOpacity
     uniforms.uPaletteSize.value = colors.length
   })
@@ -89,42 +91,56 @@
     uniform float uDensity;
     uniform float uTextureScale;
     uniform float uGranularity;
+    uniform float uSolarization;
     uniform float uOpacity;
     uniform int uPaletteSize;
     uniform vec3 uPalette[${MAX_PALETTE_SIZE}];
 
     const float TAU = 6.283185307179586;
 
-    float hash21(vec2 point) {
-      point = fract(point * vec2(123.34, 456.21));
-      point += dot(point, point + 45.32);
-      return fract(point.x * point.y);
+    vec2 hash22(vec2 point) {
+      vec3 point3 = fract(vec3(point.xyx) * vec3(0.1031, 0.1030, 0.0973));
+      point3 += dot(point3, point3.yzx + 33.33);
+      return fract((point3.xx + point3.yz) * point3.zy);
     }
 
     float hash11(float value) {
-      return fract(sin(value * 127.1 + uSeed * 0.017) * 43758.5453123);
+      return hash22(vec2(value, uSeed * 0.0137 + value * 0.071)).x;
     }
 
-    float valueNoise(vec2 point) {
+    float gradientNoise(vec2 point) {
       vec2 cell = floor(point);
       vec2 local = fract(point);
-      local = local * local * (3.0 - 2.0 * local);
-      float a = hash21(cell + uSeed * 0.013);
-      float b = hash21(cell + vec2(1.0, 0.0) + uSeed * 0.013);
-      float c = hash21(cell + vec2(0.0, 1.0) + uSeed * 0.013);
-      float d = hash21(cell + vec2(1.0, 1.0) + uSeed * 0.013);
-      return mix(mix(a, b, local.x), mix(c, d, local.x), local.y);
+      vec2 seedOffset = vec2(uSeed * 0.0137, uSeed * 0.0219);
+      vec2 gradient00 = hash22(cell + seedOffset) * 2.0 - 1.0;
+      vec2 gradient10 = hash22(cell + vec2(1.0, 0.0) + seedOffset) * 2.0 - 1.0;
+      vec2 gradient01 = hash22(cell + vec2(0.0, 1.0) + seedOffset) * 2.0 - 1.0;
+      vec2 gradient11 = hash22(cell + vec2(1.0, 1.0) + seedOffset) * 2.0 - 1.0;
+      float value00 = dot(normalize(gradient00 + 0.0001), local);
+      float value10 = dot(normalize(gradient10 + 0.0001), local - vec2(1.0, 0.0));
+      float value01 = dot(normalize(gradient01 + 0.0001), local - vec2(0.0, 1.0));
+      float value11 = dot(normalize(gradient11 + 0.0001), local - vec2(1.0, 1.0));
+      vec2 blend = local * local * local * (local * (local * 6.0 - 15.0) + 10.0);
+      float value = mix(
+        mix(value00, value10, blend.x),
+        mix(value01, value11, blend.x),
+        blend.y
+      );
+      return value * 0.5 + 0.5;
     }
 
     float fractalNoise(vec2 point) {
       float value = 0.0;
-      float amplitude = 0.57;
-      for (int octave = 0; octave < 4; octave++) {
-        value += valueNoise(point) * amplitude;
-        point = point * 2.03 + vec2(17.1, 9.2);
-        amplitude *= 0.48;
+      float amplitude = 0.52;
+      float amplitudeSum = 0.0;
+      mat2 rotation = mat2(0.8, -0.6, 0.6, 0.8);
+      for (int octave = 0; octave < 5; octave++) {
+        value += gradientNoise(point) * amplitude;
+        amplitudeSum += amplitude;
+        point = rotation * point * 2.071 + vec2(17.13, 9.71);
+        amplitude *= 0.49;
       }
-      return value;
+      return value / amplitudeSum;
     }
 
     vec4 variableBandInfo(float radial) {
@@ -145,7 +161,8 @@
         if (radial <= end || index == count - 1) {
           float local = clamp((radial - start) / max(width, 0.0001), 0.0, 1.0);
           float fillVariation = hash11(float(index) * 13.17 + 4.3);
-          return vec4(local, width, fillVariation, float(index) / float(max(1, count - 1)));
+          float colorPosition = hash11(float(index) * 19.73 + 8.1);
+          return vec4(local, width, fillVariation, colorPosition);
         }
         start = end;
       }
@@ -204,14 +221,27 @@
         distanceFromCenter
       );
       vec2 grainPosition = vPosition * (4.0 + uTextureScale * 3.0);
-      float coarseGrain = fractalNoise(grainPosition);
-      float fineGrain = valueNoise(grainPosition * 4.7 + vec2(31.2, 7.8));
-      float grain = clamp(coarseGrain * 0.72 + fineGrain * 0.28, 0.0, 1.0);
+      vec2 domainWarp = vec2(
+        fractalNoise(grainPosition * 0.43 + vec2(19.7, 3.1)),
+        fractalNoise(grainPosition * 0.43 + vec2(-7.4, 27.6))
+      ) - 0.5;
+      float coarseGrain = fractalNoise(grainPosition + domainWarp * 2.4);
+      float fineGrain = gradientNoise(
+        grainPosition * 4.731 + domainWarp * 5.2 + vec2(31.2, 7.8)
+      );
+      float grain = clamp(coarseGrain * 0.7 + fineGrain * 0.3, 0.0, 1.0);
       float edgeFade = smoothstep(0.0, 0.025, radial) * smoothstep(0.0, 0.035, 1.0 - radial);
       float colorPosition = clamp(band.w + (grain - 0.5) * 0.16, 0.0, 1.0);
       float granularVariation = mix(1.0, mix(0.68, 1.22, grain), uGranularity);
       float illumination = mix(0.2, 1.0, planetShadow());
-      vec3 color = paletteColor(colorPosition) * granularVariation * illumination;
+      vec3 baseColor = paletteColor(colorPosition);
+      float solarCurve = 1.0 - abs(grain * 2.0 - 1.0);
+      float solarMask = smoothstep(0.38, 0.88, solarCurve) * uSolarization;
+      float solarPosition = fract(1.0 - colorPosition + band.z * 0.37);
+      vec3 solarColor = paletteColor(solarPosition);
+      vec3 color = mix(baseColor, solarColor, solarMask * 0.72);
+      color *= mix(granularVariation, 2.0 - granularVariation, solarMask * 0.55);
+      color *= illumination;
       float alphaGrain = mix(1.0, mix(0.72, 1.0, grain), uGranularity);
       float alpha = coverage * edgeFade * uOpacity * alphaGrain;
 

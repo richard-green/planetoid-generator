@@ -108,6 +108,7 @@
     'ringDensity',
     'ringTextureScale',
     'ringGranularity',
+    'ringSolarization',
     'ringOpacity',
   ]
 
@@ -640,6 +641,7 @@
           ringDensity={gasGiant.ringDensity}
           ringTextureScale={gasGiant.ringTextureScale}
           ringGranularity={gasGiant.ringGranularity}
+          ringSolarization={gasGiant.ringSolarization}
           ringOpacity={gasGiant.ringOpacity}
         />
       </Canvas>

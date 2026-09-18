@@ -18,6 +18,7 @@ export type RingSettings = {
   ringDensity: number
   ringTextureScale: number
   ringGranularity: number
+  ringSolarization: number
   ringOpacity: number
 }
 
@@ -31,6 +32,7 @@ export type RingRangeValues = Pick<
   | 'ringDensity'
   | 'ringTextureScale'
   | 'ringGranularity'
+  | 'ringSolarization'
   | 'ringOpacity'
 >
 
@@ -47,6 +49,7 @@ export const DefaultRingValues: RingSettings = {
   ringDensity: 0.72,
   ringTextureScale: 7,
   ringGranularity: 0.35,
+  ringSolarization: 0.35,
   ringOpacity: 0.82,
 }
 
@@ -59,6 +62,7 @@ export const RingMinValues: RingRangeValues = {
   ringDensity: 0.05,
   ringTextureScale: 0,
   ringGranularity: 0,
+  ringSolarization: 0,
   ringOpacity: 0.05,
 }
 
@@ -71,6 +75,7 @@ export const RingMaxValues: RingRangeValues = {
   ringDensity: 1,
   ringTextureScale: 24,
   ringGranularity: 1,
+  ringSolarization: 1,
   ringOpacity: 1,
 }
 
@@ -83,6 +88,7 @@ export const RingStepValues: RingRangeValues = {
   ringDensity: 0.05,
   ringTextureScale: 0.5,
   ringGranularity: 0.05,
+  ringSolarization: 0.05,
   ringOpacity: 0.05,
 }
 
@@ -95,6 +101,7 @@ export const RingRangeLabels: Record<RingRangeKey, string> = {
   ringDensity: 'Density',
   ringTextureScale: 'Texture scale',
   ringGranularity: 'Granularity',
+  ringSolarization: 'Solarization',
   ringOpacity: 'Opacity',
 }
 
@@ -107,6 +114,7 @@ export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
   ringDensity: '--ring-density',
   ringTextureScale: '--ring-texture-scale',
   ringGranularity: '--ring-granularity',
+  ringSolarization: '--ring-solarization',
   ringOpacity: '--ring-opacity',
 }
 
@@ -156,6 +164,11 @@ const RING_NUMERIC_SPECS: Record<RingRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultRingValues.ringGranularity,
     min: RingMinValues.ringGranularity,
     max: RingMaxValues.ringGranularity,
+  },
+  ringSolarization: {
+    defaultValue: DefaultRingValues.ringSolarization,
+    min: RingMinValues.ringSolarization,
+    max: RingMaxValues.ringSolarization,
   },
   ringOpacity: {
     defaultValue: DefaultRingValues.ringOpacity,
