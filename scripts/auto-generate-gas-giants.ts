@@ -16,6 +16,7 @@ import {
   MaxValues,
   MinValues,
   type GasGiantRangeKey,
+  type GasGiantViewMode,
 } from '../src/lib/components/Threlte/GasGiant/GasGiantSettings'
 import {
   RingPaletteNames,
@@ -66,6 +67,7 @@ type ScriptOptions = {
   stormsEnabled?: boolean
   ringsEnabled?: boolean
   ringPalette?: string
+  viewMode?: GasGiantViewMode
   baseUrl: string
   outputDir: string
   frameSettleMs: number
@@ -87,6 +89,7 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   stormsEnabled: undefined,
   ringsEnabled: undefined,
   ringPalette: undefined,
+  viewMode: undefined,
   seed: undefined,
   colorScale: undefined,
   tintShadowFloor: undefined,
@@ -118,6 +121,8 @@ const LOCATOR_CONFIG = {
     checkboxByLabel: (label: string) => `label:has-text("${label}") input[type="checkbox"]`,
     sectionToggleBySummaryLabel: (label: string) =>
       `summary:has-text("${label}") input[type="checkbox"]`,
+    viewModeRadio: (mode: GasGiantViewMode) =>
+      `input[type="radio"][name="giant-view-mode"][value="${mode}"]`,
   },
 }
 
@@ -264,6 +269,15 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === '--view-mode' && next) {
+      if (next !== 'mesh' && next !== 'normal' && next !== 'texture') {
+        throw new Error(`Invalid view-mode: ${next}. Expected mesh, normal, or texture.`)
+      }
+      options.viewMode = next
+      i++
+      continue
+    }
+
     if (arg === RingCliFlags.palette && next) {
       options.ringPalette = next
       i++
@@ -317,6 +331,7 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --step <n>              Seed increment per image (default: 1)',
           '  --palette <name>        Palette name',
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
+          '  --view-mode <mode>      Render mesh, normal, or texture view',
           ...NUMERIC_HELP_LINES,
           `  ${RingCliFlags.palette} <name> Ring palette name`,
           ...RING_HELP_LINES,
@@ -541,6 +556,12 @@ async function main() {
     await applyToggleOverride('storms enabled', stormsEnabledToggle, options.stormsEnabled)
     await applyToggleOverride('rings enabled', ringsEnabledToggle, options.ringsEnabled)
 
+    if (options.viewMode) {
+      const viewModeRadio = page.locator(selectors.viewModeRadio(options.viewMode)).first()
+      await ensureLocatorVisible(viewModeRadio)
+      await viewModeRadio.check()
+    }
+
     if (requestedRingPalette) {
       await ensureLocatorVisible(ringPaletteSelect)
       await ringPaletteSelect.selectOption(requestedRingPalette)
@@ -556,6 +577,7 @@ async function main() {
       options.autoRotate !== undefined ||
       options.stormsEnabled !== undefined ||
       options.ringsEnabled !== undefined ||
+      options.viewMode !== undefined ||
       requestedRingPalette ||
       RING_RANGE_KEYS.some((key) => typeof options[key] === 'number')
     ) {

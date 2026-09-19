@@ -9,6 +9,8 @@ import {
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
 
+export type GasGiantViewMode = 'mesh' | 'normal' | 'texture'
+
 export type GasGiantSettings = RingSettings & {
   seed: number
   autoRotate: boolean
@@ -281,6 +283,7 @@ export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
 
 export const GasGiantUiLabels = {
   scene: 'Scene',
+  viewMode: 'View mode',
   autoRotate: 'Auto-rotate',
   seed: 'Seed',
   texture: 'Texture',

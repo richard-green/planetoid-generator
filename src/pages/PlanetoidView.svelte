@@ -9,6 +9,8 @@
   } from '../lib/components/Controls/PresetManager.svelte'
   import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
+  import SurfaceTintControl from '../lib/components/Controls/SurfaceTintControl.svelte'
+  import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
   import {
@@ -873,32 +875,12 @@
         <div id={ACTION_POPOVER_ID} class="scene-action-popover" popover="manual" role="tooltip">
           {activePopoverText}
         </div>
-        <CollapsibleControl title={PlanetoidUiLabels.viewMode} bind:open={viewModeSectionOpen}>
-          <div class="view-mode-group" role="radiogroup" aria-label="Scene view mode">
-            <label class="radio-row">
-              <input type="radio" name="scene-view-mode" value="mesh" bind:group={sceneViewMode} />
-              <span>3D</span>
-            </label>
-            <label class="radio-row">
-              <input
-                type="radio"
-                name="scene-view-mode"
-                value="normal"
-                bind:group={sceneViewMode}
-              />
-              <span>Normal map</span>
-            </label>
-            <label class="radio-row">
-              <input
-                type="radio"
-                name="scene-view-mode"
-                value="texture"
-                bind:group={sceneViewMode}
-              />
-              <span>Texture map</span>
-            </label>
-          </div>
-        </CollapsibleControl>
+        <ViewModeControl
+          title={PlanetoidUiLabels.viewMode}
+          bind:open={viewModeSectionOpen}
+          name="scene-view-mode"
+          bind:value={sceneViewMode}
+        />
         <label class="toggle-row">
           <span>{PlanetoidUiLabels.autoRotate}</span>
           <input type="checkbox" bind:checked={planetoid.autoRotate} />
@@ -934,13 +916,11 @@
             palettes={PlanetoidPalettes}
             bind:value={planetoid.palette}
           />
-          <label class="extra-pad">
-            <span class="label-row">
-              <span>{PlanetoidUiLabels.surfaceTint}</span>
-              <span class="label-value">{planetoid.surfaceTint.toUpperCase()}</span>
-            </span>
-            <input type="color" bind:value={planetoid.surfaceTint} />
-          </label>
+          <SurfaceTintControl
+            id="planetoid-surface-tint"
+            label={PlanetoidUiLabels.surfaceTint}
+            bind:value={planetoid.surfaceTint}
+          />
           <div class="control-grid">
             {#each colorControls as control (control)}
               <label class="compact-number-row">
@@ -1155,29 +1135,5 @@
 
   .scene-action-popover::backdrop {
     background: transparent;
-  }
-
-  .view-mode-group {
-    display: grid;
-    gap: 0.3rem;
-    padding: 0.55rem 0.6rem;
-    border: 1px solid rgba(142, 180, 221, 0.25);
-    border-radius: 10px;
-    background: rgba(7, 14, 28, 0.55);
-  }
-
-  .radio-row {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    column-gap: 0.45rem;
-    font-size: 0.85rem;
-  }
-
-  .radio-row input[type='radio'] {
-    width: 1rem;
-    height: 1rem;
-    margin: 0;
-    padding: 0;
   }
 </style>

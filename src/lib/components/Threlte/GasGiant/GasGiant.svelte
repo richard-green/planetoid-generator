@@ -4,13 +4,14 @@
     Color,
     IcosahedronGeometry,
     Mesh,
+    MeshBasicMaterial,
     MeshStandardMaterial,
     WebGLRenderTarget,
     type Texture,
   } from 'three'
   import { onDestroy } from 'svelte'
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
-  import type { GasGiantSettings } from '../GasGiant/GasGiantSettings'
+  import type { GasGiantSettings, GasGiantViewMode } from '../GasGiant/GasGiantSettings'
   import {
     createGasGiantNormalTexture,
     createGasGiantColorTexture,
@@ -19,9 +20,10 @@
 
   type Props = {
     settings: GasGiantSettings
+    viewMode?: GasGiantViewMode
   }
 
-  let { settings }: Props = $props()
+  let { settings, viewMode = 'mesh' }: Props = $props()
   let {
     palette,
     surfaceTint,
@@ -47,6 +49,7 @@
 
   let mesh = $state<Mesh | undefined>(undefined)
   let material = $state<MeshStandardMaterial | undefined>(undefined)
+  let mapPreviewMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let colorTexture = $state<ReturnType<typeof createGasGiantColorTexture> | undefined>(undefined)
   let normalTexture = $state<ReturnType<typeof createGasGiantNormalTexture> | undefined>(undefined)
   let color = $derived(new Color('#ffffff'))
@@ -54,6 +57,14 @@
   const { renderer } = useThrelte()
 
   const geometry = new IcosahedronGeometry(2, 18)
+
+  $effect(() => {
+    if (!mapPreviewMaterial) return
+
+    mapPreviewMaterial.map =
+      viewMode === 'normal' ? (normalTexture ?? null) : (colorTexture ?? null)
+    mapPreviewMaterial.needsUpdate = true
+  })
 
   function flipRowsRgba(source: Uint8Array, width: number, height: number) {
     const rowSize = width * 4
@@ -148,7 +159,7 @@
   })
 
   $effect(() => {
-    if (!renderer || !material) return
+    if (!renderer) return
 
     const paletteData = GasGiantPalettes[palette]
     const effectiveStormCount = enableStorms ? stormCount : 0
@@ -178,8 +189,14 @@
     )
 
     colorTexture = nextTexture
-    material.map = nextTexture
-    material.needsUpdate = true
+    if (material) {
+      material.map = nextTexture
+      material.needsUpdate = true
+    }
+    if (mapPreviewMaterial && viewMode === 'texture') {
+      mapPreviewMaterial.map = nextTexture
+      mapPreviewMaterial.needsUpdate = true
+    }
 
     return () => {
       if (colorTexture === nextTexture) {
@@ -190,7 +207,7 @@
   })
 
   $effect(() => {
-    if (!renderer || !material) return
+    if (!renderer) return
 
     const paletteData = GasGiantPalettes[palette]
     const effectiveStormCount = enableStorms ? stormCount : 0
@@ -220,11 +237,17 @@
     )
 
     normalTexture = nextNormal
-    material.bumpMap = null
-    material.normalMap = nextNormal
-    material.bumpScale = 0
-    material.normalScale.set(normalStrength, normalStrength)
-    material.needsUpdate = true
+    if (material) {
+      material.bumpMap = null
+      material.normalMap = nextNormal
+      material.bumpScale = 0
+      material.normalScale.set(normalStrength, normalStrength)
+      material.needsUpdate = true
+    }
+    if (mapPreviewMaterial && viewMode === 'normal') {
+      mapPreviewMaterial.map = nextNormal
+      mapPreviewMaterial.needsUpdate = true
+    }
 
     return () => {
       if (normalTexture === nextNormal) {
@@ -244,6 +267,13 @@
   })
 </script>
 
-<T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
-  <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
-</T.Mesh>
+{#if viewMode === 'mesh'}
+  <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
+    <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
+  </T.Mesh>
+{:else}
+  <T.Mesh scale={[3.8, 3.8, 1]} renderOrder={10}>
+    <T.PlaneGeometry args={[1.8, 0.9]} />
+    <T.MeshBasicMaterial bind:ref={mapPreviewMaterial} toneMapped={false} />
+  </T.Mesh>
+{/if}

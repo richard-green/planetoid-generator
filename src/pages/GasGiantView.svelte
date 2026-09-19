@@ -8,6 +8,8 @@
   } from '../lib/components/Controls/PresetManager.svelte'
   import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
+  import SurfaceTintControl from '../lib/components/Controls/SurfaceTintControl.svelte'
+  import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
   import {
@@ -36,6 +38,7 @@
     sanitizeGasGiantSettings,
     type GasGiantRangeKey,
     type GasGiantSettings,
+    type GasGiantViewMode,
   } from '../lib/components/Threlte/GasGiant/GasGiantSettings'
   import { BUILTIN_GAS_GIANT_PRESETS, type GasGiantPreset } from '../presets/GasGiants'
 
@@ -44,7 +47,8 @@
   type RangeControlKey = Exclude<GasGiantRangeKey, 'seed'>
 
   type GasGiantUiState = {
-    sceneSectionOpen: boolean
+    viewMode: GasGiantViewMode
+    viewModeSectionOpen: boolean
     colorSettingsSectionOpen: boolean
     cloudSettingsSectionOpen: boolean
     stormSectionOpen: boolean
@@ -132,7 +136,8 @@
   let sectionTogglesHydrated = $state(false)
   let presetsHydrated = $state(false)
 
-  let sceneSectionOpen = $state(true)
+  let sceneViewMode = $state<GasGiantViewMode>('mesh')
+  let viewModeSectionOpen = $state(true)
   let colorSettingsSectionOpen = $state(true)
   let cloudSettingsSectionOpen = $state(true)
   let stormSectionOpen = $state(true)
@@ -197,8 +202,27 @@
     ringsEnabled = gasGiant.enableRings
   }
 
+  function clampRingRadii() {
+    // round to 2dp to avoid floating point drift (e.g. 1.7000000000000002)
+    const round = (value: number) => Math.round(value * 100) / 100
+
+    gasGiant.ringInnerRadius = round(
+      Math.min(
+        Math.max(gasGiant.ringInnerRadius, RingMinValues.ringInnerRadius),
+        RingMaxValues.ringInnerRadius
+      )
+    )
+    gasGiant.ringOuterRadius = round(
+      Math.min(
+        Math.max(gasGiant.ringInnerRadius + 0.1, gasGiant.ringOuterRadius),
+        RingMaxValues.ringOuterRadius
+      )
+    )
+  }
+
   function resetSceneToDefaults() {
     applyGasGiantSettings(DEFAULT_GAS_GIANT_SETTINGS)
+    sceneViewMode = 'mesh'
   }
 
   function closePresetsMenu() {
@@ -248,6 +272,7 @@
 
   function buildCliCommandFromPreset(
     settings: GasGiantSettings,
+    mode: GasGiantViewMode,
     toggles: { stormsEnabled: boolean; ringsEnabled: boolean }
   ) {
     const args: string[] = [
@@ -255,6 +280,8 @@
       quoteCliValue(settings.palette),
       '--surface-tint',
       quoteCliValue(settings.surfaceTint),
+      '--view-mode',
+      mode,
     ]
 
     for (const key of NUMERIC_RANGE_KEYS) {
@@ -296,6 +323,7 @@
         enableStorms: effectiveStormsEnabled,
         enableRings: effectiveRingsEnabled,
       },
+      sceneViewMode,
       { stormsEnabled: effectiveStormsEnabled, ringsEnabled: effectiveRingsEnabled }
     )
 
@@ -313,7 +341,7 @@
       preset.settings.stormCount > 0 ||
       preset.settings.stormStrength > 0
 
-    const command = buildCliCommandFromPreset(preset.settings, {
+    const command = buildCliCommandFromPreset(preset.settings, sceneViewMode, {
       stormsEnabled: stormsEnabledFromPreset,
       ringsEnabled: preset.settings.enableRings,
     })
@@ -396,7 +424,7 @@
 
     const raw = input as Record<string, unknown>
     const hasAllKeys =
-      typeof raw.sceneSectionOpen === 'boolean' &&
+      typeof (raw.viewModeSectionOpen ?? raw.sceneSectionOpen) === 'boolean' &&
       typeof raw.colorSettingsSectionOpen === 'boolean' &&
       typeof raw.cloudSettingsSectionOpen === 'boolean' &&
       typeof raw.stormSectionOpen === 'boolean' &&
@@ -407,7 +435,9 @@
     if (!hasAllKeys) return null
 
     return {
-      sceneSectionOpen: raw.sceneSectionOpen as boolean,
+      viewMode:
+        raw.viewMode === 'normal' || raw.viewMode === 'texture' ? raw.viewMode : 'mesh',
+      viewModeSectionOpen: (raw.viewModeSectionOpen ?? raw.sceneSectionOpen) as boolean,
       colorSettingsSectionOpen: raw.colorSettingsSectionOpen as boolean,
       cloudSettingsSectionOpen: raw.cloudSettingsSectionOpen as boolean,
       stormSectionOpen: raw.stormSectionOpen as boolean,
@@ -439,7 +469,8 @@
     }
 
     if (restoredUiState) {
-      sceneSectionOpen = restoredUiState.sceneSectionOpen
+      sceneViewMode = restoredUiState.viewMode
+      viewModeSectionOpen = restoredUiState.viewModeSectionOpen
       colorSettingsSectionOpen = restoredUiState.colorSettingsSectionOpen
       cloudSettingsSectionOpen = restoredUiState.cloudSettingsSectionOpen
       stormSectionOpen = restoredUiState.stormSectionOpen
@@ -463,7 +494,8 @@
 
     try {
       const uiState: GasGiantUiState = {
-        sceneSectionOpen,
+        viewMode: sceneViewMode,
+        viewModeSectionOpen,
         colorSettingsSectionOpen,
         cloudSettingsSectionOpen,
         stormSectionOpen,
@@ -592,6 +624,7 @@
       >
         <GasGiantScene
           bind:this={gasGiantScene}
+          viewMode={sceneViewMode}
           seed={gasGiant.seed}
           autoRotate={gasGiant.autoRotate}
           palette={gasGiant.palette}
@@ -700,6 +733,12 @@
             </div>
           </details>
         </div>
+        <ViewModeControl
+          title={GasGiantUiLabels.viewMode}
+          bind:open={viewModeSectionOpen}
+          name="giant-view-mode"
+          bind:value={sceneViewMode}
+        />
         <label class="toggle-row">
           <span>{GasGiantUiLabels.autoRotate}</span>
           <input type="checkbox" bind:checked={gasGiant.autoRotate} />
@@ -727,13 +766,11 @@
             palettes={GasGiantPalettes}
             bind:value={gasGiant.palette}
           />
-          <label class="extra-pad">
-            <span class="label-row">
-              <span>{GasGiantUiLabels.surfaceTint}</span>
-              <span class="label-value">{gasGiant.surfaceTint.toUpperCase()}</span>
-            </span>
-            <input type="color" bind:value={gasGiant.surfaceTint} />
-          </label>
+          <SurfaceTintControl
+            id="gas-giant-surface-tint"
+            label={GasGiantUiLabels.surfaceTint}
+            bind:value={gasGiant.surfaceTint}
+          />
           <div class="control-grid">
             {#each colorControls as control (control)}
               <label class="compact-number-row">
@@ -853,14 +890,13 @@
                 <span>{RingRangeLabels[control]}</span>
                 <input
                   type="number"
-                  min={control === 'ringOuterRadius'
-                    ? Math.max(RingMinValues[control], gasGiant.ringInnerRadius + 0.05)
-                    : RingMinValues[control]}
-                  max={control === 'ringInnerRadius'
-                    ? Math.min(RingMaxValues[control], gasGiant.ringOuterRadius - 0.05)
-                    : RingMaxValues[control]}
+                  min={RingMinValues[control]}
+                  max={RingMaxValues[control]}
                   step={RingStepValues[control]}
                   bind:value={gasGiant[control]}
+                  oninput={control === 'ringInnerRadius' || control === 'ringOuterRadius'
+                    ? clampRingRadii
+                    : undefined}
                   disabled={!effectiveRingsEnabled}
                 />
               </label>

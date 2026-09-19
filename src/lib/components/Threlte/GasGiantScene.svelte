@@ -6,14 +6,19 @@
   import { onDestroy } from 'svelte'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import GasGiant from './GasGiant/GasGiant.svelte'
-  import { DefaultValues, type GasGiantSettings } from './GasGiant/GasGiantSettings'
+  import {
+    DefaultValues,
+    type GasGiantSettings,
+    type GasGiantViewMode,
+  } from './GasGiant/GasGiantSettings'
   import PlanetaryRingShadow from './Rings/PlanetaryRingShadow.svelte'
   import PlanetaryRings from './Rings/PlanetaryRings.svelte'
   import type { RingSettings } from './Rings/RingSettings'
 
-  type Props = Partial<GasGiantSettings>
+  type Props = Partial<GasGiantSettings> & { viewMode?: GasGiantViewMode }
 
   let {
+    viewMode = 'mesh',
     palette = DefaultValues.palette,
     surfaceTint = DefaultValues.surfaceTint,
     colorScale = DefaultValues.colorScale,
@@ -50,6 +55,11 @@
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
   let planetarySystem: Group | undefined = $state(undefined)
+  let previousViewMode: GasGiantViewMode = 'mesh'
+  const viewCameraState = {
+    mesh: { position: [0, 2, 7] as const, target: [0, 0, 0] as const },
+    map: { position: [0, 0, 7] as const, target: [0, 0, 0] as const },
+  }
   type GasGiantExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
@@ -67,11 +77,36 @@
 
   $effect(() => {
     if (!controlsRef) return
-    controlsRef.enableRotate = true
-    controlsRef.enablePan = false
+
+    const isMeshMode = viewMode === 'mesh'
+    const previousKey = previousViewMode === 'mesh' ? 'mesh' : 'map'
+    const currentKey = isMeshMode ? 'mesh' : 'map'
+
+    if (previousViewMode !== viewMode) {
+      const position = $camera.position
+      const target = controlsRef.target
+      viewCameraState[previousKey] = {
+        position: [position.x, position.y, position.z],
+        target: [target.x, target.y, target.z],
+      }
+
+      if (previousKey !== currentKey) {
+        const state = viewCameraState[currentKey]
+        $camera.position.set(...state.position)
+        controlsRef.target.set(...state.target)
+      }
+      planetarySystem?.rotation.set(0, 0, 0)
+    }
+
+    previousViewMode = viewMode
+    controlsRef.enableRotate = isMeshMode
+    controlsRef.enablePan = !isMeshMode
     controlsRef.screenSpacePanning = true
-    controlsRef.mouseButtons.LEFT = MOUSE.ROTATE
-    controlsRef.mouseButtons.RIGHT = MOUSE.ROTATE
+    controlsRef.minDistance = isMeshMode ? 4 : 0.5
+    controlsRef.maxDistance = isMeshMode ? 14 : 8
+    controlsRef.zoomToCursor = !isMeshMode
+    controlsRef.mouseButtons.LEFT = isMeshMode ? MOUSE.ROTATE : MOUSE.PAN
+    controlsRef.mouseButtons.RIGHT = isMeshMode ? MOUSE.ROTATE : MOUSE.PAN
     controlsRef.update()
   })
 
@@ -144,7 +179,7 @@
   })
 
   useTask((delta) => {
-    if (!autoRotate || !planetarySystem) return
+    if (viewMode !== 'mesh' || !autoRotate || !planetarySystem) return
     planetarySystem.rotateOnAxis(rotationAxis, delta * 0.18)
   })
 </script>
@@ -168,7 +203,14 @@
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
 <T.Group bind:ref={planetarySystem}>
-  <GasGiant bind:this={gasGiantRef} settings={planetSettings} />
-  <PlanetaryRingShadow settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
-  <PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
+  <GasGiant bind:this={gasGiantRef} settings={planetSettings} {viewMode} />
+  {#if viewMode === 'mesh'}
+    <PlanetaryRingShadow
+      settings={ringSettings}
+      {seed}
+      planetRadius={2}
+      lightPosition={[-5, 1, 2]}
+    />
+    <PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
+  {/if}
 </T.Group>
