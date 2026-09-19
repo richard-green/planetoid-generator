@@ -557,7 +557,9 @@ async function main() {
     await applyToggleOverride('rings enabled', ringsEnabledToggle, options.ringsEnabled)
 
     if (options.viewMode) {
-      const viewModeRadio = page.locator(selectors.viewModeRadio(options.viewMode)).first()
+      const viewModeRadio = page
+        .locator(LOCATOR_CONFIG.selectors.viewModeRadio(options.viewMode))
+        .first()
       await ensureLocatorVisible(viewModeRadio)
       await viewModeRadio.check()
     }
