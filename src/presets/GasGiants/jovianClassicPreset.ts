@@ -20,10 +20,10 @@ export const jovianClassicPreset: GasGiantPreset = {
     stormPower: 2.2,
     stormStrength: 0.45,
     stormColorStrength: 0.5,
-    bumpScale: 0.4,
+    normalStrength: 0.5,
     roughness: 0.85,
     metalness: 0.05,
-    bumpTextureSize: 1024,
+    normalTextureSize: 1024,
     colorTextureSize: 1024,
   },
 }

@@ -19,7 +19,7 @@ export const tempestBeltsPreset: GasGiantPreset = {
     stormPower: 1.8,
     stormStrength: 0.78,
     stormColorStrength: 0.66,
-    bumpScale: 0.4,
+    normalStrength: 0.5,
     roughness: 0.74,
     metalness: 0.08,
   },

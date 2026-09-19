@@ -2,7 +2,7 @@
 
 Single-page app for generating planetoid and asteroid artwork directly in the browser.
 
-The app is built with Svelte + Vite and renders with THRELTE/Three.js. It generates procedural results and lets you export different render outputs, including texture and bump map imagery.
+The app is built with Svelte + Vite and renders with THRELTE/Three.js. It generates procedural results and lets you export different render outputs, including texture and normal map imagery.
 
 ## Live demo
 
@@ -12,7 +12,7 @@ https://rdgreen.dev/planetoids/
 
 - Interactive browser UI for procedural planetoid generation
 - Tunable controls for color, geometry, craters, ridges, rifts, volcanoes, and material properties
-- Multiple view modes for output workflows (including texture and bump views)
+- Multiple view modes for output workflows (including texture and normal views)
 - Presets and seed-based generation for repeatable results
 - Scriptable batch generation using Playwright
 
@@ -61,7 +61,7 @@ npm run auto-generate-gas-giants -- --count 10 --seed 1 --step 1 --palette jovia
 
 Common options:
 
-- `--view-mode mesh|bump|texture|ray`
+- `--view-mode mesh|normal|texture|ray`
 - `--palette <name>`
 - `--surface-tint <hex>`
 - `--output-dir <path>`

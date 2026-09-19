@@ -19,7 +19,7 @@ export const bandedNoStormsPreset: GasGiantPreset = {
     stormPower: 2.2,
     stormStrength: 0,
     stormColorStrength: 0,
-    bumpScale: 0.4,
+    normalStrength: 0.5,
     roughness: 0.84,
     metalness: 0.03,
   },

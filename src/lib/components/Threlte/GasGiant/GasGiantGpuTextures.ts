@@ -1,5 +1,6 @@
 import {
   ClampToEdgeWrapping,
+  HalfFloatType,
   LinearFilter,
   MathUtils,
   Mesh,
@@ -269,9 +270,81 @@ const fragmentShader = `
     return mix(a, b, localT);
   }
 
+  float sampleCloudRelief(vec2 sourceUv, vec3 seed) {
+    vec2 uv = vec2(fract(sourceUv.x), clamp(sourceUv.y, 0.0, 1.0));
+    vec4 storm = stormField(uv, seed);
+    vec2 distortedUv = vec2(fract(uv.x + storm.x), clamp(uv.y + storm.y, 0.0, 1.0));
+    float theta = distortedUv.x * TAU;
+    float phi = distortedUv.y * PI;
+    vec3 spherePos = vec3(
+      sin(phi) * cos(theta),
+      cos(phi),
+      sin(phi) * sin(theta)
+    );
+    float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
+    float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
+    float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
+    vec3 warpedSpherePos = normalize(spherePos + vec3(warpX, warpY, warpZ) * 0.2);
+    vec3 remappedPos = vec3(
+      dot(warpedSpherePos, vec3(0.00, 0.83, 0.56)),
+      dot(warpedSpherePos, vec3(0.56, 0.00, 0.83)),
+      dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
+    );
+    vec2 cloudSignals = cloudBandSignals(distortedUv, remappedPos, seed);
+    float chaosNorm = clamp(uCloudChaos, 0.0, 2.0) * 0.5;
+    float latWarpLow = fractalNoise(
+      remappedPos * 2.7 + seed * 0.31 + vec3(7.4, 39.1, 13.7)
+    ) * mix(0.01, 0.08, chaosNorm);
+    float latWarpHigh = fractalNoise(
+      remappedPos * 9.6 + seed * 0.74 + vec3(29.3, 5.6, 41.2)
+    ) * mix(0.0, 0.05, chaosNorm);
+    float latBandAxis = clamp(distortedUv.y + latWarpLow + latWarpHigh, 0.0, 1.0);
+    vec3 bandInfo = variableBandGradientInfo(latBandAxis, seed);
+    float bandProfile = cos(bandInfo.y * TAU);
+    float edgeDistance = min(bandInfo.y, 1.0 - bandInfo.y);
+    float boundaryRidge = 1.0 - smoothstep(0.015, 0.16, edgeDistance);
+    float bandVariation = mix(
+      0.65,
+      1.35,
+      hash11(bandInfo.z * 29.7 + seed.x * 0.0017 + 6.3)
+    );
+    float cloudCell = fractalNoise(remappedPos * 12.0 + seed * 0.91 + vec3(9.3, 17.1, 41.7));
+    float cloudPuffs = pow(clamp((cloudCell + 1.0) * 0.5, 0.0, 1.0), 2.2) - 0.35;
+    float wispyRelief = cloudSignals.y * mix(0.015, 0.1, chaosNorm);
+    float colorBandRelief = bandProfile * bandVariation * 0.045;
+    float boundaryRelief = boundaryRidge * mix(0.015, 0.035, chaosNorm);
+    return
+      colorBandRelief +
+      boundaryRelief +
+      cloudSignals.x * 0.012 +
+      cloudPuffs * 0.008 +
+      wispyRelief +
+      storm.z * 0.025;
+  }
+
   void main() {
     vec2 uv = vUv;
     vec3 seed = uSeed;
+
+    if (uMode == 1) {
+      vec2 texel = 1.0 / max(uResolution, vec2(1.0));
+      float hL = sampleCloudRelief(uv + vec2(-texel.x, 0.0), seed);
+      float hR = sampleCloudRelief(uv + vec2(texel.x, 0.0), seed);
+      float hD = sampleCloudRelief(uv + vec2(0.0, -texel.y), seed);
+      float hU = sampleCloudRelief(uv + vec2(0.0, texel.y), seed);
+      float dX = (hR - hL) * uResolution.x * 0.0014;
+      float dY = (hU - hD) * uResolution.y * 0.004;
+      vec3 normal = normalize(vec3(-dX, -dY, 1.0));
+      gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);
+      return;
+    }
+
+    if (uMode == 2) {
+      float relief = sampleCloudRelief(uv, seed);
+      gl_FragColor = vec4(vec3(clamp(0.5 + relief, 0.0, 1.0)), 1.0);
+      return;
+    }
+
     vec4 storm = stormField(uv, seed);
     float stormActivity = storm.z;
     float stormEyeActivity = storm.w;
@@ -310,17 +383,6 @@ const fragmentShader = `
     float baseBandT = bandInfo.x;
     float bandLocalT = bandInfo.y;
     float bandIndex = bandInfo.z;
-
-    if (uMode == 1) {
-      float cloudCell = fractalNoise(remappedPos * 12.0 + seed * 0.91 + vec3(9.3, 17.1, 41.7));
-      float cloudPuffs = pow(clamp((cloudCell + 1.0) * 0.5, 0.0, 1.0), 2.2) - 0.35;
-      float wispyRelief = filigree * mix(0.02, 0.62, chaosNorm);
-      float cloudRelief = broadBands * 0.12 + cloudPuffs * 0.06 + wispyRelief + stormActivity * 0.06;
-
-      float value = clamp(0.5 + cloudRelief, 0.0, 1.0);
-      gl_FragColor = vec4(vec3(value), 1.0);
-      return;
-    }
 
     float cloudLarge = fractalNoise(remappedPos * 3.8 + seed * 0.51 + vec3(13.4, 7.2, 29.8));
     float cloudMedium = fractalNoise(remappedPos * 9.0 + seed * 0.88 + vec3(43.1, 19.4, 5.7));
@@ -461,6 +523,36 @@ const quad = new Mesh(new PlaneGeometry(2, 2), material)
 quad.frustumCulled = false
 scene.add(quad)
 
+const normalMaterial = new ShaderMaterial({
+  vertexShader,
+  fragmentShader: `
+    precision highp float;
+    varying vec2 vUv;
+    uniform sampler2D uHeightMap;
+    uniform vec2 uResolution;
+
+    void main() {
+      vec2 texel = 1.0 / max(uResolution, vec2(1.0));
+      float hL = texture2D(uHeightMap, vUv + vec2(-texel.x, 0.0)).r;
+      float hR = texture2D(uHeightMap, vUv + vec2(texel.x, 0.0)).r;
+      float hD = texture2D(uHeightMap, vUv + vec2(0.0, -texel.y)).r;
+      float hU = texture2D(uHeightMap, vUv + vec2(0.0, texel.y)).r;
+      float dX = (hR - hL) * uResolution.x * 0.0014;
+      float dY = (hU - hD) * uResolution.y * 0.004;
+      vec3 normal = normalize(vec3(-dX, -dY, 1.0));
+      gl_FragColor = vec4(normal * 0.5 + 0.5, 1.0);
+    }
+  `,
+  uniforms: {
+    uHeightMap: new Uniform(null),
+    uResolution: new Uniform(new Vector2(1, 1)),
+  },
+})
+const normalScene = new Scene()
+const normalQuad = new Mesh(new PlaneGeometry(2, 2), normalMaterial)
+normalQuad.frustumCulled = false
+normalScene.add(normalQuad)
+
 function toFiniteNumber(value: number | undefined, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
 }
@@ -521,7 +613,7 @@ function setPaletteUniform(palette: Palette) {
 
 function renderTexture(
   renderer: WebGLRenderer,
-  mode: 0 | 1,
+  mode: 0 | 1 | 2,
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
@@ -592,6 +684,7 @@ function renderTexture(
   const renderTarget = new WebGLRenderTarget(width, height, {
     depthBuffer: false,
     stencilBuffer: false,
+    ...(mode === 2 ? { type: HalfFloatType } : {}),
   })
 
   renderTarget.texture.wrapS = RepeatWrapping
@@ -623,6 +716,48 @@ function renderTexture(
   return texture
 }
 
+function renderNormalFromHeight(
+  renderer: WebGLRenderer,
+  heightTexture: Texture,
+  width: number,
+  height: number
+) {
+  normalMaterial.uniforms.uHeightMap.value = heightTexture
+  normalMaterial.uniforms.uResolution.value.set(width, height)
+
+  const renderTarget = new WebGLRenderTarget(width, height, {
+    depthBuffer: false,
+    stencilBuffer: false,
+  })
+  renderTarget.texture.wrapS = RepeatWrapping
+  renderTarget.texture.wrapT = ClampToEdgeWrapping
+  renderTarget.texture.minFilter = LinearFilter
+  renderTarget.texture.magFilter = LinearFilter
+  renderTarget.texture.generateMipmaps = false
+  renderTarget.texture.colorSpace = NoColorSpace
+
+  const previousTarget = renderer.getRenderTarget()
+  const previousViewport = renderer.getViewport(new Vector4())
+  const previousScissor = renderer.getScissor(new Vector4())
+  const previousScissorTest = renderer.getScissorTest()
+
+  renderer.setRenderTarget(renderTarget)
+  renderer.setViewport(0, 0, width, height)
+  renderer.setScissor(0, 0, width, height)
+  renderer.setScissorTest(false)
+  renderer.clear()
+  renderer.render(normalScene, camera)
+  renderer.setRenderTarget(previousTarget)
+  renderer.setViewport(previousViewport)
+  renderer.setScissor(previousScissor)
+  renderer.setScissorTest(previousScissorTest)
+
+  const texture = renderTarget.texture
+  texture.needsUpdate = true
+  texture.userData.renderTarget = renderTarget
+  return texture
+}
+
 export function disposeGeneratedTexture(texture: Texture) {
   const renderTarget = texture.userData.renderTarget as WebGLRenderTarget | undefined
   if (renderTarget) {
@@ -650,7 +785,7 @@ export function createGasGiantColorTexture(
   return texture
 }
 
-export function createGasGiantBumpTexture(
+export function createGasGiantNormalTexture(
   renderer: WebGLRenderer,
   noiseOffset: NoiseOffset,
   palette: Palette,
@@ -660,7 +795,9 @@ export function createGasGiantBumpTexture(
   const height = Math.max(2, Math.floor(textureHeight))
   const width = height * 2
 
-  const texture = renderTexture(renderer, 1, width, height, noiseOffset, palette, options)
+  const heightTexture = renderTexture(renderer, 2, width, height, noiseOffset, palette, options)
+  const texture = renderNormalFromHeight(renderer, heightTexture, width, height)
+  disposeGeneratedTexture(heightTexture)
   texture.anisotropy = 8
 
   return texture

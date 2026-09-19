@@ -58,7 +58,7 @@
   type GasGiantSceneExports = {
     downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
-    downloadBumpMapPng: (fileName?: string) => Promise<boolean>
+    downloadNormalMapPng: (fileName?: string) => Promise<boolean>
   }
 
   const GAS_GIANT_SETTINGS_STORAGE_KEY = 'gas-giant-view-settings-v1'
@@ -81,15 +81,15 @@
     'stormPower',
     'stormStrength',
     'stormColorStrength',
-    'bumpTextureSize',
+    'normalTextureSize',
     'colorTextureSize',
-    'bumpScale',
+    'normalStrength',
     'roughness',
     'metalness',
   ]
 
   const colorControlKeys: RangeControlKey[] = ['colorScale', 'tintShadowFloor']
-  const textureResolutionControlKeys: RangeControlKey[] = ['bumpTextureSize', 'colorTextureSize']
+  const textureResolutionControlKeys: RangeControlKey[] = ['normalTextureSize', 'colorTextureSize']
   const cloudControlKeys: RangeControlKey[] = ['cloudBandCount', 'cloudBandSharpness', 'cloudChaos']
   const stormControlKeys: RangeControlKey[] = [
     'stormCount',
@@ -98,7 +98,7 @@
     'stormStrength',
     'stormColorStrength',
   ]
-  const materialControlKeys: RangeControlKey[] = ['bumpScale', 'roughness', 'metalness']
+  const materialControlKeys: RangeControlKey[] = ['normalStrength', 'roughness', 'metalness']
   const ringControls: RingRangeKey[] = [
     'ringInnerRadius',
     'ringOuterRadius',
@@ -557,13 +557,13 @@
     }
   }
 
-  async function downloadBumpMapPng() {
+  async function downloadNormalMapPng() {
     if (!gasGiantScene || isSaving) return
 
     isSaving = true
     try {
-      const fileName = `generated-gas-giant-bump-${getTimestamp()}.png`
-      await gasGiantScene.downloadBumpMapPng(fileName)
+      const fileName = `generated-gas-giant-normal-${getTimestamp()}.png`
+      await gasGiantScene.downloadNormalMapPng(fileName)
     } catch (error) {
       console.error(error)
     } finally {
@@ -607,10 +607,10 @@
           stormPower={gasGiant.stormPower}
           stormStrength={gasGiant.stormStrength}
           stormColorStrength={gasGiant.stormColorStrength}
-          bumpScale={gasGiant.bumpScale}
+          normalStrength={gasGiant.normalStrength}
           roughness={gasGiant.roughness}
           metalness={gasGiant.metalness}
-          bumpTextureSize={gasGiant.bumpTextureSize}
+          normalTextureSize={gasGiant.normalTextureSize}
           colorTextureSize={gasGiant.colorTextureSize}
           enableRings={effectiveRingsEnabled}
           ringPalette={gasGiant.ringPalette}
@@ -654,11 +654,11 @@
             <button
               type="button"
               class="action"
-              onclick={downloadBumpMapPng}
+              onclick={downloadNormalMapPng}
               disabled={isSaving}
-              aria-label="Download bump map"
+              aria-label="Download normal map"
             >
-              BMP
+              NRM
             </button>
           </div>
           <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>

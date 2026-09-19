@@ -28,11 +28,11 @@
     stormPower = DefaultValues.stormPower,
     stormStrength = DefaultValues.stormStrength,
     stormColorStrength = DefaultValues.stormColorStrength,
-    bumpScale = DefaultValues.bumpScale,
+    normalStrength = DefaultValues.normalStrength,
     roughness = DefaultValues.roughness,
     metalness = DefaultValues.metalness,
     autoRotate = DefaultValues.autoRotate,
-    bumpTextureSize = DefaultValues.bumpTextureSize,
+    normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
     enableRings = DefaultValues.enableRings,
     ringPalette = DefaultValues.ringPalette,
@@ -52,7 +52,7 @@
   let planetarySystem: Group | undefined = $state(undefined)
   type GasGiantExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
-    downloadBumpMapPng: (fileName?: string) => Promise<boolean>
+    downloadNormalMapPng: (fileName?: string) => Promise<boolean>
   }
   let gasGiantRef: GasGiantExports | undefined = $state(undefined)
   const { camera, renderer, scene } = useThrelte()
@@ -79,8 +79,8 @@
     return (await gasGiantRef?.downloadTextureMapPng(fileName)) ?? false
   }
 
-  export async function downloadBumpMapPng(fileName?: string) {
-    return (await gasGiantRef?.downloadBumpMapPng(fileName)) ?? false
+  export async function downloadNormalMapPng(fileName?: string) {
+    return (await gasGiantRef?.downloadNormalMapPng(fileName)) ?? false
   }
 
   export function downloadScenePng(fileName = 'gas-giant-render.png') {
@@ -102,11 +102,11 @@
     stormPower,
     stormStrength,
     stormColorStrength,
-    bumpScale,
+    normalStrength,
     roughness,
     metalness,
     autoRotate,
-    bumpTextureSize,
+    normalTextureSize,
     colorTextureSize,
     enableRings,
     ringPalette,

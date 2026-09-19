@@ -25,10 +25,10 @@ export type GasGiantSettings = RingSettings & {
   stormPower: number
   stormStrength: number
   stormColorStrength: number
-  bumpScale: number
+  normalStrength: number
   roughness: number
   metalness: number
-  bumpTextureSize: number
+  normalTextureSize: number
   colorTextureSize: number
 }
 
@@ -45,10 +45,10 @@ export type GasGiantRangeValues = Pick<
   | 'stormPower'
   | 'stormStrength'
   | 'stormColorStrength'
-  | 'bumpScale'
+  | 'normalStrength'
   | 'roughness'
   | 'metalness'
-  | 'bumpTextureSize'
+  | 'normalTextureSize'
   | 'colorTextureSize'
 >
 
@@ -71,10 +71,10 @@ export const DefaultValues: GasGiantSettings = {
   stormPower: 2.2,
   stormStrength: 0.45,
   stormColorStrength: 0.4,
-  bumpScale: 0.4,
+  normalStrength: 0.5,
   roughness: 0.82,
   metalness: 0.05,
-  bumpTextureSize: 1024,
+  normalTextureSize: 1024,
   colorTextureSize: 1024,
 }
 
@@ -90,10 +90,10 @@ export const MinValues: GasGiantRangeValues = {
   stormPower: 0.5,
   stormStrength: 0,
   stormColorStrength: 0,
-  bumpScale: 0,
+  normalStrength: 0,
   roughness: 0,
   metalness: 0,
-  bumpTextureSize: 128,
+  normalTextureSize: 128,
   colorTextureSize: 64,
 }
 
@@ -109,10 +109,10 @@ export const MaxValues: GasGiantRangeValues = {
   stormPower: 6,
   stormStrength: 1.5,
   stormColorStrength: 1.5,
-  bumpScale: 10,
+  normalStrength: 1,
   roughness: 1,
   metalness: 1,
-  bumpTextureSize: 4096,
+  normalTextureSize: 4096,
   colorTextureSize: 4096,
 }
 
@@ -128,10 +128,10 @@ export const StepValues: GasGiantRangeValues = {
   stormPower: 0.1,
   stormStrength: 0.01,
   stormColorStrength: 0.01,
-  bumpScale: 0.05,
+  normalStrength: 0.05,
   roughness: 0.01,
   metalness: 0.01,
-  bumpTextureSize: 1,
+  normalTextureSize: 1,
   colorTextureSize: 1,
 }
 
@@ -194,10 +194,10 @@ const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
     min: MinValues.stormColorStrength,
     max: MaxValues.stormColorStrength,
   },
-  bumpScale: {
-    defaultValue: DefaultValues.bumpScale,
-    min: MinValues.bumpScale,
-    max: MaxValues.bumpScale,
+  normalStrength: {
+    defaultValue: DefaultValues.normalStrength,
+    min: MinValues.normalStrength,
+    max: MaxValues.normalStrength,
   },
   roughness: {
     defaultValue: DefaultValues.roughness,
@@ -209,10 +209,10 @@ const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
     min: MinValues.metalness,
     max: MaxValues.metalness,
   },
-  bumpTextureSize: {
-    defaultValue: DefaultValues.bumpTextureSize,
-    min: MinValues.bumpTextureSize,
-    max: MaxValues.bumpTextureSize,
+  normalTextureSize: {
+    defaultValue: DefaultValues.normalTextureSize,
+    min: MinValues.normalTextureSize,
+    max: MaxValues.normalTextureSize,
     round: true,
   },
   colorTextureSize: {
@@ -225,7 +225,12 @@ const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
 
 export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
   const raw = toRecord(input)
-  const numeric = sanitizeNumericMap(raw, NUMERIC_SANITIZE_SPECS)
+  const migratedRaw = {
+    ...raw,
+    normalStrength: raw.normalStrength ?? raw.bumpScale,
+    normalTextureSize: raw.normalTextureSize ?? raw.bumpTextureSize,
+  }
+  const numeric = sanitizeNumericMap(migratedRaw, NUMERIC_SANITIZE_SPECS)
 
   const palette = sanitizeEnum(raw, 'palette', GasGiantPaletteNames, DefaultValues.palette)
   const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
@@ -247,10 +252,10 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
     stormPower: numeric.stormPower,
     stormStrength: numeric.stormStrength,
     stormColorStrength: numeric.stormColorStrength,
-    bumpScale: numeric.bumpScale,
+    normalStrength: numeric.normalStrength,
     roughness: numeric.roughness,
     metalness: numeric.metalness,
-    bumpTextureSize: numeric.bumpTextureSize,
+    normalTextureSize: numeric.normalTextureSize,
     colorTextureSize: numeric.colorTextureSize,
   }
 }
@@ -267,10 +272,10 @@ export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
   stormPower: 'Storm falloff power',
   stormStrength: 'Storm strength',
   stormColorStrength: 'Storm color strength',
-  bumpScale: 'Bump scale',
+  normalStrength: 'Normal strength',
   roughness: 'Roughness',
   metalness: 'Metalness',
-  bumpTextureSize: 'Bump texture size',
+  normalTextureSize: 'Normal texture size',
   colorTextureSize: 'Color texture size',
 }
 
@@ -303,10 +308,10 @@ export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
   stormPower: '--storm-power',
   stormStrength: '--storm-strength',
   stormColorStrength: '--storm-color-strength',
-  bumpScale: '--bump-scale',
+  normalStrength: '--normal-strength',
   roughness: '--roughness',
   metalness: '--metalness',
-  bumpTextureSize: '--bump-tex-height',
+  normalTextureSize: '--normal-tex-height',
   colorTextureSize: '--color-tex-height',
 }
 

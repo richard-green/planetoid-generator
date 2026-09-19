@@ -12,7 +12,7 @@
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
   import type { GasGiantSettings } from '../GasGiant/GasGiantSettings'
   import {
-    createGasGiantBumpTexture,
+    createGasGiantNormalTexture,
     createGasGiantColorTexture,
     disposeGeneratedTexture,
   } from '../GasGiant/GasGiantGpuTextures'
@@ -37,18 +37,18 @@
     stormPower,
     stormStrength,
     stormColorStrength,
-    bumpScale,
+    normalStrength,
     roughness,
     metalness,
     autoRotate,
-    bumpTextureSize,
+    normalTextureSize,
     colorTextureSize,
   } = $derived(settings)
 
   let mesh = $state<Mesh | undefined>(undefined)
   let material = $state<MeshStandardMaterial | undefined>(undefined)
   let colorTexture = $state<ReturnType<typeof createGasGiantColorTexture> | undefined>(undefined)
-  let bumpTexture = $state<ReturnType<typeof createGasGiantBumpTexture> | undefined>(undefined)
+  let normalTexture = $state<ReturnType<typeof createGasGiantNormalTexture> | undefined>(undefined)
   let color = $derived(new Color('#ffffff'))
 
   const { renderer } = useThrelte()
@@ -122,9 +122,9 @@
     return downloadRenderTexture(colorMap, fileName)
   }
 
-  export async function downloadBumpMapPng(fileName = 'gas-giant-bump-map.png') {
-    const bumpMap = (material?.bumpMap as Texture | null | undefined) ?? bumpTexture
-    return downloadRenderTexture(bumpMap, fileName)
+  export async function downloadNormalMapPng(fileName = 'gas-giant-normal-map.png') {
+    const normalMap = (material?.normalMap as Texture | null | undefined) ?? normalTexture
+    return downloadRenderTexture(normalMap, fileName)
   }
 
   function createRandom(initialSeed: number) {
@@ -199,11 +199,11 @@
     const effectiveStormStrength = enableStorms ? stormStrength : 0
     const effectiveStormColorStrength = enableStorms ? stormColorStrength : 0
 
-    const nextBump = createGasGiantBumpTexture(
+    const nextNormal = createGasGiantNormalTexture(
       renderer,
       noiseOffset,
       paletteData,
-      bumpTextureSize,
+      normalTextureSize,
       {
         surfaceTint,
         tintShadowFloor,
@@ -219,16 +219,18 @@
       }
     )
 
-    bumpTexture = nextBump
-    material.bumpMap = nextBump
-    material.bumpScale = bumpScale
+    normalTexture = nextNormal
+    material.bumpMap = null
+    material.normalMap = nextNormal
+    material.bumpScale = 0
+    material.normalScale.set(normalStrength, normalStrength)
     material.needsUpdate = true
 
     return () => {
-      if (bumpTexture === nextBump) {
-        bumpTexture = undefined
+      if (normalTexture === nextNormal) {
+        normalTexture = undefined
       }
-      disposeGeneratedTexture(nextBump)
+      disposeGeneratedTexture(nextNormal)
     }
   })
 
