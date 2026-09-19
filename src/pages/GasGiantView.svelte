@@ -116,6 +116,7 @@
     'ringSolarization',
     'ringOpacity',
     'ringNoise',
+    'ringGlitter',
   ]
 
   const colorControls = numericControls.filter((control) => colorControlKeys.includes(control))
@@ -660,6 +661,7 @@
           ringSolarization={gasGiant.ringSolarization}
           ringOpacity={gasGiant.ringOpacity}
           ringNoise={gasGiant.ringNoise}
+          ringGlitter={gasGiant.ringGlitter}
         />
       </Canvas>
     </div>

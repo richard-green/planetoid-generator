@@ -53,6 +53,7 @@
     ringSolarization = DefaultValues.ringSolarization,
     ringOpacity = DefaultValues.ringOpacity,
     ringNoise = DefaultValues.ringNoise,
+    ringGlitter = DefaultValues.ringGlitter,
   }: Props = $props()
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
@@ -159,6 +160,7 @@
     ringSolarization,
     ringOpacity,
     ringNoise,
+    ringGlitter,
   })
 
   const ringSettings: RingSettings = $derived({
@@ -176,6 +178,7 @@
     ringSolarization,
     ringOpacity,
     ringNoise,
+    ringGlitter,
   })
 
   const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })

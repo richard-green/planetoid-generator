@@ -22,6 +22,7 @@ export type RingSettings = {
   ringSolarization: number
   ringOpacity: number
   ringNoise: number
+  ringGlitter: number
 }
 
 export type RingRangeValues = Pick<
@@ -38,6 +39,7 @@ export type RingRangeValues = Pick<
   | 'ringSolarization'
   | 'ringOpacity'
   | 'ringNoise'
+  | 'ringGlitter'
 >
 
 export type RingRangeKey = keyof RingRangeValues
@@ -57,6 +59,7 @@ export const DefaultRingValues: RingSettings = {
   ringSolarization: 0.35,
   ringOpacity: 0.82,
   ringNoise: 0,
+  ringGlitter: 0,
 }
 
 export const RingMinValues: RingRangeValues = {
@@ -72,6 +75,7 @@ export const RingMinValues: RingRangeValues = {
   ringSolarization: 0,
   ringOpacity: 0.05,
   ringNoise: 0,
+  ringGlitter: 0,
 }
 
 export const RingMaxValues: RingRangeValues = {
@@ -87,6 +91,7 @@ export const RingMaxValues: RingRangeValues = {
   ringSolarization: 1,
   ringOpacity: 1,
   ringNoise: 1,
+  ringGlitter: 1,
 }
 
 export const RingStepValues: RingRangeValues = {
@@ -102,6 +107,7 @@ export const RingStepValues: RingRangeValues = {
   ringSolarization: 0.05,
   ringOpacity: 0.05,
   ringNoise: 0.05,
+  ringGlitter: 0.05,
 }
 
 export const RingRangeLabels: Record<RingRangeKey, string> = {
@@ -117,6 +123,7 @@ export const RingRangeLabels: Record<RingRangeKey, string> = {
   ringSolarization: 'Solarization',
   ringOpacity: 'Opacity',
   ringNoise: 'Noise',
+  ringGlitter: 'Glitter',
 }
 
 export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
@@ -132,6 +139,7 @@ export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
   ringSolarization: '--ring-solarization',
   ringOpacity: '--ring-opacity',
   ringNoise: '--ring-noise',
+  ringGlitter: '--ring-glitter',
 }
 
 export const RingCliFlags = {
@@ -200,6 +208,11 @@ const RING_NUMERIC_SPECS: Record<RingRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultRingValues.ringNoise,
     min: RingMinValues.ringNoise,
     max: RingMaxValues.ringNoise,
+  },
+  ringGlitter: {
+    defaultValue: DefaultRingValues.ringGlitter,
+    min: RingMinValues.ringGlitter,
+    max: RingMaxValues.ringGlitter,
   },
 }
 

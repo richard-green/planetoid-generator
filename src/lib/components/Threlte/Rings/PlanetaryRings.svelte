@@ -29,6 +29,7 @@
     uSolarization: new Uniform(0),
     uOpacity: new Uniform(0),
     uNoise: new Uniform(0),
+    uGlitter: new Uniform(0),
     uPaletteSize: new Uniform(0),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => new Vector3())),
   }
@@ -61,6 +62,7 @@
     uniforms.uSolarization.value = settings.ringSolarization
     uniforms.uOpacity.value = settings.ringOpacity
     uniforms.uNoise.value = settings.ringNoise
+    uniforms.uGlitter.value = settings.ringGlitter
     uniforms.uPaletteSize.value = colors.length
   })
 
@@ -68,12 +70,14 @@
     varying float vRadius;
     varying vec2 vPosition;
     varying vec3 vWorldPosition;
+    varying vec3 vWorldNormal;
 
     void main() {
       vRadius = length(position.xy);
       vPosition = position.xy;
       vec4 worldPosition = modelMatrix * vec4(position, 1.0);
       vWorldPosition = worldPosition.xyz;
+      vWorldNormal = normalize(mat3(modelMatrix) * normal);
       gl_Position = projectionMatrix * viewMatrix * worldPosition;
     }
   `
@@ -84,6 +88,7 @@
     varying float vRadius;
     varying vec2 vPosition;
     varying vec3 vWorldPosition;
+    varying vec3 vWorldNormal;
 
     uniform float uInnerRadius;
     uniform float uOuterRadius;
@@ -99,6 +104,7 @@
     uniform float uSolarization;
     uniform float uOpacity;
     uniform float uNoise;
+    uniform float uGlitter;
     uniform int uPaletteSize;
     uniform vec3 uPalette[${MAX_PALETTE_SIZE}];
 
@@ -258,7 +264,28 @@
       vec2 sparkleSalt = hash22(floor(sparkleBase * 0.11) + vec2(19.7, 41.3)) * 57.0;
       float sparkleNoise = hash22(sparkleBase + sparkleSalt).x;
       float alphaNoise = mix(1.0, sparkleNoise, uNoise);
-      float alpha = coverage * edgeFade * uOpacity * alphaGrain * alphaNoise;
+
+      vec3 glitterNormal = normalize(vWorldNormal);
+      vec3 glitterAxis = abs(glitterNormal.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+      vec3 glitterTangent = normalize(cross(glitterAxis, glitterNormal));
+      vec3 glitterBitangent = cross(glitterNormal, glitterTangent);
+      vec2 glitterCell = floor(vPosition * (260.0 + uSeed * 1.3));
+      vec2 glitterJitter = hash22(glitterCell + vec2(61.7, 12.4)) * 2.0 - 1.0;
+      float glitterGate = step(0.992, hash22(glitterCell + vec2(5.5, 88.2)).x);
+      vec3 perturbedNormal = normalize(
+        glitterNormal + (glitterTangent * glitterJitter.x + glitterBitangent * glitterJitter.y) * 0.9
+      );
+      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
+      vec3 halfVector = normalize(viewDirection + normalize(uLightDirection));
+      float specular = pow(max(dot(perturbedNormal, halfVector), 0.0), 60.0);
+      float glitter = specular * glitterGate * illumination * uGlitter;
+
+      color += glitter * vec3(1.3, 1.25, 1.1);
+      float alpha = clamp(
+        coverage * edgeFade * uOpacity * alphaGrain * alphaNoise + glitter,
+        0.0,
+        1.0
+      );
 
       if (alpha < 0.01) discard;
       gl_FragColor = vec4(color, alpha);
