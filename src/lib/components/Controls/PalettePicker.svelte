@@ -33,7 +33,7 @@
   })
 </script>
 
-<div class="palette-control">
+<div class="palette-picker">
   <label for={id}>
     <span>{title}</span>
     <select {id} bind:value>
@@ -51,10 +51,14 @@
 </div>
 
 <style>
-  .palette-control,
+  .palette-picker,
   label {
     display: grid;
     gap: 0.35rem;
+  }
+
+  .palette-picker {
+    margin-bottom: 0.75rem;
   }
 
   label {
@@ -64,11 +68,11 @@
   .palette-preview {
     width: 100%;
     height: 2rem;
-    margin: 0.35rem 0;
     border-radius: 10px;
     border: 1px solid #8eb4dd;
     box-shadow:
       inset 0 0 0 1px rgba(4, 10, 20, 0.25),
       0 4px 14px rgba(0, 0, 0, 0.2);
+    margin-top: 0.5rem;
   }
 </style>

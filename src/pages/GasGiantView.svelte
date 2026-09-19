@@ -6,9 +6,9 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
-  import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
+  import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
-  import SurfaceTintControl from '../lib/components/Controls/SurfaceTintControl.svelte'
+  import ColorPicker from '../lib/components/Controls/ColorPicker.svelte'
   import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
@@ -109,11 +109,13 @@
     'ringTilt',
     'ringBandCount',
     'ringBandSharpness',
+    'ringBandRegularity',
     'ringDensity',
     'ringTextureScale',
     'ringGranularity',
     'ringSolarization',
     'ringOpacity',
+    'ringNoise',
   ]
 
   const colorControls = numericControls.filter((control) => colorControlKeys.includes(control))
@@ -435,8 +437,7 @@
     if (!hasAllKeys) return null
 
     return {
-      viewMode:
-        raw.viewMode === 'normal' || raw.viewMode === 'texture' ? raw.viewMode : 'mesh',
+      viewMode: raw.viewMode === 'normal' || raw.viewMode === 'texture' ? raw.viewMode : 'mesh',
       viewModeSectionOpen: (raw.viewModeSectionOpen ?? raw.sceneSectionOpen) as boolean,
       colorSettingsSectionOpen: raw.colorSettingsSectionOpen as boolean,
       cloudSettingsSectionOpen: raw.cloudSettingsSectionOpen as boolean,
@@ -652,11 +653,13 @@
           ringTilt={gasGiant.ringTilt}
           ringBandCount={gasGiant.ringBandCount}
           ringBandSharpness={gasGiant.ringBandSharpness}
+          ringBandRegularity={gasGiant.ringBandRegularity}
           ringDensity={gasGiant.ringDensity}
           ringTextureScale={gasGiant.ringTextureScale}
           ringGranularity={gasGiant.ringGranularity}
           ringSolarization={gasGiant.ringSolarization}
           ringOpacity={gasGiant.ringOpacity}
+          ringNoise={gasGiant.ringNoise}
         />
       </Canvas>
     </div>
@@ -759,14 +762,14 @@
           title={GasGiantUiLabels.colorSettings}
           bind:open={colorSettingsSectionOpen}
         >
-          <PaletteControl
+          <PalettePicker
             id="gas-giant-palette"
             title={GasGiantUiLabels.palette}
             options={GasGiantPaletteNames}
             palettes={GasGiantPalettes}
             bind:value={gasGiant.palette}
           />
-          <SurfaceTintControl
+          <ColorPicker
             id="gas-giant-surface-tint"
             label={GasGiantUiLabels.surfaceTint}
             bind:value={gasGiant.surfaceTint}
@@ -877,7 +880,7 @@
         </CollapsibleControl>
 
         <CollapsibleControl title="Rings" bind:open={ringSectionOpen} bind:enabled={ringsEnabled}>
-          <PaletteControl
+          <PalettePicker
             id="ring-palette"
             title="Ring palette"
             options={RingPaletteNames}

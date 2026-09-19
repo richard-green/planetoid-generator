@@ -22,6 +22,7 @@
     uSeed: new Uniform(0),
     uBandCount: new Uniform(0),
     uBandSharpness: new Uniform(0),
+    uBandRegularity: new Uniform(0),
     uDensity: new Uniform(0),
     uOpacity: new Uniform(0),
   }
@@ -35,6 +36,7 @@
     uniforms.uSeed.value = seed
     uniforms.uBandCount.value = settings.ringBandCount
     uniforms.uBandSharpness.value = settings.ringBandSharpness
+    uniforms.uBandRegularity.value = settings.ringBandRegularity
     uniforms.uDensity.value = settings.ringDensity
     uniforms.uOpacity.value = settings.ringOpacity
   })
@@ -68,6 +70,7 @@
     uniform float uSeed;
     uniform float uBandCount;
     uniform float uBandSharpness;
+    uniform float uBandRegularity;
     uniform float uDensity;
     uniform float uOpacity;
 
@@ -83,17 +86,20 @@
 
     vec3 variableBandInfo(float radial) {
       int count = int(floor(clamp(uBandCount, 2.0, 64.0) + 0.5));
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
+      float widthLow = mix(1.0, 0.02, variance);
+      float widthHigh = mix(1.0, 8.0, variance);
       float totalWidth = 0.0;
 
       for (int index = 0; index < 64; index++) {
         if (index >= count) break;
-        totalWidth += mix(0.35, 2.15, hash11(float(index) * 7.31 + 1.7));
+        totalWidth += mix(widthLow, widthHigh, hash11(float(index) * 7.31 + 1.7));
       }
 
       float start = 0.0;
       for (int index = 0; index < 64; index++) {
         if (index >= count) break;
-        float randomWidth = mix(0.35, 2.15, hash11(float(index) * 7.31 + 1.7));
+        float randomWidth = mix(widthLow, widthHigh, hash11(float(index) * 7.31 + 1.7));
         float width = randomWidth / max(totalWidth, 0.0001);
         float end = start + width;
         if (radial <= end || index == count - 1) {
@@ -124,8 +130,10 @@
 
       float radial = (ringRadius - uInnerRadius) / max(0.0001, uOuterRadius - uInnerRadius);
       vec3 band = variableBandInfo(radial);
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
+      float fillMultiplier = mix(1.0, band.z, variance);
       float fillRatio = clamp(
-        mix(0.15, 0.96, uDensity) * mix(0.58, 1.0, band.z),
+        mix(0.15, 0.96, uDensity) * fillMultiplier,
         0.08,
         0.98
       );

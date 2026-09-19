@@ -46,11 +46,13 @@
     ringTilt = DefaultValues.ringTilt,
     ringBandCount = DefaultValues.ringBandCount,
     ringBandSharpness = DefaultValues.ringBandSharpness,
+    ringBandRegularity = DefaultValues.ringBandRegularity,
     ringDensity = DefaultValues.ringDensity,
     ringTextureScale = DefaultValues.ringTextureScale,
     ringGranularity = DefaultValues.ringGranularity,
     ringSolarization = DefaultValues.ringSolarization,
     ringOpacity = DefaultValues.ringOpacity,
+    ringNoise = DefaultValues.ringNoise,
   }: Props = $props()
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
@@ -150,11 +152,13 @@
     ringTilt,
     ringBandCount,
     ringBandSharpness,
+    ringBandRegularity,
     ringDensity,
     ringTextureScale,
     ringGranularity,
     ringSolarization,
     ringOpacity,
+    ringNoise,
   })
 
   const ringSettings: RingSettings = $derived({
@@ -165,11 +169,13 @@
     ringTilt,
     ringBandCount,
     ringBandSharpness,
+    ringBandRegularity,
     ringDensity,
     ringTextureScale,
     ringGranularity,
     ringSolarization,
     ringOpacity,
+    ringNoise,
   })
 
   const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })

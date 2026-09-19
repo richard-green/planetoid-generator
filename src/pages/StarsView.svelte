@@ -3,7 +3,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
-  import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
+  import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import StarsScene from '../lib/components/Threlte/StarsScene.svelte'
@@ -280,7 +280,7 @@
         <legend>Texture</legend>
         <CollapsibleControl title="Color settings" bind:open={stellarSurfaceSectionOpen}>
           <div class="control-grid">
-            <PaletteControl
+            <PalettePicker
               id="star-palette"
               title="Stellar class"
               options={StarPaletteNames}

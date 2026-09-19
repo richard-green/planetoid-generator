@@ -22,11 +22,13 @@
     uSeed: new Uniform(0),
     uBandCount: new Uniform(0),
     uBandSharpness: new Uniform(0),
+    uBandRegularity: new Uniform(0),
     uDensity: new Uniform(0),
     uTextureScale: new Uniform(0),
     uGranularity: new Uniform(0),
     uSolarization: new Uniform(0),
     uOpacity: new Uniform(0),
+    uNoise: new Uniform(0),
     uPaletteSize: new Uniform(0),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => new Vector3())),
   }
@@ -52,11 +54,13 @@
     uniforms.uSeed.value = seed
     uniforms.uBandCount.value = settings.ringBandCount
     uniforms.uBandSharpness.value = settings.ringBandSharpness
+    uniforms.uBandRegularity.value = settings.ringBandRegularity
     uniforms.uDensity.value = settings.ringDensity
     uniforms.uTextureScale.value = settings.ringTextureScale
     uniforms.uGranularity.value = settings.ringGranularity
     uniforms.uSolarization.value = settings.ringSolarization
     uniforms.uOpacity.value = settings.ringOpacity
+    uniforms.uNoise.value = settings.ringNoise
     uniforms.uPaletteSize.value = colors.length
   })
 
@@ -88,11 +92,13 @@
     uniform float uSeed;
     uniform float uBandCount;
     uniform float uBandSharpness;
+    uniform float uBandRegularity;
     uniform float uDensity;
     uniform float uTextureScale;
     uniform float uGranularity;
     uniform float uSolarization;
     uniform float uOpacity;
+    uniform float uNoise;
     uniform int uPaletteSize;
     uniform vec3 uPalette[${MAX_PALETTE_SIZE}];
 
@@ -145,17 +151,20 @@
 
     vec4 variableBandInfo(float radial) {
       int count = int(floor(clamp(uBandCount, 2.0, 64.0) + 0.5));
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
+      float widthLow = mix(1.0, 0.02, variance);
+      float widthHigh = mix(1.0, 8.0, variance);
       float totalWidth = 0.0;
 
       for (int index = 0; index < 64; index++) {
         if (index >= count) break;
-        totalWidth += mix(0.35, 2.15, hash11(float(index) * 7.31 + 1.7));
+        totalWidth += mix(widthLow, widthHigh, hash11(float(index) * 7.31 + 1.7));
       }
 
       float start = 0.0;
       for (int index = 0; index < 64; index++) {
         if (index >= count) break;
-        float randomWidth = mix(0.35, 2.15, hash11(float(index) * 7.31 + 1.7));
+        float randomWidth = mix(widthLow, widthHigh, hash11(float(index) * 7.31 + 1.7));
         float width = randomWidth / max(totalWidth, 0.0001);
         float end = start + width;
         if (radial <= end || index == count - 1) {
@@ -205,8 +214,10 @@
       );
       vec4 band = variableBandInfo(radial);
       float distanceFromCenter = abs(band.x - 0.5);
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
+      float fillMultiplier = mix(1.0, band.z, variance);
       float fillRatio = clamp(
-        mix(0.15, 0.96, uDensity) * mix(0.58, 1.0, band.z),
+        mix(0.15, 0.96, uDensity) * fillMultiplier,
         0.08,
         0.98
       );
@@ -243,7 +254,11 @@
       color *= mix(granularVariation, 2.0 - granularVariation, solarMask * 0.55);
       color *= illumination;
       float alphaGrain = mix(1.0, mix(0.72, 1.0, grain), uGranularity);
-      float alpha = coverage * edgeFade * uOpacity * alphaGrain;
+      vec2 sparkleBase = vPosition * (420.0 + uSeed * 2.7);
+      vec2 sparkleSalt = hash22(floor(sparkleBase * 0.11) + vec2(19.7, 41.3)) * 57.0;
+      float sparkleNoise = hash22(sparkleBase + sparkleSalt).x;
+      float alphaNoise = mix(1.0, sparkleNoise, uNoise);
+      float alpha = coverage * edgeFade * uOpacity * alphaGrain * alphaNoise;
 
       if (alpha < 0.01) discard;
       gl_FragColor = vec4(color, alpha);

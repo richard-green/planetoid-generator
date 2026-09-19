@@ -7,9 +7,9 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
-  import PaletteControl from '../lib/components/Controls/PaletteControl.svelte'
+  import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
-  import SurfaceTintControl from '../lib/components/Controls/SurfaceTintControl.svelte'
+  import ColorPicker from '../lib/components/Controls/ColorPicker.svelte'
   import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
@@ -909,14 +909,14 @@
           title={PlanetoidUiLabels.colorSettings}
           bind:open={colorSettingsSectionOpen}
         >
-          <PaletteControl
+          <PalettePicker
             id="planetoid-palette"
             title={PlanetoidUiLabels.palette}
             options={PlanetoidPaletteNames}
             palettes={PlanetoidPalettes}
             bind:value={planetoid.palette}
           />
-          <SurfaceTintControl
+          <ColorPicker
             id="planetoid-surface-tint"
             label={PlanetoidUiLabels.surfaceTint}
             bind:value={planetoid.surfaceTint}

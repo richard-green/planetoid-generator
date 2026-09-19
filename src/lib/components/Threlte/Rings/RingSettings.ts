@@ -15,11 +15,13 @@ export type RingSettings = {
   ringTilt: number
   ringBandCount: number
   ringBandSharpness: number
+  ringBandRegularity: number
   ringDensity: number
   ringTextureScale: number
   ringGranularity: number
   ringSolarization: number
   ringOpacity: number
+  ringNoise: number
 }
 
 export type RingRangeValues = Pick<
@@ -29,11 +31,13 @@ export type RingRangeValues = Pick<
   | 'ringTilt'
   | 'ringBandCount'
   | 'ringBandSharpness'
+  | 'ringBandRegularity'
   | 'ringDensity'
   | 'ringTextureScale'
   | 'ringGranularity'
   | 'ringSolarization'
   | 'ringOpacity'
+  | 'ringNoise'
 >
 
 export type RingRangeKey = keyof RingRangeValues
@@ -46,11 +50,13 @@ export const DefaultRingValues: RingSettings = {
   ringTilt: 8,
   ringBandCount: 18,
   ringBandSharpness: 0.65,
+  ringBandRegularity: 0.5,
   ringDensity: 0.72,
   ringTextureScale: 7,
   ringGranularity: 0.35,
   ringSolarization: 0.35,
   ringOpacity: 0.82,
+  ringNoise: 0,
 }
 
 export const RingMinValues: RingRangeValues = {
@@ -59,11 +65,13 @@ export const RingMinValues: RingRangeValues = {
   ringTilt: -45,
   ringBandCount: 2,
   ringBandSharpness: 0,
+  ringBandRegularity: 0,
   ringDensity: 0.05,
   ringTextureScale: 0,
   ringGranularity: 0,
   ringSolarization: 0,
   ringOpacity: 0.05,
+  ringNoise: 0,
 }
 
 export const RingMaxValues: RingRangeValues = {
@@ -72,11 +80,13 @@ export const RingMaxValues: RingRangeValues = {
   ringTilt: 45,
   ringBandCount: 64,
   ringBandSharpness: 1,
+  ringBandRegularity: 1,
   ringDensity: 1,
   ringTextureScale: 24,
   ringGranularity: 1,
   ringSolarization: 1,
   ringOpacity: 1,
+  ringNoise: 1,
 }
 
 export const RingStepValues: RingRangeValues = {
@@ -85,11 +95,13 @@ export const RingStepValues: RingRangeValues = {
   ringTilt: 1,
   ringBandCount: 1,
   ringBandSharpness: 0.05,
+  ringBandRegularity: 0.05,
   ringDensity: 0.05,
   ringTextureScale: 0.5,
   ringGranularity: 0.05,
   ringSolarization: 0.05,
   ringOpacity: 0.05,
+  ringNoise: 0.05,
 }
 
 export const RingRangeLabels: Record<RingRangeKey, string> = {
@@ -98,11 +110,13 @@ export const RingRangeLabels: Record<RingRangeKey, string> = {
   ringTilt: 'Tilt',
   ringBandCount: 'Band count',
   ringBandSharpness: 'Band sharpness',
+  ringBandRegularity: 'Band regularity',
   ringDensity: 'Density',
   ringTextureScale: 'Texture scale',
   ringGranularity: 'Granularity',
   ringSolarization: 'Solarization',
   ringOpacity: 'Opacity',
+  ringNoise: 'Noise',
 }
 
 export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
@@ -111,11 +125,13 @@ export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
   ringTilt: '--ring-tilt',
   ringBandCount: '--ring-band-count',
   ringBandSharpness: '--ring-band-sharpness',
+  ringBandRegularity: '--ring-band-regularity',
   ringDensity: '--ring-density',
   ringTextureScale: '--ring-texture-scale',
   ringGranularity: '--ring-granularity',
   ringSolarization: '--ring-solarization',
   ringOpacity: '--ring-opacity',
+  ringNoise: '--ring-noise',
 }
 
 export const RingCliFlags = {
@@ -150,6 +166,11 @@ const RING_NUMERIC_SPECS: Record<RingRangeKey, NumericSanitizeSpec> = {
     min: RingMinValues.ringBandSharpness,
     max: RingMaxValues.ringBandSharpness,
   },
+  ringBandRegularity: {
+    defaultValue: DefaultRingValues.ringBandRegularity,
+    min: RingMinValues.ringBandRegularity,
+    max: RingMaxValues.ringBandRegularity,
+  },
   ringDensity: {
     defaultValue: DefaultRingValues.ringDensity,
     min: RingMinValues.ringDensity,
@@ -174,6 +195,11 @@ const RING_NUMERIC_SPECS: Record<RingRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultRingValues.ringOpacity,
     min: RingMinValues.ringOpacity,
     max: RingMaxValues.ringOpacity,
+  },
+  ringNoise: {
+    defaultValue: DefaultRingValues.ringNoise,
+    min: RingMinValues.ringNoise,
+    max: RingMaxValues.ringNoise,
   },
 }
 

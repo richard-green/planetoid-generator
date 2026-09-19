@@ -8,23 +8,23 @@
   let { id, label, value = $bindable() }: Props = $props()
 </script>
 
-<label class="surface-tint-control" for={id}>
+<label class="color-picker" for={id}>
   <span>{label}</span>
-  <span class="surface-tint-swatch" style={`background-color: ${value}`}>
-    <span class="surface-tint-value">{value.toUpperCase()}</span>
+  <span class="color-picker-swatch" style={`background-color: ${value}`}>
+    <span class="color-picker-value">{value.toUpperCase()}</span>
     <input {id} type="color" bind:value />
   </span>
 </label>
 
 <style>
-  .surface-tint-control {
+  .color-picker {
     display: grid;
     gap: 0.35rem;
     margin-bottom: 0.75rem;
     font-size: 0.88rem;
   }
 
-  .surface-tint-swatch {
+  .color-picker-swatch {
     position: relative;
     display: flex;
     align-items: center;
@@ -36,7 +36,7 @@
     overflow: hidden;
   }
 
-  .surface-tint-value {
+  .color-picker-value {
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.04em;
     font-weight: 600;
@@ -48,7 +48,7 @@
   }
 
   /* hide the native square swatch; the rounded box background shows the color instead */
-  .surface-tint-swatch input[type='color'] {
+  .color-picker-swatch input[type='color'] {
     position: absolute;
     inset: 0;
     width: 100%;
