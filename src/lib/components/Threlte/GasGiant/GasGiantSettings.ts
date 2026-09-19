@@ -58,17 +58,17 @@ export type GasGiantRangeKey = keyof GasGiantRangeValues
 
 export const DefaultValues: GasGiantSettings = {
   ...DefaultRingValues,
-  seed: 21,
-  autoRotate: true,
-  palette: 'jovianBands',
-  surfaceTint: '#d8d1b8',
-  colorScale: 1.15,
+  seed: 1,
+  autoRotate: false,
+  palette: 'verdantCeruleanDrift',
+  surfaceTint: '#c1d9b7',
+  colorScale: 0.8,
   tintShadowFloor: 0.3,
   cloudBandCount: 6,
   cloudBandSharpness: 0.2,
   cloudChaos: 0.6,
   enableStorms: true,
-  stormCount: 4,
+  stormCount: 2,
   stormScale: 0.1,
   stormPower: 2.2,
   stormStrength: 0.45,
@@ -76,8 +76,8 @@ export const DefaultValues: GasGiantSettings = {
   normalStrength: 0.5,
   roughness: 0.82,
   metalness: 0.05,
-  normalTextureSize: 1024,
-  colorTextureSize: 1024,
+  normalTextureSize: 4096,
+  colorTextureSize: 4096,
 }
 
 export const MinValues: GasGiantRangeValues = {

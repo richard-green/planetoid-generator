@@ -45,20 +45,20 @@ export type RingRangeValues = Pick<
 export type RingRangeKey = keyof RingRangeValues
 
 export const DefaultRingValues: RingSettings = {
-  enableRings: false,
-  ringPalette: 'iceDust',
-  ringInnerRadius: 1.2,
-  ringOuterRadius: 1.7,
-  ringTilt: 8,
-  ringBandCount: 18,
-  ringBandSharpness: 0.65,
-  ringBandRegularity: 0.5,
-  ringDensity: 0.72,
+  enableRings: true,
+  ringPalette: 'graphite',
+  ringInnerRadius: 1.6,
+  ringOuterRadius: 1.95,
+  ringTilt: -37,
+  ringBandCount: 6,
+  ringBandSharpness: 0,
+  ringBandRegularity: 0,
+  ringDensity: 0.65,
   ringTextureScale: 7,
   ringGranularity: 0.35,
-  ringSolarization: 0.35,
-  ringOpacity: 0.82,
-  ringNoise: 0,
+  ringSolarization: 1,
+  ringOpacity: 0.7,
+  ringNoise: 0.35,
   ringGlitter: 0,
 }
 
