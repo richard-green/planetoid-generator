@@ -23,7 +23,5 @@ export const jovianClassicPreset: GasGiantPreset = {
     normalStrength: 0.5,
     roughness: 0.85,
     metalness: 0.05,
-    normalTextureSize: 1024,
-    colorTextureSize: 1024,
   },
 }

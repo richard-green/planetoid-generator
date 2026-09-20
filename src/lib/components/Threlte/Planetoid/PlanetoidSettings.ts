@@ -1,4 +1,5 @@
 import { PlanetoidPaletteNames, type PlanetoidPaletteName } from './PlanetoidPalettes'
+import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import {
   sanitizeBoolean,
   sanitizeEnum,
@@ -45,8 +46,8 @@ export type PlanetoidSettings = {
   riftWidth: number
   riftSharpness: number
   ridgesRiftsBlend: number
-  normalTextureSize: number
-  colorTextureSize: number
+  normalTextureSize: TextureSize
+  colorTextureSize: TextureSize
   normalStrength: number
   roughness: number
   metalness: number
@@ -92,8 +93,6 @@ export type PlanetoidRangeValues = Pick<
   | 'riftWidth'
   | 'riftSharpness'
   | 'ridgesRiftsBlend'
-  | 'normalTextureSize'
-  | 'colorTextureSize'
   | 'normalStrength'
   | 'roughness'
   | 'metalness'
@@ -176,8 +175,6 @@ export const MinValues: PlanetoidRangeValues = {
   riftWidth: 0.01,
   riftSharpness: 0.5,
   ridgesRiftsBlend: 0,
-  normalTextureSize: 128,
-  colorTextureSize: 64,
   normalStrength: 0,
   roughness: 0,
   metalness: 0,
@@ -213,8 +210,6 @@ export const MaxValues: PlanetoidRangeValues = {
   riftWidth: 0.25,
   riftSharpness: 6,
   ridgesRiftsBlend: 1,
-  normalTextureSize: 4096,
-  colorTextureSize: 4096,
   normalStrength: 10,
   roughness: 1,
   metalness: 1,
@@ -250,8 +245,6 @@ export const StepValues: PlanetoidRangeValues = {
   riftWidth: 0.01,
   riftSharpness: 0.05,
   ridgesRiftsBlend: 0.05,
-  normalTextureSize: 1,
-  colorTextureSize: 1,
   normalStrength: 0.1,
   roughness: 0.1,
   metalness: 0.1,
@@ -382,18 +375,6 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     min: MinValues.ridgesRiftsBlend,
     max: MaxValues.ridgesRiftsBlend,
   },
-  normalTextureSize: {
-    defaultValue: DefaultValues.normalTextureSize,
-    min: MinValues.normalTextureSize,
-    max: MaxValues.normalTextureSize,
-    round: true,
-  },
-  colorTextureSize: {
-    defaultValue: DefaultValues.colorTextureSize,
-    min: MinValues.colorTextureSize,
-    max: MaxValues.colorTextureSize,
-    round: true,
-  },
   normalStrength: {
     defaultValue: DefaultValues.normalStrength,
     min: MinValues.normalStrength,
@@ -484,8 +465,8 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     riftWidth: numeric.riftWidth,
     riftSharpness: numeric.riftSharpness,
     ridgesRiftsBlend: numeric.ridgesRiftsBlend,
-    normalTextureSize: numeric.normalTextureSize,
-    colorTextureSize: numeric.colorTextureSize,
+    normalTextureSize: sanitizeTextureSize(raw.normalTextureSize, DefaultValues.normalTextureSize),
+    colorTextureSize: sanitizeTextureSize(raw.colorTextureSize, DefaultValues.colorTextureSize),
     seed: numeric.seed,
     largeScale: numeric.largeScale,
     mediumScale: numeric.mediumScale,
@@ -553,8 +534,6 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   riftWidth: 'Rift width',
   riftSharpness: 'Rift sharpness',
   ridgesRiftsBlend: 'Ridges/rifts blend',
-  normalTextureSize: 'Normal texture size',
-  colorTextureSize: 'Color texture size',
   normalStrength: 'Normal strength',
   roughness: 'Roughness',
   metalness: 'Metalness',
@@ -612,8 +591,6 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   riftWidth: '--rift-width',
   riftSharpness: '--rift-sharpness',
   ridgesRiftsBlend: '--ridges-rifts-blend',
-  normalTextureSize: '--normal-tex-height',
-  colorTextureSize: '--color-tex-height',
   normalStrength: '--normal-strength',
   roughness: '--roughness',
   metalness: '--metalness',

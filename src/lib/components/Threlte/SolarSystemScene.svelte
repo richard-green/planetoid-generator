@@ -25,6 +25,11 @@
   import { BUILTIN_GAS_GIANT_PRESETS } from '../../../presets/GasGiants'
   import type { PlanetoidPreset } from '../../../presets/Planetoids/types'
   import type { GasGiantPreset } from '../../../presets/GasGiants/types'
+  import {
+    DefaultTextureSize,
+    sanitizeTextureSize,
+    type TextureSize,
+  } from '../../types/textureSize'
 
   type Props = {
     bodies?: SystemBody[]
@@ -34,7 +39,7 @@
     starScale?: number
     autoRotate?: boolean
     showOrbits?: boolean
-    textureSize?: number
+    textureSize?: TextureSize
   }
 
   let {
@@ -45,7 +50,7 @@
     starScale = 1.4,
     autoRotate = true,
     showOrbits = true,
-    textureSize = 1024,
+    textureSize = DefaultTextureSize,
   }: Props = $props()
 
   type Vec3 = [number, number, number]
@@ -101,6 +106,9 @@
     return [direction.x, direction.y, direction.z]
   }
 
+  // Giants and the sun fill more of the frame, so they get the next size up.
+  const detailTextureSize = $derived(sanitizeTextureSize(Math.min(textureSize * 2, 4096)))
+
   function rockySettings(
     preset: PlanetoidPreset,
     seed: number
@@ -125,8 +133,8 @@
       ringTilt: ((seed % 100) - 50) * 0.8,
       seed,
       autoRotate,
-      normalTextureSize: textureSize * 2,
-      colorTextureSize: textureSize * 2,
+      normalTextureSize: detailTextureSize,
+      colorTextureSize: detailTextureSize,
     }
   }
 
@@ -169,7 +177,7 @@
   const sunSettings: StarSettings = $derived({
     ...starSettings,
     autoRotate,
-    colorTextureSize: textureSize * 2,
+    colorTextureSize: detailTextureSize,
   })
 
   const rockyBodies: RockyBody[] = $derived(

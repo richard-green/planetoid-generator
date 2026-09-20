@@ -5,6 +5,11 @@ import {
   toRecord,
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
+import {
+  DefaultTextureSize,
+  sanitizeTextureSize,
+  type TextureSize,
+} from '../../../types/textureSize'
 
 export type StarPaletteName = 'White' | 'Blue' | 'Yellow' | 'Orange' | 'Red'
 
@@ -32,7 +37,7 @@ export type StarSettings = {
   plasmaTurbulence: number
   plasmaSharpness: number
   plasmaTextureScale: number
-  colorTextureSize: number
+  colorTextureSize: TextureSize
   textureScale: number
   bandContrast: number
   bandSwirl: number
@@ -65,7 +70,6 @@ export type StarRangeValues = Pick<
   | 'plasmaTurbulence'
   | 'plasmaSharpness'
   | 'plasmaTextureScale'
-  | 'colorTextureSize'
   | 'textureScale'
   | 'bandContrast'
   | 'bandSwirl'
@@ -99,7 +103,7 @@ export const DefaultValues: StarSettings = {
   plasmaTurbulence: 2,
   plasmaSharpness: 3,
   plasmaTextureScale: 2.3,
-  colorTextureSize: 2048,
+  colorTextureSize: 1024,
   textureScale: 4,
   bandContrast: 1,
   bandSwirl: 1,
@@ -131,7 +135,6 @@ export const MinValues: StarRangeValues = {
   plasmaTurbulence: 0,
   plasmaSharpness: 1,
   plasmaTextureScale: 0.2,
-  colorTextureSize: 64,
   textureScale: 0.2,
   bandContrast: 0,
   bandSwirl: 0,
@@ -162,7 +165,6 @@ export const MaxValues: StarRangeValues = {
   plasmaTurbulence: 8,
   plasmaSharpness: 12,
   plasmaTextureScale: 8,
-  colorTextureSize: 4096,
   textureScale: 4,
   bandContrast: 5,
   bandSwirl: 5,
@@ -193,7 +195,6 @@ export const StepValues: StarRangeValues = {
   plasmaTurbulence: 0.1,
   plasmaSharpness: 0.25,
   plasmaTextureScale: 0.1,
-  colorTextureSize: 1,
   textureScale: 0.1,
   bandContrast: 0.05,
   bandSwirl: 0.05,
@@ -209,12 +210,7 @@ export const StepValues: StarRangeValues = {
   sunspotDarkness: 0.05,
 }
 
-const INTEGER_RANGE_KEYS: readonly StarRangeKey[] = [
-  'seed',
-  'colorTextureSize',
-  'sunspotCount',
-  'sunspotNeighbours',
-]
+const INTEGER_RANGE_KEYS: readonly StarRangeKey[] = ['seed', 'sunspotCount', 'sunspotNeighbours']
 
 export function sanitizeStarSettings(input: unknown): StarSettings {
   const raw = toRecord(input)
@@ -232,6 +228,7 @@ export function sanitizeStarSettings(input: unknown): StarSettings {
 
   return {
     ...numeric,
+    colorTextureSize: sanitizeTextureSize(raw.colorTextureSize, DefaultValues.colorTextureSize),
     palette: sanitizeEnum(raw, 'palette', StarPaletteNames, DefaultValues.palette),
     autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate),
   }

@@ -8,6 +8,7 @@
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
+  import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import StarsScene from '../lib/components/Threlte/StarsScene.svelte'
   import { StarPalettes } from '../lib/components/Threlte/Star/StarPalettes'
@@ -544,16 +545,11 @@
         </CollapsibleControl>
         <CollapsibleControl title="Texture resolution" bind:open={textureResolutionSectionOpen}>
           <div class="control-grid">
-            <label class="compact-number-row">
-              <span>Color texture size</span>
-              <input
-                type="number"
-                min={MinValues.colorTextureSize}
-                max={MaxValues.colorTextureSize}
-                step={StepValues.colorTextureSize}
-                bind:value={colorTextureSize}
-              />
-            </label>
+            <TextureSizeControl
+              id="star-color-texture-size"
+              label="Color texture size"
+              bind:value={colorTextureSize}
+            />
           </div>
         </CollapsibleControl>
       </fieldset>

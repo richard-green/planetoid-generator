@@ -9,6 +9,7 @@
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import ColorPicker from '../lib/components/Controls/ColorPicker.svelte'
+  import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import GasGiantScene from '../lib/components/Threlte/GasGiantScene.svelte'
@@ -85,15 +86,12 @@
     'stormPower',
     'stormStrength',
     'stormColorStrength',
-    'normalTextureSize',
-    'colorTextureSize',
     'normalStrength',
     'roughness',
     'metalness',
   ]
 
   const colorControlKeys: RangeControlKey[] = ['colorScale', 'tintShadowFloor']
-  const textureResolutionControlKeys: RangeControlKey[] = ['normalTextureSize', 'colorTextureSize']
   const cloudControlKeys: RangeControlKey[] = ['cloudBandCount', 'cloudBandSharpness', 'cloudChaos']
   const stormControlKeys: RangeControlKey[] = [
     'stormCount',
@@ -120,9 +118,6 @@
   ]
 
   const colorControls = numericControls.filter((control) => colorControlKeys.includes(control))
-  const textureResolutionControls = numericControls.filter((control) =>
-    textureResolutionControlKeys.includes(control)
-  )
   const cloudControls = numericControls.filter((control) => cloudControlKeys.includes(control))
   const stormControls = numericControls.filter((control) => stormControlKeys.includes(control))
   const materialControls = numericControls.filter((control) =>
@@ -797,18 +792,16 @@
           bind:open={textureResolutionSectionOpen}
         >
           <div class="control-grid">
-            {#each textureResolutionControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
-                />
-              </label>
-            {/each}
+            <TextureSizeControl
+              id="giant-normal-texture-size"
+              label="Normal texture size"
+              bind:value={gasGiant.normalTextureSize}
+            />
+            <TextureSizeControl
+              id="giant-color-texture-size"
+              label="Color texture size"
+              bind:value={gasGiant.colorTextureSize}
+            />
           </div>
         </CollapsibleControl>
       </fieldset>

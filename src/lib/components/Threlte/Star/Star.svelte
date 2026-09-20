@@ -14,6 +14,7 @@
   import { createStarColorTexture, disposeStarTexture } from './StarGpuTextures'
   import { StarPalettes } from './StarPalettes'
   import { MaxValues, MinValues, type StarRangeKey, type StarSettings } from './StarSettings'
+  import { sanitizeTextureSize } from '../../../types/textureSize'
 
   const surfaceVertexShader = `
     varying vec2 vUv;
@@ -260,7 +261,7 @@
     const nextTexture = createStarColorTexture(
       renderer,
       clampSetting('seed', settings.seed),
-      Math.floor(clampSetting('colorTextureSize', settings.colorTextureSize)),
+      sanitizeTextureSize(settings.colorTextureSize),
       clampSetting('textureScale', settings.textureScale),
       clampSetting('bandContrast', settings.bandContrast),
       clampSetting('bandSwirl', settings.bandSwirl),

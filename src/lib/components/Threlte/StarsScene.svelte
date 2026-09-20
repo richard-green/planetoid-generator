@@ -4,6 +4,7 @@
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import Star from './Star/Star.svelte'
   import { DefaultValues, type StarPaletteName, type StarSettings } from './Star/StarSettings'
+  import type { TextureSize } from '../../types/textureSize'
 
   export type { StarPaletteName } from './Star/StarSettings'
 
@@ -36,7 +37,7 @@
     plasmaTurbulence?: number
     plasmaSharpness?: number
     plasmaTextureScale?: number
-    colorTextureSize?: number
+    colorTextureSize?: TextureSize
     autoRotate?: boolean
   }
 

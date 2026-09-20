@@ -1,4 +1,5 @@
 import { GasGiantPaletteNames, type GasGiantPaletteName } from './GasGiantPalettes'
+import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import { DefaultRingValues, sanitizeRingSettings, type RingSettings } from '../Rings/RingSettings'
 import {
   sanitizeBoolean,
@@ -30,8 +31,8 @@ export type GasGiantSettings = RingSettings & {
   normalStrength: number
   roughness: number
   metalness: number
-  normalTextureSize: number
-  colorTextureSize: number
+  normalTextureSize: TextureSize
+  colorTextureSize: TextureSize
 }
 
 export type GasGiantRangeValues = Pick<
@@ -50,8 +51,6 @@ export type GasGiantRangeValues = Pick<
   | 'normalStrength'
   | 'roughness'
   | 'metalness'
-  | 'normalTextureSize'
-  | 'colorTextureSize'
 >
 
 export type GasGiantRangeKey = keyof GasGiantRangeValues
@@ -76,8 +75,8 @@ export const DefaultValues: GasGiantSettings = {
   normalStrength: 0.5,
   roughness: 0.82,
   metalness: 0.05,
-  normalTextureSize: 4096,
-  colorTextureSize: 4096,
+  normalTextureSize: 1024,
+  colorTextureSize: 1024,
 }
 
 export const MinValues: GasGiantRangeValues = {
@@ -95,8 +94,6 @@ export const MinValues: GasGiantRangeValues = {
   normalStrength: 0,
   roughness: 0,
   metalness: 0,
-  normalTextureSize: 128,
-  colorTextureSize: 64,
 }
 
 export const MaxValues: GasGiantRangeValues = {
@@ -114,8 +111,6 @@ export const MaxValues: GasGiantRangeValues = {
   normalStrength: 1,
   roughness: 1,
   metalness: 1,
-  normalTextureSize: 4096,
-  colorTextureSize: 4096,
 }
 
 export const StepValues: GasGiantRangeValues = {
@@ -133,8 +128,6 @@ export const StepValues: GasGiantRangeValues = {
   normalStrength: 0.05,
   roughness: 0.01,
   metalness: 0.01,
-  normalTextureSize: 1,
-  colorTextureSize: 1,
 }
 
 const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
@@ -211,18 +204,6 @@ const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
     min: MinValues.metalness,
     max: MaxValues.metalness,
   },
-  normalTextureSize: {
-    defaultValue: DefaultValues.normalTextureSize,
-    min: MinValues.normalTextureSize,
-    max: MaxValues.normalTextureSize,
-    round: true,
-  },
-  colorTextureSize: {
-    defaultValue: DefaultValues.colorTextureSize,
-    min: MinValues.colorTextureSize,
-    max: MaxValues.colorTextureSize,
-    round: true,
-  },
 }
 
 export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
@@ -257,8 +238,11 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
     normalStrength: numeric.normalStrength,
     roughness: numeric.roughness,
     metalness: numeric.metalness,
-    normalTextureSize: numeric.normalTextureSize,
-    colorTextureSize: numeric.colorTextureSize,
+    normalTextureSize: sanitizeTextureSize(
+      migratedRaw.normalTextureSize,
+      DefaultValues.normalTextureSize
+    ),
+    colorTextureSize: sanitizeTextureSize(raw.colorTextureSize, DefaultValues.colorTextureSize),
   }
 }
 
@@ -277,8 +261,6 @@ export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
   normalStrength: 'Normal strength',
   roughness: 'Roughness',
   metalness: 'Metalness',
-  normalTextureSize: 'Normal texture size',
-  colorTextureSize: 'Color texture size',
 }
 
 export const GasGiantUiLabels = {
@@ -314,8 +296,6 @@ export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
   normalStrength: '--normal-strength',
   roughness: '--roughness',
   metalness: '--metalness',
-  normalTextureSize: '--normal-tex-height',
-  colorTextureSize: '--color-tex-height',
 }
 
 export const GasGiantCliToggleFlags = {

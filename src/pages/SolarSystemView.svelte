@@ -3,6 +3,8 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
+  import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
+  import { DefaultTextureSize, type TextureSize } from '../lib/types/textureSize'
   import SolarSystemScene from '../lib/components/Threlte/SolarSystemScene.svelte'
   import {
     createSystemBody,
@@ -44,10 +46,8 @@
   let userGiantPresets = $state<GasGiantPreset[]>([])
   let userStarPresets = $state<StarPreset[]>([])
   let bodies = $state<SystemBody[]>(DefaultSystemBodies.map((body) => ({ ...body })))
-  let textureSize = $state(1024)
+  let textureSize = $state<TextureSize>(DefaultTextureSize)
   let isSaving = $state(false)
-
-  const textureSizeOptions = [512, 1024, 2048]
 
   const rockyPresets = $derived([...BUILTIN_PRESETS, ...userRockyPresets])
   const giantPresets = $derived([...BUILTIN_GAS_GIANT_PRESETS, ...userGiantPresets])
@@ -206,14 +206,11 @@
           <span>Show orbit lines</span>
           <input type="checkbox" bind:checked={showOrbits} />
         </label>
-        <label class="compact-number-row">
-          <span>Texture size</span>
-          <select bind:value={textureSize}>
-            {#each textureSizeOptions as size (size)}
-              <option value={size}>{size}</option>
-            {/each}
-          </select>
-        </label>
+        <TextureSizeControl
+          id="solar-system-texture-size"
+          label="Texture size"
+          bind:value={textureSize}
+        />
       </fieldset>
 
       <fieldset>

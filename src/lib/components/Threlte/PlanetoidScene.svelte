@@ -8,6 +8,7 @@
   import Planetoid from './Planetoid/Planetoid.svelte'
   import { DefaultValues, type PlanetoidViewMode } from './Planetoid/PlanetoidSettings'
   import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
+  import type { TextureSize } from '../../types/textureSize'
 
   type Props = {
     viewMode?: PlanetoidViewMode
@@ -51,8 +52,8 @@
     autoRotate?: boolean
     showDebugMeshes?: boolean
     triangleDetail?: number
-    normalTextureSize?: number
-    colorTextureSize?: number
+    normalTextureSize?: TextureSize
+    colorTextureSize?: TextureSize
   }
 
   let {

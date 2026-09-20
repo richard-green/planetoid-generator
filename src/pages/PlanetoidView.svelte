@@ -10,6 +10,7 @@
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import ColorPicker from '../lib/components/Controls/ColorPicker.svelte'
+  import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
@@ -47,6 +48,8 @@
     | 'enableRidges'
     | 'enableRifts'
     | 'enableVolcanoes'
+    | 'normalTextureSize'
+    | 'colorTextureSize'
   >
 
   const PLANETOID_SETTINGS_STORAGE_KEY = 'planetoid-view-settings-v1'
@@ -96,8 +99,6 @@
     'riftSharpness',
     'riftColorWeight',
     'ridgesRiftsBlend',
-    'normalTextureSize',
-    'colorTextureSize',
     'roughness',
     'metalness',
   ]
@@ -149,10 +150,6 @@
   let userPresets = $state<PlanetoidPreset[]>([])
 
   const colorControlKeys: NumericControlKey[] = ['colorScale', 'tintShadowFloor', 'swirliness']
-  const textureResolutionControlKeys: NumericControlKey[] = [
-    'normalTextureSize',
-    'colorTextureSize',
-  ]
   const materialControlKeys: NumericControlKey[] = ['normalStrength', 'roughness', 'metalness']
   const craterControlKeys: NumericControlKey[] = [
     'craterCount',
@@ -183,9 +180,6 @@
   ]
 
   const colorControls = textureControls.filter((control) => colorControlKeys.includes(control))
-  const textureResolutionControls = textureControls.filter((control) =>
-    textureResolutionControlKeys.includes(control)
-  )
   const materialControls = textureControls.filter((control) =>
     materialControlKeys.includes(control)
   )
@@ -941,18 +935,16 @@
           bind:open={textureResolutionSectionOpen}
         >
           <div class="control-grid">
-            {#each textureResolutionControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                />
-              </label>
-            {/each}
+            <TextureSizeControl
+              id="planetoid-normal-texture-size"
+              label="Normal texture size"
+              bind:value={planetoid.normalTextureSize}
+            />
+            <TextureSizeControl
+              id="planetoid-color-texture-size"
+              label="Color texture size"
+              bind:value={planetoid.colorTextureSize}
+            />
           </div>
         </CollapsibleControl>
       </fieldset>

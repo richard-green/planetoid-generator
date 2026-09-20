@@ -61,8 +61,6 @@ type ScriptOptions = {
   volcanoScale?: number
   volcanoStrength?: number
   volcanoColorStrength?: number
-  normalTextureSize?: number
-  colorTextureSize?: number
   largeScale?: number
   mediumScale?: number
   smallScale?: number
@@ -117,8 +115,6 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   volcanoScale: undefined,
   volcanoStrength: undefined,
   volcanoColorStrength: undefined,
-  normalTextureSize: undefined,
-  colorTextureSize: undefined,
   largeScale: undefined,
   mediumScale: undefined,
   smallScale: undefined,
@@ -516,8 +512,6 @@ async function main() {
       `volcanoScale=${options.volcanoScale ?? 'unchanged'}`,
       `volcanoStrength=${options.volcanoStrength ?? 'unchanged'}`,
       `volcanoColorStrength=${options.volcanoColorStrength ?? 'unchanged'}`,
-      `normalTextureSize=${options.normalTextureSize ?? 'unchanged'}`,
-      `colorTextureSize=${options.colorTextureSize ?? 'unchanged'}`,
       `largeScale=${options.largeScale ?? 'unchanged'}`,
       `mediumScale=${options.mediumScale ?? 'unchanged'}`,
       `smallScale=${options.smallScale ?? 'unchanged'}`,
