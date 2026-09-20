@@ -84,7 +84,7 @@ export type StarRangeValues = Pick<
 export type StarRangeKey = keyof StarRangeValues
 
 export const DefaultValues: StarSettings = {
-  seed: 20069,
+  seed: 1,
   palette: 'Yellow',
   brightness: 1.5,
   saturation: 1.3,
@@ -100,10 +100,10 @@ export const DefaultValues: StarSettings = {
   plasmaSharpness: 3,
   plasmaTextureScale: 2.3,
   colorTextureSize: 2048,
-  textureScale: 2,
-  bandContrast: 5,
-  bandSwirl: 5,
-  granularity: 8,
+  textureScale: 4,
+  bandContrast: 1,
+  bandSwirl: 1,
+  granularity: 6,
   turbulence: 8,
   convection: 0.3,
   sunspotCount: 12,

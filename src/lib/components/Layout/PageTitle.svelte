@@ -12,6 +12,7 @@
     { href: '#/planetoids', label: 'Planetoids' },
     { href: '#/giants', label: 'Gas and Ice Giants' },
     { href: '#/stars', label: 'Stars' },
+    { href: '#/system', label: 'Solar System' },
   ] as const
 </script>
 

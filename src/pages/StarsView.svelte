@@ -4,6 +4,9 @@
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
+  import PresetManager, {
+    type PresetListItem,
+  } from '../lib/components/Controls/PresetManager.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import StarsScene from '../lib/components/Threlte/StarsScene.svelte'
@@ -18,6 +21,8 @@
     type StarPaletteName,
     type StarSettings,
   } from '../lib/components/Threlte/Star/StarSettings'
+  import { BUILTIN_STAR_PRESETS, type StarPreset } from '../presets/Stars'
+  import { STAR_PRESETS_STORAGE_KEY } from '../presets/userPresets'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
   const STAR_SETTINGS_STORAGE_KEY = 'star-view-settings-v1'
@@ -61,6 +66,11 @@
   let autoRotate = $state(DefaultValues.autoRotate)
   let isSaving = $state(false)
   let settingsHydrated = $state(false)
+  let presetsHydrated = $state(false)
+  let presetsMenuOpen = $state(false)
+  let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
+  let presetsManagerOpen = $state(false)
+  let userPresets = $state<StarPreset[]>([])
   let stellarSurfaceSectionOpen = $state(true)
   let haloSectionOpen = $state(true)
   let plasmaSectionOpen = $state(true)
@@ -163,6 +173,115 @@
     return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   }
 
+  function sanitizePresetName(input: unknown): string {
+    if (typeof input !== 'string') return ''
+    return input.trim().replace(/\s+/g, ' ').slice(0, 48)
+  }
+
+  function createPresetId(): string {
+    const random = Math.random().toString(36).slice(2, 8)
+    return `star-preset-${Date.now()}-${random}`
+  }
+
+  function sanitizePreset(input: unknown): StarPreset | null {
+    if (typeof input !== 'object' || input === null) return null
+
+    const raw = input as Record<string, unknown>
+    const name = sanitizePresetName(raw.name)
+    if (!name) return null
+
+    const id =
+      typeof raw.id === 'string' && raw.id.trim().length > 0 ? raw.id.trim() : createPresetId()
+
+    return { id, name, settings: sanitizeStarSettings(raw.settings) }
+  }
+
+  function closePresetsMenu(): void {
+    presetsMenuOpen = false
+  }
+
+  function onResetSceneFromMenu(): void {
+    closePresetsMenu()
+    applyStarSettings(DefaultValues)
+  }
+
+  function onSavePresetFromMenu(): void {
+    closePresetsMenu()
+
+    const name = sanitizePresetName(window.prompt('Name this preset:', 'My star preset'))
+    if (!name) return
+
+    userPresets = [{ id: createPresetId(), name, settings: getStarSettings() }, ...userPresets]
+  }
+
+  function onManagePresetsFromMenu(): void {
+    closePresetsMenu()
+    presetsManagerOpen = true
+  }
+
+  function findPresetById(presetId: string): StarPreset | undefined {
+    return (
+      BUILTIN_STAR_PRESETS.find((preset) => preset.id === presetId) ??
+      userPresets.find((preset) => preset.id === presetId)
+    )
+  }
+
+  async function exportPresetSettings(preset: StarPreset): Promise<void> {
+    const json = JSON.stringify(preset.settings, null, 2)
+
+    try {
+      await navigator.clipboard.writeText(json)
+      window.alert(`Settings copied for preset: ${preset.name}`)
+    } catch {
+      window.prompt(`Copy settings for ${preset.name}:`, JSON.stringify(preset.settings))
+    }
+  }
+
+  function onWindowPointerDown(event: PointerEvent): void {
+    if (!presetsMenuOpen || !presetsMenuElement) return
+
+    const target = event.target
+    if (!(target instanceof Node)) return
+    if (presetsMenuElement.contains(target)) return
+
+    closePresetsMenu()
+  }
+
+  $effect(() => {
+    if (presetsHydrated) return
+
+    try {
+      const raw = localStorage.getItem(STAR_PRESETS_STORAGE_KEY)
+
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw)
+        const list = Array.isArray(parsed) ? parsed : []
+        const sanitized: StarPreset[] = []
+
+        for (const entry of list) {
+          const preset = sanitizePreset(entry)
+          if (preset) sanitized.push(preset)
+        }
+
+        userPresets = sanitized
+      }
+    } catch (error) {
+      console.warn('Failed to restore star presets from localStorage', error)
+    } finally {
+      presetsHydrated = true
+    }
+  })
+
+  $effect(() => {
+    if (!presetsHydrated) return
+
+    try {
+      localStorage.setItem(STAR_PRESETS_STORAGE_KEY, JSON.stringify(userPresets))
+    } catch (error) {
+      console.warn('Failed to persist star presets to localStorage', error)
+    }
+  })
+
   function downloadRender(): void {
     if (!starScene || isSaving) return
 
@@ -262,6 +381,36 @@
               TEX
             </button>
           </div>
+          <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
+            <summary class="action preset-menu-trigger" aria-label="Preset actions">PRESETS</summary
+            >
+            <div class="preset-menu-dropdown" role="menu" aria-label="Preset actions menu">
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={onResetSceneFromMenu}
+              >
+                Reset scene to defaults
+              </button>
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={onSavePresetFromMenu}
+              >
+                Save a preset
+              </button>
+              <button
+                type="button"
+                class="preset-menu-item"
+                role="menuitem"
+                onclick={onManagePresetsFromMenu}
+              >
+                Manage presets
+              </button>
+            </div>
+          </details>
         </div>
         <label class="toggle-row">
           <span>Auto-rotate</span>
@@ -592,3 +741,28 @@
     </div>
   </section>
 </div>
+
+<svelte:window onpointerdown={onWindowPointerDown} />
+
+{#if presetsManagerOpen}
+  <PresetManager
+    title="Manage Star Presets"
+    builtInPresets={BUILTIN_STAR_PRESETS}
+    {userPresets}
+    onClose={() => (presetsManagerOpen = false)}
+    onApplyPreset={(entry: PresetListItem) => {
+      const preset = findPresetById(entry.id)
+      if (!preset) return
+
+      applyStarSettings(preset.settings)
+      presetsManagerOpen = false
+    }}
+    onExportPreset={(entry: PresetListItem) => {
+      const preset = findPresetById(entry.id)
+      if (preset) void exportPresetSettings(preset)
+    }}
+    onDeleteUserPreset={(entry: PresetListItem) => {
+      userPresets = userPresets.filter((preset) => preset.id !== entry.id)
+    }}
+  />
+{/if}
