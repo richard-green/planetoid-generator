@@ -2,6 +2,7 @@
   import { T, useThrelte } from '@threlte/core'
   import { OrbitControls } from '@threlte/extras'
   import { DoubleSide, Vector3 } from 'three'
+  import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import GasGiant from './GasGiant/GasGiant.svelte'
@@ -70,7 +71,6 @@
     planeRotation: Vec3
     scale: number
     seed: number
-    lightPosition: Vec3
     settings: GasGiantSettings
     ringSettings: RingSettings
   }
@@ -79,6 +79,43 @@
   const giantPresetsById = $derived(new Map(giantPresets.map((preset) => [preset.id, preset])))
 
   const { camera, renderer, scene } = useThrelte()
+
+  const MIN_PIVOT_DISTANCE = 2.5
+  const MAX_PIVOT_DISTANCE = 80
+
+  let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
+  const flyDirection = new Vector3()
+
+  // Wheel flies along the view direction and drags the orbit pivot with it, so you can
+  // stop next to a body and rotate around it instead of zooming towards a fixed point.
+  function flyForward(event: WheelEvent): void {
+    if (!controlsRef) return
+
+    event.preventDefault()
+
+    const target = controlsRef.target
+    flyDirection.subVectors(target, $camera.position)
+    const distance = flyDirection.length()
+    if (distance < 0.0001) return
+
+    flyDirection.divideScalar(distance)
+
+    const step = -event.deltaY * 0.0012 * Math.max(distance, 1.5)
+    $camera.position.addScaledVector(flyDirection, step)
+
+    const pivotDistance = distance - step
+    const clamped = Math.min(Math.max(pivotDistance, MIN_PIVOT_DISTANCE), MAX_PIVOT_DISTANCE)
+    target.addScaledVector(flyDirection, clamped - pivotDistance)
+
+    controlsRef.update()
+  }
+
+  $effect(() => {
+    const canvas = renderer.domElement
+    canvas.addEventListener('wheel', flyForward, { passive: false })
+
+    return () => canvas.removeEventListener('wheel', flyForward)
+  })
 
   scene.background = null
 
@@ -98,12 +135,6 @@
     const node = (body.orbitNode * Math.PI) / 180
 
     return [inclination * Math.cos(node), 0, inclination * Math.sin(node)]
-  }
-
-  // The sun lights every body, so each ring shader needs a direction pointing back at the origin.
-  function directionToSun(position: Vec3): Vec3 {
-    const direction = new Vector3(...position).negate().normalize()
-    return [direction.x, direction.y, direction.z]
   }
 
   // Giants and the sun fill more of the frame, so they get the next size up.
@@ -168,7 +199,6 @@
       planeRotation: orbitPlaneRotation(body),
       scale: body.scale,
       seed: body.seed,
-      lightPosition: directionToSun(position),
       settings,
       ringSettings: toRingSettings(settings),
     }
@@ -224,14 +254,13 @@
 
 <T.PerspectiveCamera makeDefault position={[0, 22, 70]} fov={55} near={0.1} far={2000}>
   <OrbitControls
+    bind:ref={controlsRef}
     enableRotate={true}
-    enableZoom={true}
+    enableZoom={false}
     enablePan={true}
     screenSpacePanning={true}
-    zoomToCursor={true}
-    minDistance={4}
-    maxDistance={300}
-    zoomSpeed={1.2}
+    minDistance={MIN_PIVOT_DISTANCE}
+    maxDistance={MAX_PIVOT_DISTANCE}
     panSpeed={1.2}
     enableDamping={true}
     dampingFactor={0.1}
@@ -280,13 +309,13 @@
         settings={giant.ringSettings}
         seed={giant.seed}
         planetRadius={2}
-        lightPosition={giant.lightPosition}
+        lightPosition={[0, 0, 0]}
       />
       <PlanetaryRings
         settings={giant.ringSettings}
         seed={giant.seed}
         planetRadius={2}
-        lightPosition={giant.lightPosition}
+        lightPosition={[0, 0, 0]}
       />
     </T.Group>
   </T.Group>

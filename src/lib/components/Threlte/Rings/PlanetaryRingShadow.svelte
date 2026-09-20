@@ -14,11 +14,13 @@
   let { settings, seed, planetRadius = 1, lightPosition = [-5, 1, 2] }: Props = $props()
 
   const geometry = new IcosahedronGeometry(1, 8)
+  const meshScale = $derived(planetRadius * 1.001)
   const uniforms = {
     uInnerRadius: new Uniform(0),
     uOuterRadius: new Uniform(0),
-    uLightDirection: new Uniform(new Vector3()),
+    uLightPosition: new Uniform(new Vector3()),
     uRingNormal: new Uniform(new Vector3()),
+    uMeshScale: new Uniform(1),
     uSeed: new Uniform(0),
     uBandCount: new Uniform(0),
     uBandSharpness: new Uniform(0),
@@ -31,7 +33,8 @@
     const tilt = (settings.ringTilt * Math.PI) / 180
     uniforms.uInnerRadius.value = settings.ringInnerRadius * planetRadius
     uniforms.uOuterRadius.value = settings.ringOuterRadius * planetRadius
-    uniforms.uLightDirection.value = new Vector3(...lightPosition).normalize()
+    uniforms.uLightPosition.value = new Vector3(...lightPosition)
+    uniforms.uMeshScale.value = meshScale
     uniforms.uRingNormal.value = new Vector3(Math.sin(tilt), -Math.cos(tilt), 0).normalize()
     uniforms.uSeed.value = seed
     uniforms.uBandCount.value = settings.ringBandCount
@@ -46,13 +49,27 @@
   })
 
   const vertexShader = `
-    varying vec3 vWorldPosition;
+    uniform vec3 uRingNormal;
+    uniform vec3 uLightPosition;
+    uniform float uMeshScale;
+
+    varying vec3 vPlanetPosition;
     varying vec3 vWorldNormal;
+    varying vec3 vRingNormalWorld;
+    varying vec3 vLightDirection;
+    varying float vWorldScale;
 
     void main() {
       vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-      vWorldPosition = worldPosition.xyz;
+      vec3 planetCenter = modelMatrix[3].xyz;
+
+      vPlanetPosition = worldPosition.xyz - planetCenter;
       vWorldNormal = normalize(mat3(modelMatrix) * normal);
+      vRingNormalWorld = normalize(mat3(modelMatrix) * uRingNormal);
+      vLightDirection = normalize(uLightPosition - planetCenter);
+      // World units per settings unit, so ring radii stay comparable under any parent scale.
+      vWorldScale = length(modelMatrix[0].xyz) / max(uMeshScale, 0.0001);
+
       gl_Position = projectionMatrix * viewMatrix * worldPosition;
     }
   `
@@ -60,13 +77,14 @@
   const fragmentShader = `
     precision highp float;
 
-    varying vec3 vWorldPosition;
+    varying vec3 vPlanetPosition;
     varying vec3 vWorldNormal;
+    varying vec3 vRingNormalWorld;
+    varying vec3 vLightDirection;
+    varying float vWorldScale;
 
     uniform float uInnerRadius;
     uniform float uOuterRadius;
-    uniform vec3 uLightDirection;
-    uniform vec3 uRingNormal;
     uniform float uSeed;
     uniform float uBandCount;
     uniform float uBandSharpness;
@@ -114,18 +132,20 @@
     }
 
     void main() {
-      vec3 lightDirection = normalize(uLightDirection);
-      float lightFacing = smoothstep(0.0, 0.08, dot(normalize(vWorldNormal), lightDirection));
+      vec3 lightDirection = normalize(vLightDirection);
+      // Keep the shadow alive right up to the terminator so it meets the night side cleanly.
+      float lightFacing = smoothstep(-0.06, 0.01, dot(normalize(vWorldNormal), lightDirection));
       if (lightFacing <= 0.0) discard;
 
-      float denominator = dot(lightDirection, uRingNormal);
+      vec3 ringNormal = normalize(vRingNormalWorld);
+      float denominator = dot(lightDirection, ringNormal);
       if (abs(denominator) < 0.0001) discard;
 
-      float distanceToPlane = -dot(vWorldPosition, uRingNormal) / denominator;
+      float distanceToPlane = -dot(vPlanetPosition, ringNormal) / denominator;
       if (distanceToPlane <= 0.0) discard;
 
-      vec3 ringPoint = vWorldPosition + lightDirection * distanceToPlane;
-      float ringRadius = length(ringPoint);
+      vec3 ringPoint = vPlanetPosition + lightDirection * distanceToPlane;
+      float ringRadius = length(ringPoint) / max(vWorldScale, 0.0001);
       if (ringRadius <= uInnerRadius || ringRadius >= uOuterRadius) discard;
 
       float radial = (ringRadius - uInnerRadius) / max(0.0001, uOuterRadius - uInnerRadius);
@@ -156,7 +176,7 @@
 </script>
 
 {#if settings.enableRings}
-  <T.Mesh {geometry} scale={planetRadius * 1.001} renderOrder={0}>
+  <T.Mesh {geometry} scale={meshScale} renderOrder={0}>
     <T.ShaderMaterial
       {vertexShader}
       {fragmentShader}

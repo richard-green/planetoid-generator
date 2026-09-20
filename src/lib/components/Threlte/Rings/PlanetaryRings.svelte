@@ -18,7 +18,7 @@
     uInnerRadius: new Uniform(0),
     uOuterRadius: new Uniform(0),
     uPlanetRadius: new Uniform(0),
-    uLightDirection: new Uniform(new Vector3()),
+    uLightPosition: new Uniform(new Vector3()),
     uSeed: new Uniform(0),
     uBandCount: new Uniform(0),
     uBandSharpness: new Uniform(0),
@@ -51,7 +51,7 @@
     uniforms.uInnerRadius.value = innerRadius
     uniforms.uOuterRadius.value = outerRadius
     uniforms.uPlanetRadius.value = planetRadius
-    uniforms.uLightDirection.value = new Vector3(...lightPosition).normalize()
+    uniforms.uLightPosition.value = new Vector3(...lightPosition)
     uniforms.uSeed.value = seed
     uniforms.uBandCount.value = settings.ringBandCount
     uniforms.uBandSharpness.value = settings.ringBandSharpness
@@ -67,17 +67,26 @@
   })
 
   const vertexShader = `
+    uniform vec3 uLightPosition;
+
     varying float vRadius;
     varying vec2 vPosition;
     varying vec3 vWorldPosition;
+    varying vec3 vPlanetPosition;
+    varying vec3 vLightDirection;
     varying vec3 vWorldNormal;
+    varying float vWorldScale;
 
     void main() {
       vRadius = length(position.xy);
       vPosition = position.xy;
       vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+      vec3 planetCenter = modelMatrix[3].xyz;
       vWorldPosition = worldPosition.xyz;
+      vPlanetPosition = worldPosition.xyz - planetCenter;
+      vLightDirection = normalize(uLightPosition - planetCenter);
       vWorldNormal = normalize(mat3(modelMatrix) * normal);
+      vWorldScale = length(modelMatrix[0].xyz);
       gl_Position = projectionMatrix * viewMatrix * worldPosition;
     }
   `
@@ -88,12 +97,14 @@
     varying float vRadius;
     varying vec2 vPosition;
     varying vec3 vWorldPosition;
+    varying vec3 vPlanetPosition;
+    varying vec3 vLightDirection;
     varying vec3 vWorldNormal;
+    varying float vWorldScale;
 
     uniform float uInnerRadius;
     uniform float uOuterRadius;
     uniform float uPlanetRadius;
-    uniform vec3 uLightDirection;
     uniform float uSeed;
     uniform float uBandCount;
     uniform float uBandSharpness;
@@ -202,14 +213,15 @@
     }
 
     float planetShadow() {
-      vec3 directionToLight = normalize(uLightDirection);
-      float distanceAlongRay = -dot(vWorldPosition, directionToLight);
+      vec3 directionToLight = normalize(vLightDirection);
+      float distanceAlongRay = -dot(vPlanetPosition, directionToLight);
       if (distanceAlongRay <= 0.0) return 1.0;
 
-      vec3 closestPoint = vWorldPosition + directionToLight * distanceAlongRay;
+      vec3 closestPoint = vPlanetPosition + directionToLight * distanceAlongRay;
+      float planetRadiusWorld = uPlanetRadius * max(vWorldScale, 0.0001);
       float distanceFromAxis = length(closestPoint);
-      float softness = max(0.03, uPlanetRadius * 0.045);
-      return smoothstep(uPlanetRadius - softness, uPlanetRadius + softness, distanceFromAxis);
+      float softness = max(0.03, planetRadiusWorld * 0.045);
+      return smoothstep(planetRadiusWorld - softness, planetRadiusWorld + softness, distanceFromAxis);
     }
 
     void main() {
@@ -276,7 +288,7 @@
         glitterNormal + (glitterTangent * glitterJitter.x + glitterBitangent * glitterJitter.y) * 0.9
       );
       vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
-      vec3 halfVector = normalize(viewDirection + normalize(uLightDirection));
+      vec3 halfVector = normalize(viewDirection + normalize(vLightDirection));
       float specular = pow(max(dot(perturbedNormal, halfVector), 0.0), 60.0);
       float glitter = specular * glitterGate * illumination * uGlitter;
 

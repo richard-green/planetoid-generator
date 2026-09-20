@@ -173,10 +173,7 @@
     <div class="controls">
       <fieldset>
         <legend>Scene</legend>
-        <p class="hint">
-          Drag to orbit, right-drag to pan, scroll to zoom. The sun at the centre is the only light
-          source.
-        </p>
+        <p class="hint">Drag to orbit, right-drag to pan, scroll to fly forwards.</p>
         <div class="save-actions" aria-label="Save and export actions">
           <div class="export-actions">
             <button
