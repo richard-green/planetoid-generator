@@ -1,6 +1,8 @@
 <script lang="ts">
   import { T, useThrelte } from '@threlte/core'
   import { OrbitControls } from '@threlte/extras'
+  import { MOUSE } from 'three'
+  import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import Star from './Star/Star.svelte'
   import { DefaultValues, type StarPaletteName, type StarSettings } from './Star/StarSettings'
@@ -112,8 +114,18 @@
   }
 
   let starRef: StarExports | undefined = $state(undefined)
+  let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
   const { camera, renderer, scene } = useThrelte()
   scene.background = null
+
+  $effect(() => {
+    if (!controlsRef) return
+
+    controlsRef.enablePan = false
+    controlsRef.mouseButtons.LEFT = MOUSE.ROTATE
+    controlsRef.mouseButtons.RIGHT = MOUSE.ROTATE
+    controlsRef.update()
+  })
 
   export function downloadTextureMapPng(fileName?: string) {
     return starRef?.downloadTextureMapPng(fileName) ?? false
@@ -125,7 +137,18 @@
 </script>
 
 <T.PerspectiveCamera makeDefault position={[0, 0, 6.5]}>
-  <OrbitControls enableDamping={true} dampingFactor={0.08} minDistance={3.5} maxDistance={14} />
+  <OrbitControls
+    bind:ref={controlsRef}
+    enableRotate={true}
+    enableZoom={true}
+    enablePan={false}
+    zoomToCursor={false}
+    minDistance={4}
+    maxDistance={14}
+    zoomSpeed={1.2}
+    enableDamping={true}
+    dampingFactor={0.2}
+  />
 </T.PerspectiveCamera>
 
 <Star bind:this={starRef} {settings} />

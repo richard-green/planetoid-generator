@@ -74,6 +74,8 @@
 
 <style>
   .page-title {
+    position: relative;
+    z-index: 2;
     margin: 0;
     padding: 1.1rem 1.25rem;
     display: flex;

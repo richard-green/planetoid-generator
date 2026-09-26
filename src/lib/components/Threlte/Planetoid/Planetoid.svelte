@@ -28,6 +28,7 @@
     disposeGeneratedTexture,
   } from './PlanetoidGpuTextures'
   import { SvelteMap } from 'svelte/reactivity'
+  import { trackPalette } from '../../../types/paletteState.svelte'
   import { PlanetoidPalettes } from './PlanetoidPalettes'
 
   type Props = {
@@ -475,7 +476,7 @@
     if (!renderer) return
 
     const shape = shapeParameters
-    const planetoidPalette = PlanetoidPalettes[palette]
+    const planetoidPalette = trackPalette(PlanetoidPalettes[palette])
     const textureScale = colorScale
     const currentCraterCount = craterCount
     const currentCraterScale = craterScale
@@ -566,7 +567,7 @@
       return
     }
 
-    const planetoidPalette = PlanetoidPalettes[palette]
+    const planetoidPalette = trackPalette(PlanetoidPalettes[palette])
     const gradientWidth = Math.max(64, colorTextureSize * 2)
     const gradientHeight = Math.max(8, Math.floor(colorTextureSize * 0.2))
 

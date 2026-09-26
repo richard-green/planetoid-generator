@@ -10,6 +10,7 @@
     type Texture,
   } from 'three'
   import { onDestroy } from 'svelte'
+  import { trackPalette } from '../../../types/paletteState.svelte'
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
   import type { GasGiantSettings, GasGiantViewMode } from '../GasGiant/GasGiantSettings'
   import {
@@ -161,7 +162,7 @@
   $effect(() => {
     if (!renderer) return
 
-    const paletteData = GasGiantPalettes[palette]
+    const paletteData = trackPalette(GasGiantPalettes[palette])
     const effectiveStormCount = enableStorms ? stormCount : 0
     const effectiveStormScale = enableStorms ? stormScale : 0
     const effectiveStormPower = enableStorms ? stormPower : 2.2

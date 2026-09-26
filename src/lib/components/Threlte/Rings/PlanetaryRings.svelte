@@ -1,6 +1,8 @@
 <script lang="ts">
   import { T } from '@threlte/core'
   import { DoubleSide, Uniform, Vector3 } from 'three'
+  import { getPalettePosition } from '../../../types/palette'
+  import { trackPalette } from '../../../types/paletteState.svelte'
   import type { RingSettings } from './RingSettings'
   import { RingPalettes } from './RingPalettes'
 
@@ -32,6 +34,7 @@
     uGlitter: new Uniform(0),
     uPaletteSize: new Uniform(0),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => new Vector3())),
+    uPalettePositions: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => 1)),
   }
 
   const innerRadius = $derived(settings.ringInnerRadius * planetRadius)
@@ -41,12 +44,15 @@
   const tiltRadians = $derived((settings.ringTilt * Math.PI) / 180)
 
   $effect(() => {
-    const colors = RingPalettes[settings.ringPalette]
+    const colors = trackPalette(RingPalettes[settings.ringPalette])
     const fallback = colors.at(-1) ?? { r: 255, g: 255, b: 255 }
     uniforms.uPalette.value = Array.from({ length: MAX_PALETTE_SIZE }, (_, index) => {
       const color = colors[index] ?? fallback
       return new Vector3(color.r / 255, color.g / 255, color.b / 255)
     })
+    uniforms.uPalettePositions.value = Array.from({ length: MAX_PALETTE_SIZE }, (_, index) =>
+      getPalettePosition(colors, Math.min(index, colors.length - 1))
+    )
 
     uniforms.uInnerRadius.value = innerRadius
     uniforms.uOuterRadius.value = outerRadius
@@ -118,6 +124,7 @@
     uniform float uGlitter;
     uniform int uPaletteSize;
     uniform vec3 uPalette[${MAX_PALETTE_SIZE}];
+    uniform float uPalettePositions[${MAX_PALETTE_SIZE}];
 
     const float TAU = 6.283185307179586;
 
@@ -198,17 +205,29 @@
 
     vec3 paletteColor(float amount) {
       int size = max(2, min(uPaletteSize, ${MAX_PALETTE_SIZE}));
-      float position = clamp(amount, 0.0, 1.0) * float(size - 1);
-      int index = min(int(floor(position)), size - 2);
-      float localAmount = fract(position);
+      float position = clamp(amount, 0.0, 1.0);
+      int index = 0;
+      for (int i = 0; i < ${MAX_PALETTE_SIZE} - 1; i++) {
+        if (i < size - 1 && position >= uPalettePositions[i]) index = i;
+      }
+      index = min(index, size - 2);
       vec3 first = uPalette[0];
       vec3 second = uPalette[1];
+      float startPosition = uPalettePositions[0];
+      float endPosition = uPalettePositions[1];
 
       for (int i = 0; i < ${MAX_PALETTE_SIZE}; i++) {
-        if (i == index) first = uPalette[i];
-        if (i == index + 1) second = uPalette[i];
+        if (i == index) {
+          first = uPalette[i];
+          startPosition = uPalettePositions[i];
+        }
+        if (i == index + 1) {
+          second = uPalette[i];
+          endPosition = uPalettePositions[i];
+        }
       }
 
+      float localAmount = clamp((position - startPosition) / max(0.0001, endPosition - startPosition), 0.0, 1.0);
       return mix(first, second, localAmount);
     }
 

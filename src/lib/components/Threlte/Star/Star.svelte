@@ -15,6 +15,8 @@
   import { StarPalettes } from './StarPalettes'
   import { MaxValues, MinValues, type StarRangeKey, type StarSettings } from './StarSettings'
   import { sanitizeTextureSize } from '../../../types/textureSize'
+  import { getPalettePosition, type Palette } from '../../../types/palette'
+  import { trackPalette } from '../../../types/paletteState.svelte'
 
   const surfaceVertexShader = `
     varying vec2 vUv;
@@ -171,9 +173,11 @@
   let haloMaterial = $state<ShaderMaterial | undefined>(undefined)
   let colorTexture = $state<Texture | undefined>(undefined)
   const { renderer } = useThrelte()
-  const activePalette = $derived(StarPalettes[settings.palette] ?? StarPalettes.Orange)
-  const limbColor = $derived(new Color(...activePalette[2]))
-  const haloColor = $derived(new Color(...activePalette[1]))
+  const activePalette = $derived([
+    ...trackPalette(StarPalettes[settings.palette] ?? StarPalettes.Orange),
+  ])
+  const limbColor = $derived(toColor(samplePalette(activePalette, 1)))
+  const haloColor = $derived(toColor(samplePalette(activePalette, 0.5)))
   const haloSize = $derived(settings.haloSize)
   const plasmaShellScale = $derived(1 + settings.plasmaExtent)
   const surfaceUniforms = {
@@ -206,6 +210,31 @@
     uPlasmaTurbulence: { value: 0 },
     uPlasmaSharpness: { value: 1 },
     uPlasmaTextureScale: { value: 1 },
+  }
+
+  function samplePalette(palette: Palette, position: number) {
+    const upperIndex = palette.findIndex(
+      (_, index) => getPalettePosition(palette, index) >= position
+    )
+    const endIndex = upperIndex < 0 ? palette.length - 1 : upperIndex
+    const startIndex = Math.max(0, endIndex - 1)
+    const start = palette[startIndex] ?? { r: 255, g: 255, b: 255 }
+    const end = palette[endIndex] ?? start
+    const startPosition = getPalettePosition(palette, startIndex)
+    const endPosition = getPalettePosition(palette, endIndex)
+    const amount = Math.min(
+      1,
+      Math.max(0, (position - startPosition) / Math.max(0.0001, endPosition - startPosition))
+    )
+    return {
+      r: start.r + (end.r - start.r) * amount,
+      g: start.g + (end.g - start.g) * amount,
+      b: start.b + (end.b - start.b) * amount,
+    }
+  }
+
+  function toColor(color: { r: number; g: number; b: number }) {
+    return new Color(color.r / 255, color.g / 255, color.b / 255)
   }
 
   function clampSetting(key: StarRangeKey, value: number): number {

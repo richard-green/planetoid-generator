@@ -40,6 +40,7 @@ for (const key of NUMERIC_RANGE_KEYS) {
   CLI_FLAG_TO_RANGE_KEY.set(GasGiantCliFlagByRangeKey[key], key)
 }
 CLI_FLAG_TO_RANGE_KEY.set('--bump-scale', 'normalStrength')
+CLI_FLAG_TO_RANGE_KEY.set('--bump-tex-height', 'normalTextureSize')
 
 const NUMERIC_HELP_LINES = NUMERIC_RANGE_KEYS.map((key) => {
   const flag = GasGiantCliFlagByRangeKey[key]
@@ -103,6 +104,8 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   normalStrength: undefined,
   roughness: undefined,
   metalness: undefined,
+  normalTextureSize: undefined,
+  colorTextureSize: undefined,
   baseUrl: 'http://127.0.0.1:5173/giants',
   outputDir: path.resolve('public/generated/giants'),
   frameSettleMs: 50,

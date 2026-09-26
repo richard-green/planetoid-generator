@@ -15,6 +15,9 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three'
+import { getPalettePosition, type Palette } from '../../../types/palette'
+
+const MAX_PALETTE = 16
 
 const vertexShader = `
   varying vec2 vUv;
@@ -44,9 +47,33 @@ const fragmentShader = `
   uniform float uBrightness;
   uniform float uSaturation;
   uniform float uContrast;
-  uniform vec3 uPaletteDeep;
-  uniform vec3 uPaletteMid;
-  uniform vec3 uPaletteHot;
+  uniform int uPaletteSize;
+  uniform vec3 uPalette[${MAX_PALETTE}];
+  uniform float uPalettePositions[${MAX_PALETTE}];
+
+  vec3 mapToPalette(float amount) {
+    float position = clamp(amount, 0.0, 1.0);
+    int size = max(2, min(uPaletteSize, ${MAX_PALETTE}));
+    int index = 0;
+    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+      if (i < size - 1 && position >= uPalettePositions[i]) index = i;
+    }
+    index = min(index, size - 2);
+    vec3 first = uPalette[0];
+    vec3 second = uPalette[1];
+    float startPosition = uPalettePositions[0];
+    float endPosition = uPalettePositions[1];
+    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+      if (i == index) {
+        first = uPalette[i];
+        second = uPalette[i + 1];
+        startPosition = uPalettePositions[i];
+        endPosition = uPalettePositions[i + 1];
+      }
+    }
+    float localAmount = clamp((position - startPosition) / max(0.0001, endPosition - startPosition), 0.0, 1.0);
+    return mix(first, second, localAmount);
+  }
 
   float noise(vec3 p) {
     vec3 cell = floor(p);
@@ -218,8 +245,7 @@ const fragmentShader = `
     float penumbra = clamp(sunspotOuter - sunspotCore, 0.0, 1.0);
     float penumbraRidges = clamp(sunspotRidges, 0.0, 1.0);
     float heat = clamp(0.54 + flow * 0.11 + bands * 0.015 * uBandContrast + detail * 0.1 + (granulation - 0.32) * uConvection * 0.27 - sunspotOuter * 0.2 * uSunspotDarkness - sunspotCore * 0.76 * uSunspotDarkness, 0.0, 1.0);
-    vec3 color = mix(uPaletteDeep, uPaletteMid, smoothstep(0.2, 0.72, heat));
-    color = mix(color, uPaletteHot, smoothstep(0.66, 1.0, heat));
+    vec3 color = mapToPalette(heat);
     color *= min(uBrightness, 1.0);
     float whiteHotness = clamp((uBrightness - 1.0) * 0.5, 0.0, 1.0);
     color = mix(color, vec3(1.0), whiteHotness);
@@ -253,7 +279,7 @@ export function createStarColorTexture(
   brightness: number,
   saturation: number,
   contrast: number,
-  palette: readonly [number, number, number][]
+  palette: Palette
 ): Texture {
   const height = Math.max(2, Math.floor(textureHeight))
   const width = height * 2
@@ -278,9 +304,22 @@ export function createStarColorTexture(
       uBrightness: { value: brightness },
       uSaturation: { value: saturation },
       uContrast: { value: contrast },
-      uPaletteDeep: { value: new Vector3(...palette[0]) },
-      uPaletteMid: { value: new Vector3(...palette[1]) },
-      uPaletteHot: { value: new Vector3(...palette[2]) },
+      uPaletteSize: { value: Math.max(2, Math.min(MAX_PALETTE, palette.length)) },
+      uPalette: {
+        value: Array.from({ length: MAX_PALETTE }, (_, index) => {
+          const color = palette[Math.min(index, Math.max(0, palette.length - 1))] ?? {
+            r: 255,
+            g: 255,
+            b: 255,
+          }
+          return new Vector3(color.r / 255, color.g / 255, color.b / 255)
+        }),
+      },
+      uPalettePositions: {
+        value: Array.from({ length: MAX_PALETTE }, (_, index) =>
+          getPalettePosition(palette, Math.min(index, Math.max(0, palette.length - 1)))
+        ),
+      },
     },
   })
   const scene = new Scene()

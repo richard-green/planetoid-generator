@@ -4,6 +4,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
+  import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
@@ -776,6 +777,7 @@
           viewMode={sceneViewMode}
         />
       </Canvas>
+      <FullscreenControl target={canvasShell} />
     </div>
 
     <div class="controls">

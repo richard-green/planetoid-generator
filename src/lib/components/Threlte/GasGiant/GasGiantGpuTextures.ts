@@ -20,7 +20,7 @@ import {
 } from 'three'
 
 import { DefaultValues, MaxValues, MinValues } from '../GasGiant/GasGiantSettings'
-import type { Palette } from '../../../types/palette'
+import { getPalettePosition, type Palette } from '../../../types/palette'
 
 type NoiseOffset = { x: number; y: number; z: number }
 
@@ -69,6 +69,7 @@ const fragmentShader = `
   uniform float uStormColorStrength;
   uniform int uPaletteSize;
   uniform vec3 uPalette[${MAX_PALETTE}];
+  uniform float uPalettePositions[${MAX_PALETTE}];
 
   const float PI = 3.141592653589793;
   const float TAU = 6.283185307179586;
@@ -259,13 +260,24 @@ const fragmentShader = `
   vec3 mapToPalette(float t) {
     float safeT = clamp(t, 0.0, 1.0);
     int size = safePaletteSize();
-    float position = safeT * float(size - 1);
-    int index = int(floor(position));
+    int index = 0;
+
+    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+      if (i < size - 1 && safeT >= uPalettePositions[i]) index = i;
+    }
     index = min(index, size - 2);
-    float localT = fract(position);
 
     vec3 a = paletteColorAt(index);
     vec3 b = paletteColorAt(index + 1);
+    float startPosition = uPalettePositions[0];
+    float endPosition = uPalettePositions[1];
+    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+      if (i == index) {
+        startPosition = uPalettePositions[i];
+        endPosition = uPalettePositions[i + 1];
+      }
+    }
+    float localT = clamp((safeT - startPosition) / max(0.0001, endPosition - startPosition), 0.0, 1.0);
 
     return mix(a, b, localT);
   }
@@ -517,6 +529,7 @@ const material = new ShaderMaterial({
     uStormColorStrength: new Uniform(0.4),
     uPaletteSize: new Uniform(2),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE }, () => new Vector3())),
+    uPalettePositions: new Uniform(Array.from({ length: MAX_PALETTE }, () => 1)),
   },
 })
 const quad = new Mesh(new PlaneGeometry(2, 2), material)
@@ -596,9 +609,11 @@ function parseHexTint(value: string | undefined) {
 
 function setPaletteUniform(palette: Palette) {
   const paletteVectors = material.uniforms.uPalette.value as Vector3[]
+  const palettePositions = material.uniforms.uPalettePositions.value as number[]
 
   for (let i = 0; i < MAX_PALETTE; i++) {
-    const source = palette[Math.min(i, Math.max(0, palette.length - 1))] ?? {
+    const sourceIndex = Math.min(i, Math.max(0, palette.length - 1))
+    const source = palette[sourceIndex] ?? {
       r: 255,
       g: 255,
       b: 255,
@@ -606,6 +621,7 @@ function setPaletteUniform(palette: Palette) {
 
     const linear = srgbToLinearVector(source.r / 255, source.g / 255, source.b / 255)
     paletteVectors[i].copy(linear)
+    palettePositions[i] = getPalettePosition(palette, sourceIndex)
   }
 
   material.uniforms.uPaletteSize.value = Math.max(2, Math.min(MAX_PALETTE, palette.length))

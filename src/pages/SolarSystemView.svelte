@@ -3,6 +3,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
+  import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import { DefaultTextureSize, type TextureSize } from '../lib/types/textureSize'
   import SolarSystemScene from '../lib/components/Threlte/SolarSystemScene.svelte'
@@ -38,7 +39,6 @@
 
   let solarSystemScene = $state<SolarSystemSceneExports | undefined>(undefined)
   let canvasShell = $state<HTMLDivElement | undefined>(undefined)
-  let isFullscreen = $state(false)
   let autoRotate = $state(true)
   let showOrbits = $state(true)
   let starPresetId = $state(BUILTIN_STAR_PRESETS[0]?.id ?? '')
@@ -90,32 +90,6 @@
     bodies = bodies.filter((body) => body.id !== id)
   }
 
-  $effect(() => {
-    function syncFullscreenState(): void {
-      isFullscreen = document.fullscreenElement === canvasShell
-    }
-
-    document.addEventListener('fullscreenchange', syncFullscreenState)
-    syncFullscreenState()
-
-    return () => document.removeEventListener('fullscreenchange', syncFullscreenState)
-  })
-
-  async function toggleFullscreen(): Promise<void> {
-    if (!canvasShell) return
-
-    try {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
-        return
-      }
-
-      await canvasShell.requestFullscreen()
-    } catch (error) {
-      console.warn('Fullscreen request failed', error)
-    }
-  }
-
   function timestamp(): string {
     return new Date().toISOString().replace(/[:.]/g, '-')
   }
@@ -136,7 +110,7 @@
   <PageTitle title="Solar System" activeHref="#/system" {onOpenWelcome} />
 
   <section class="threlte-view">
-    <div class="canvas-shell" class:fullscreen={isFullscreen} bind:this={canvasShell}>
+    <div class="canvas-shell" bind:this={canvasShell}>
       <Canvas
         dpr={1}
         createRenderer={(canvas) =>
@@ -159,15 +133,7 @@
           {textureSize}
         />
       </Canvas>
-      <button
-        class="fullscreen-toggle"
-        type="button"
-        onclick={toggleFullscreen}
-        aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand scene to fullscreen'}
-        title={isFullscreen ? 'Exit fullscreen' : 'Expand scene to fullscreen'}
-      >
-        {isFullscreen ? '✕' : '⛶'}
-      </button>
+      <FullscreenControl target={canvasShell} />
     </div>
 
     <div class="controls">
@@ -184,14 +150,6 @@
               aria-label="Save scene PNG"
             >
               PNG
-            </button>
-            <button
-              class="action"
-              type="button"
-              onclick={toggleFullscreen}
-              aria-label={isFullscreen ? 'Exit fullscreen' : 'Expand scene to fullscreen'}
-            >
-              {isFullscreen ? 'EXIT' : 'FULL'}
             </button>
           </div>
         </div>
@@ -281,41 +239,6 @@
 </div>
 
 <style>
-  .canvas-shell {
-    position: relative;
-  }
-
-  .canvas-shell.fullscreen {
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    aspect-ratio: auto;
-    border: none;
-    border-radius: 0;
-  }
-
-  .fullscreen-toggle {
-    position: absolute;
-    top: 0.6rem;
-    right: 0.6rem;
-    width: 2rem;
-    height: 2rem;
-    display: grid;
-    place-items: center;
-    font-size: 1rem;
-    line-height: 1;
-    color: #d7e4f4;
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-  }
-
-  .fullscreen-toggle:hover {
-    color: #ffffff;
-    background: rgba(18, 40, 70, 0.6);
-  }
-
   .hint {
     margin: 0;
     font-size: 0.85rem;

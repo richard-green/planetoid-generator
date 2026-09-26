@@ -17,10 +17,10 @@ import {
   type Texture,
   type WebGLRenderer,
 } from 'three'
+import { getPalettePosition, type PaletteColor } from '../../../types/palette'
 import { DefaultValues, MaxValues, MinValues } from './PlanetoidSettings'
 
 type NoiseOffset = { x: number; y: number; z: number }
-type PaletteColor = { r: number; g: number; b: number }
 
 type SurfaceDetailTextureOptions = {
   enableCraters?: boolean
@@ -126,6 +126,7 @@ const fragmentShader = `
   uniform int uDebugMidline;
   uniform int uPaletteSize;
   uniform vec3 uPalette[${MAX_PALETTE}];
+  uniform float uPalettePositions[${MAX_PALETTE}];
 
   const int MAX_CRATERS = 96;
   const int MAX_VOLCANOES = 80;
@@ -210,21 +211,28 @@ const fragmentShader = `
   vec3 mapToPalette(float value) {
     float t = clamp((value + 1.0) * 0.5, 0.0, 1.0);
     int safePaletteSize = max(2, min(uPaletteSize, ${MAX_PALETTE}));
-    float position = t * float(safePaletteSize - 1);
-    int index = int(floor(position));
+    int index = 0;
+
+    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+      if (i < safePaletteSize - 1 && t >= uPalettePositions[i]) index = i;
+    }
     index = min(index, safePaletteSize - 2);
-    float localT = fract(position);
 
     vec3 a = uPalette[0];
     vec3 b = uPalette[1];
+    float startPosition = uPalettePositions[0];
+    float endPosition = uPalettePositions[1];
 
     for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
       if (i == index) {
         a = uPalette[i];
         b = uPalette[i + 1];
+        startPosition = uPalettePositions[i];
+        endPosition = uPalettePositions[i + 1];
       }
     }
 
+    float localT = clamp((t - startPosition) / max(0.0001, endPosition - startPosition), 0.0, 1.0);
     return mix(a, b, localT);
   }
 
@@ -865,6 +873,7 @@ const material = new ShaderMaterial({
     uDebugMidline: new Uniform(0),
     uPaletteSize: new Uniform(2),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE }, () => new Vector3())),
+    uPalettePositions: new Uniform(Array.from({ length: MAX_PALETTE }, () => 1)),
   },
 })
 const quad = new Mesh(new PlaneGeometry(2, 2), material)
@@ -919,9 +928,11 @@ function parseHexTint(value: string | undefined) {
 
 function setPaletteUniform(palette: PaletteColor[]) {
   const paletteVectors = material.uniforms.uPalette.value as Vector3[]
+  const palettePositions = material.uniforms.uPalettePositions.value as number[]
 
   for (let i = 0; i < MAX_PALETTE; i++) {
-    const source = palette[Math.min(i, Math.max(0, palette.length - 1))] ?? {
+    const sourceIndex = Math.min(i, Math.max(0, palette.length - 1))
+    const source = palette[sourceIndex] ?? {
       r: 255,
       g: 255,
       b: 255,
@@ -929,6 +940,7 @@ function setPaletteUniform(palette: PaletteColor[]) {
 
     const linear = srgbToLinearVector(source.r / 255, source.g / 255, source.b / 255)
     paletteVectors[i].copy(linear)
+    palettePositions[i] = getPalettePosition(palette, sourceIndex)
   }
 
   material.uniforms.uPaletteSize.value = Math.max(2, Math.min(MAX_PALETTE, palette.length))

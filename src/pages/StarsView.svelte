@@ -3,6 +3,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
+  import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import PresetManager, {
     type PresetListItem,
@@ -356,6 +357,7 @@
           {autoRotate}
         />
       </Canvas>
+      <FullscreenControl target={canvasShell} />
     </div>
 
     <div class="controls">
