@@ -33,6 +33,7 @@ export type StarSettings = {
   haloSize: number
   haloTurbulence: number
   plasmaIntensity: number
+  plasmaSurfaceIntensity: number
   plasmaExtent: number
   plasmaTurbulence: number
   plasmaSharpness: number
@@ -66,6 +67,7 @@ export type StarRangeValues = Pick<
   | 'haloSize'
   | 'haloTurbulence'
   | 'plasmaIntensity'
+  | 'plasmaSurfaceIntensity'
   | 'plasmaExtent'
   | 'plasmaTurbulence'
   | 'plasmaSharpness'
@@ -99,6 +101,7 @@ export const DefaultValues: StarSettings = {
   haloSize: 1.27,
   haloTurbulence: 2,
   plasmaIntensity: 10,
+  plasmaSurfaceIntensity: 1,
   plasmaExtent: 0.04,
   plasmaTurbulence: 2,
   plasmaSharpness: 3,
@@ -131,6 +134,7 @@ export const MinValues: StarRangeValues = {
   haloSize: 1,
   haloTurbulence: 0,
   plasmaIntensity: 1,
+  plasmaSurfaceIntensity: 0,
   plasmaExtent: 0.02,
   plasmaTurbulence: 0,
   plasmaSharpness: 1,
@@ -161,6 +165,7 @@ export const MaxValues: StarRangeValues = {
   haloSize: 1.4,
   haloTurbulence: 2,
   plasmaIntensity: 20,
+  plasmaSurfaceIntensity: 8,
   plasmaExtent: 1,
   plasmaTurbulence: 8,
   plasmaSharpness: 12,
@@ -191,6 +196,7 @@ export const StepValues: StarRangeValues = {
   haloSize: 0.01,
   haloTurbulence: 0.1,
   plasmaIntensity: 0.1,
+  plasmaSurfaceIntensity: 0.05,
   plasmaExtent: 0.01,
   plasmaTurbulence: 0.1,
   plasmaSharpness: 0.25,

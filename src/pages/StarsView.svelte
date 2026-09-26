@@ -60,12 +60,14 @@
   let haloSize = $state(DefaultValues.haloSize)
   let haloTurbulence = $state(DefaultValues.haloTurbulence)
   let plasmaIntensity = $state(DefaultValues.plasmaIntensity)
+  let plasmaSurfaceIntensity = $state(DefaultValues.plasmaSurfaceIntensity)
   let plasmaExtent = $state(DefaultValues.plasmaExtent)
   let plasmaTurbulence = $state(DefaultValues.plasmaTurbulence)
   let plasmaSharpness = $state(DefaultValues.plasmaSharpness)
   let plasmaTextureScale = $state(DefaultValues.plasmaTextureScale)
   let colorTextureSize = $state(DefaultValues.colorTextureSize)
   let autoRotate = $state(DefaultValues.autoRotate)
+  let starSurfaceVisible = $state(true)
   let isSaving = $state(false)
   let settingsHydrated = $state(false)
   let presetsHydrated = $state(false)
@@ -92,6 +94,7 @@
     haloSize = settings.haloSize
     haloTurbulence = settings.haloTurbulence
     plasmaIntensity = settings.plasmaIntensity
+    plasmaSurfaceIntensity = settings.plasmaSurfaceIntensity
     plasmaExtent = settings.plasmaExtent
     plasmaTurbulence = settings.plasmaTurbulence
     plasmaSharpness = settings.plasmaSharpness
@@ -126,6 +129,7 @@
       haloSize,
       haloTurbulence,
       plasmaIntensity,
+      plasmaSurfaceIntensity,
       plasmaExtent,
       plasmaTurbulence,
       plasmaSharpness,
@@ -349,12 +353,14 @@
           {haloSize}
           {haloTurbulence}
           {plasmaIntensity}
+          {plasmaSurfaceIntensity}
           {plasmaExtent}
           {plasmaTurbulence}
           {plasmaSharpness}
           {plasmaTextureScale}
           {colorTextureSize}
           {autoRotate}
+          showStarSurface={starSurfaceVisible}
         />
       </Canvas>
       <FullscreenControl target={canvasShell} />
@@ -683,6 +689,13 @@
 
         <CollapsibleControl title="Plasma" bind:open={plasmaSectionOpen}>
           <div class="control-grid">
+            <button
+              type="button"
+              aria-pressed={!starSurfaceVisible}
+              onclick={() => (starSurfaceVisible = !starSurfaceVisible)}
+            >
+              {starSurfaceVisible ? 'Hide star' : 'Show star'}
+            </button>
             <label class="compact-number-row">
               <span>Plasma brightness</span>
               <input
@@ -691,6 +704,16 @@
                 max={MaxValues.plasmaIntensity}
                 step={StepValues.plasmaIntensity}
                 bind:value={plasmaIntensity}
+              />
+            </label>
+            <label class="compact-number-row">
+              <span>Surface plasma intensity</span>
+              <input
+                type="number"
+                min={MinValues.plasmaSurfaceIntensity}
+                max={MaxValues.plasmaSurfaceIntensity}
+                step={StepValues.plasmaSurfaceIntensity}
+                bind:value={plasmaSurfaceIntensity}
               />
             </label>
             <label class="compact-number-row">

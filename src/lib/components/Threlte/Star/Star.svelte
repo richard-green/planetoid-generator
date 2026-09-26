@@ -21,10 +21,12 @@
   const surfaceVertexShader = `
     varying vec2 vUv;
     varying vec3 vNormal;
+    varying vec3 vObjectNormal;
     varying vec3 vViewPosition;
     void main() {
       vUv = uv;
       vNormal = normalize(normalMatrix * normal);
+      vObjectNormal = normalize(normal);
       vec4 modelViewPosition = modelViewMatrix * vec4(position, 1.0);
       vViewPosition = -modelViewPosition.xyz;
       gl_Position = projectionMatrix * modelViewPosition;
@@ -35,11 +37,61 @@
     uniform sampler2D uMap;
     uniform vec3 uLimbColor;
     uniform float uLimbIntensity;
+    uniform vec3 uSeed;
+    uniform float uPlasmaSurfaceIntensity;
+    uniform float uPlasmaTurbulence;
+    uniform float uPlasmaSharpness;
+    uniform float uPlasmaTextureScale;
     varying vec2 vUv;
     varying vec3 vNormal;
+    varying vec3 vObjectNormal;
     varying vec3 vViewPosition;
+
+    float noise(vec3 p) {
+      return sin(p.x * 2.1 + sin(p.y * 3.4)) * sin(p.y * 2.7 + sin(p.z * 2.3)) * sin(p.z * 3.1);
+    }
+
+    float fbm(vec3 p) {
+      float value = 0.0;
+      float amplitude = 0.5;
+      for (int index = 0; index < 4; index++) {
+        value += noise(p) * amplitude;
+        p = p * 2.07 + vec3(4.2, 8.7, 2.6);
+        amplitude *= 0.5;
+      }
+      return value;
+    }
+
+    vec3 swirlDomain(vec3 point, float strength) {
+      float latitude = asin(clamp(point.y, -1.0, 1.0));
+      float localWarp = fbm(point * 1.65 + uSeed.yzx * 0.61);
+      float angle = (latitude * 1.8 + localWarp * 1.1) * strength;
+      float cosine = cos(angle);
+      float sine = sin(angle);
+      return vec3(
+        cosine * point.x - sine * point.z,
+        point.y,
+        sine * point.x + cosine * point.z
+      );
+    }
+
     void main() {
       vec3 color = texture2D(uMap, vUv).rgb;
+      vec3 objectNormal = normalize(vObjectNormal);
+      float turbulenceAmount = uPlasmaTurbulence * 0.5;
+      vec3 broadDomain = swirlDomain(objectNormal, turbulenceAmount * 0.85);
+      float broadStorm = fbm(broadDomain * 3.2 * uPlasmaTextureScale + uSeed);
+      vec3 fineDomain = swirlDomain(objectNormal, turbulenceAmount * 1.35 + broadStorm * 0.45);
+      float fineStorm = fbm(fineDomain * 12.0 * uPlasmaTextureScale + uSeed.zxy * 2.7);
+      float storm = broadStorm * 0.68 + fineStorm * 0.32;
+      float sharpness = (uPlasmaSharpness - 1.0) / 11.0;
+      float filamentField = clamp(storm * 0.75 + 0.25, 0.0, 1.0);
+      float filamentThreshold = mix(0.22, 0.62, sharpness);
+      float filaments = smoothstep(filamentThreshold, 0.9, filamentField);
+      float overlayStrength =
+        clamp(uPlasmaSurfaceIntensity, 0.0, 8.0) *
+        clamp(turbulenceAmount, 0.0, 1.0);
+      color *= 1.0 + filaments * overlayStrength * 0.4;
       float edge = 1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition)));
       float limb = pow(clamp(edge, 0.0, 1.0), 2.4) * uLimbIntensity;
       gl_FragColor = vec4(color + uLimbColor * limb, 1.0);
@@ -176,9 +228,10 @@
 
   type Props = {
     settings: StarSettings
+    showStarSurface?: boolean
   }
 
-  let { settings }: Props = $props()
+  let { settings, showStarSurface = true }: Props = $props()
 
   const geometry = createIcosphere(2, 20)
   const haloGeometry = createIcosphere(2.05, 5)
@@ -199,6 +252,11 @@
     uMap: { value: null },
     uLimbColor: { value: new Color('#ffffff') },
     uLimbIntensity: { value: 0 },
+    uSeed: { value: new Color() },
+    uPlasmaSurfaceIntensity: { value: 0 },
+    uPlasmaTurbulence: { value: 0 },
+    uPlasmaSharpness: { value: 1 },
+    uPlasmaTextureScale: { value: 1 },
   }
   const haloUniforms = {
     uHaloColor: { value: new Color('#ffffff') },
@@ -336,6 +394,16 @@
   })
 
   $effect(() => {
+    surfaceUniforms.uSeed.value.set(
+      settings.seed * 0.0013,
+      settings.seed * 0.0021,
+      settings.seed * 0.0007
+    )
+    surfaceUniforms.uPlasmaSurfaceIntensity.value = settings.plasmaSurfaceIntensity
+    surfaceUniforms.uPlasmaTurbulence.value = settings.plasmaTurbulence
+    surfaceUniforms.uPlasmaSharpness.value = settings.plasmaSharpness
+    surfaceUniforms.uPlasmaTextureScale.value = settings.plasmaTextureScale
+
     if (!haloMaterial) return
     haloMaterial.uniforms.uHaloColor.value = haloColor
     haloMaterial.uniforms.uSeed.value.set(
@@ -383,7 +451,7 @@
   })
 </script>
 
-<T.Mesh bind:ref={mesh} {geometry}>
+<T.Mesh bind:ref={mesh} {geometry} visible={showStarSurface}>
   <T.ShaderMaterial
     bind:ref={material}
     vertexShader={surfaceVertexShader}

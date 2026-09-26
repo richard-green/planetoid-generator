@@ -35,12 +35,14 @@
     haloSize?: number
     haloTurbulence?: number
     plasmaIntensity?: number
+    plasmaSurfaceIntensity?: number
     plasmaExtent?: number
     plasmaTurbulence?: number
     plasmaSharpness?: number
     plasmaTextureScale?: number
     colorTextureSize?: TextureSize
     autoRotate?: boolean
+    showStarSurface?: boolean
   }
 
   let {
@@ -68,12 +70,14 @@
     haloSize = DefaultValues.haloSize,
     haloTurbulence = DefaultValues.haloTurbulence,
     plasmaIntensity = DefaultValues.plasmaIntensity,
+    plasmaSurfaceIntensity = DefaultValues.plasmaSurfaceIntensity,
     plasmaExtent = DefaultValues.plasmaExtent,
     plasmaTurbulence = DefaultValues.plasmaTurbulence,
     plasmaSharpness = DefaultValues.plasmaSharpness,
     plasmaTextureScale = DefaultValues.plasmaTextureScale,
     colorTextureSize = DefaultValues.colorTextureSize,
     autoRotate = DefaultValues.autoRotate,
+    showStarSurface = true,
   }: Props = $props()
 
   const settings: StarSettings = $derived({
@@ -101,6 +105,7 @@
     haloSize,
     haloTurbulence,
     plasmaIntensity,
+    plasmaSurfaceIntensity,
     plasmaExtent,
     plasmaTurbulence,
     plasmaSharpness,
@@ -151,4 +156,4 @@
   />
 </T.PerspectiveCamera>
 
-<Star bind:this={starRef} {settings} />
+<Star bind:this={starRef} {settings} {showStarSurface} />

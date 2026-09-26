@@ -75,6 +75,25 @@ const fragmentShader = `
     return mix(first, second, localAmount);
   }
 
+  vec3 darkestPaletteColor() {
+    int size = max(2, min(uPaletteSize, ${MAX_PALETTE}));
+    vec3 darkest = uPalette[0];
+    float darkestLuminance = dot(darkest, vec3(0.2126, 0.7152, 0.0722));
+
+    for (int i = 1; i < ${MAX_PALETTE}; i++) {
+      if (i < size) {
+        vec3 candidate = uPalette[i];
+        float candidateLuminance = dot(candidate, vec3(0.2126, 0.7152, 0.0722));
+        if (candidateLuminance < darkestLuminance) {
+          darkest = candidate;
+          darkestLuminance = candidateLuminance;
+        }
+      }
+    }
+
+    return darkest;
+  }
+
   float noise(vec3 p) {
     vec3 cell = floor(p);
     vec3 local = fract(p);
@@ -140,7 +159,8 @@ const fragmentShader = `
   }
 
   vec3 sunspotDirection(float index) {
-    float z = hash(index * 17.3 + uSeed.x) * 2.0 - 1.0;
+    const float MAX_SUNSPOT_Z = 0.93969262;
+    float z = (hash(index * 17.3 + uSeed.x) * 2.0 - 1.0) * MAX_SUNSPOT_Z;
     float angle = hash(index * 31.7 + uSeed.y) * 6.2831853;
     float radius = sqrt(max(0.0, 1.0 - z * z));
     return vec3(radius * cos(angle), z, radius * sin(angle));
@@ -253,8 +273,12 @@ const fragmentShader = `
     color = mix(vec3(luminance), color, uSaturation);
     color = mix(vec3(0.5), color, uContrast);
     float penumbraShade = penumbra * (0.42 + penumbraRidges * 0.08) * uSunspotDarkness;
-    color = mix(color, color * 0.22, penumbraShade);
-    color = mix(color, vec3(0.008), clamp(sunspotCore * uSunspotDarkness, 0.0, 1.0));
+    vec3 spotColor = darkestPaletteColor();
+    float spotLuminance = dot(spotColor, vec3(0.2126, 0.7152, 0.0722));
+    spotColor = mix(vec3(spotLuminance), spotColor, max(1.0, uSaturation));
+    vec3 penumbraColor = mix(spotColor * 0.32, spotColor * 0.58, penumbraRidges);
+    color = mix(color, penumbraColor, penumbraShade);
+    color = mix(color, spotColor * 0.035, clamp(sunspotCore * uSunspotDarkness, 0.0, 1.0));
     gl_FragColor = vec4(color, 1.0);
   }
 `
