@@ -80,12 +80,42 @@ export const StarPalettes: Record<StarPaletteName, Palette> = {
     },
   ],
   Yellow: [
-    { r: 112, g: 42, b: 1, position: 0.26 },
-    { r: 238, g: 105, b: 3, position: 0.37 },
-    { r: 255, g: 196, b: 24, position: 0.45 },
-    { r: 255, g: 238, b: 112, position: 0.66 },
-    { r: 255, g: 178, b: 12, position: 0.76 },
-    { r: 255, g: 252, b: 218, position: 0.89 },
+    {
+      r: 136,
+      g: 70,
+      b: 4,
+      position: 0.26,
+    },
+    {
+      r: 238,
+      g: 105,
+      b: 3,
+      position: 0.37,
+    },
+    {
+      r: 255,
+      g: 196,
+      b: 24,
+      position: 0.45,
+    },
+    {
+      r: 255,
+      g: 238,
+      b: 112,
+      position: 0.66,
+    },
+    {
+      r: 255,
+      g: 178,
+      b: 12,
+      position: 0.76,
+    },
+    {
+      r: 255,
+      g: 252,
+      b: 218,
+      position: 0.89,
+    },
   ],
   Orange: [
     {
