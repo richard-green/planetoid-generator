@@ -132,6 +132,19 @@
       return value;
     }
 
+    vec3 swirlDomain(vec3 point, float strength) {
+      float latitude = asin(clamp(point.y, -1.0, 1.0));
+      float localWarp = fbm(point * 1.65 + uSeed.yzx * 0.61);
+      float angle = (latitude * 1.8 + localWarp * 1.1) * strength;
+      float cosine = cos(angle);
+      float sine = sin(angle);
+      return vec3(
+        cosine * point.x - sine * point.z,
+        point.y,
+        sine * point.x + cosine * point.z
+      );
+    }
+
     void main() {
       vec3 normal = normalize(vNormal);
       vec3 objectNormal = normalize(vObjectNormal);
@@ -139,10 +152,12 @@
       float edge = 1.0 - abs(dot(normal, viewDirection));
       float starEdge = 1.0 - sqrt(max(0.0, 1.0 - pow(2.0 / (2.05 * uHaloSize), 2.0)));
       float haloDistance = clamp((edge - starEdge) / (1.0 - starEdge), 0.0, 1.0);
-      float broadStorm = fbm(objectNormal * 3.2 * uPlasmaTextureScale + uSeed);
-      float fineStorm = fbm(objectNormal * 12.0 * uPlasmaTextureScale + uSeed.zxy * 2.7);
-      float storm = broadStorm * 0.7 + fineStorm * 0.3;
       float turbulenceAmount = uPlasmaTurbulence * 0.5;
+      vec3 broadDomain = swirlDomain(objectNormal, turbulenceAmount * 0.85);
+      float broadStorm = fbm(broadDomain * 3.2 * uPlasmaTextureScale + uSeed);
+      vec3 fineDomain = swirlDomain(objectNormal, turbulenceAmount * 1.35 + broadStorm * 0.45);
+      float fineStorm = fbm(fineDomain * 12.0 * uPlasmaTextureScale + uSeed.zxy * 2.7);
+      float storm = broadStorm * 0.68 + fineStorm * 0.32;
       float distanceWarp = storm * turbulenceAmount * 0.018 * smoothstep(0.03, 0.25, haloDistance);
       float plasmaDistance = clamp((haloDistance - distanceWarp) / 0.04, 0.0, 1.0);
       float outerFade = 1.0 - smoothstep(0.72, 1.0, plasmaDistance);
