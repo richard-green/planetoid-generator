@@ -13,7 +13,7 @@
 
   let { settings, seed, planetRadius = 1, lightPosition = [-5, 1, 2] }: Props = $props()
 
-  const geometry = new IcosahedronGeometry(1, 8)
+  const geometry = new IcosahedronGeometry(1, 16)
   const meshScale = $derived(planetRadius * 1.001)
   const uniforms = {
     uInnerRadius: new Uniform(0),
