@@ -1,5 +1,7 @@
 # Planetoid Generator
 
+![Planetoid Generator](public/hero.jpg)
+
 Single-page app for generating planetoid and asteroid artwork directly in the browser.
 
 The app is built with Svelte + Vite and renders with THRELTE/Three.js. It generates procedural results and lets you export different render outputs, including texture and normal map imagery.
