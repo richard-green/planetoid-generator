@@ -11,9 +11,16 @@
     seed: number
     planetRadius?: number
     lightPosition?: [number, number, number]
+    spin?: number
   }
 
-  let { settings, seed, planetRadius = 1, lightPosition = [-5, 1, 2] }: Props = $props()
+  let {
+    settings,
+    seed,
+    planetRadius = 1,
+    lightPosition = [-5, 1, 2],
+    spin = 0,
+  }: Props = $props()
 
   const MAX_PALETTE_SIZE = 8
   const uniforms = {
@@ -334,17 +341,19 @@
 
 {#if settings.enableRings}
   <T.Group rotation={[0, 0, tiltRadians]}>
-    <T.Mesh rotation={[Math.PI / 2, 0, 0]} renderOrder={1}>
-      <T.RingGeometry args={[innerRadius, outerRadius, 256, 1]} />
-      <T.ShaderMaterial
-        {vertexShader}
-        {fragmentShader}
-        {uniforms}
-        side={DoubleSide}
-        transparent={true}
-        depthWrite={false}
-        toneMapped={false}
-      />
-    </T.Mesh>
+    <T.Group rotation={[0, spin, 0]}>
+      <T.Mesh rotation={[Math.PI / 2, 0, 0]} renderOrder={1}>
+        <T.RingGeometry args={[innerRadius, outerRadius, 256, 1]} />
+        <T.ShaderMaterial
+          {vertexShader}
+          {fragmentShader}
+          {uniforms}
+          side={DoubleSide}
+          transparent={true}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </T.Mesh>
+    </T.Group>
   </T.Group>
 {/if}

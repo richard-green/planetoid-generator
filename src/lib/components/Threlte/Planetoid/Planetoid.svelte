@@ -50,6 +50,7 @@
     colorScale,
     tintShadowFloor,
     swirliness,
+    enableDustClouds,
     dustCloudCoverage,
     dustCloudStyle,
     dustCloudPalette,
@@ -60,6 +61,7 @@
     dustCloudCoriolis,
     dustCloudNormalStrength,
     atmospherePalette,
+    enableAtmosphere,
     atmosphereIntensity,
     atmosphereThickness,
     atmosphereDropoff,
@@ -133,6 +135,8 @@
   const dustCloudGeometry = new SphereGeometry(1, 96, 64)
   const dustCloudRadius = $derived(2 + largeScale + mediumScale + smallScale + dustCloudElevation)
   const atmospherePlanetRadius = $derived(meanRadius)
+  const showDustClouds = $derived(enableDustClouds && dustCloudCoverage > 0)
+  const showAtmosphere = $derived(enableAtmosphere && atmosphereIntensity > 0)
   // Threlte spreads arrays into Vector2.set(); passing a Vector2 here sets x to the
   // vector itself and y to undefined, which produces NaN normals.
   const dustCloudNormalScale = $derived<[number, number]>([
@@ -607,7 +611,7 @@
   })
 
   $effect(() => {
-    if (!renderer || dustCloudCoverage <= 0) {
+    if (!renderer || !showDustClouds) {
       dustCloudTexture = undefined
       return
     }
@@ -639,7 +643,7 @@
   })
 
   $effect(() => {
-    if (!renderer || dustCloudCoverage <= 0) {
+    if (!renderer || !showDustClouds) {
       dustCloudNormalTexture = undefined
       return
     }
@@ -869,7 +873,7 @@
 {#if viewMode === 'mesh'}
   <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
     <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
-    {#if dustCloudCoverage > 0 && dustCloudTexture}
+    {#if showDustClouds && dustCloudTexture}
       <T.Mesh
         geometry={dustCloudGeometry}
         scale={[dustCloudRadius, dustCloudRadius, dustCloudRadius]}
@@ -888,7 +892,7 @@
     {/if}
   </T.Mesh>
 
-  {#if atmosphereIntensity > 0}
+  {#if showAtmosphere}
     <PlanetoidAtmosphere
       planetRadius={atmospherePlanetRadius}
       thickness={atmosphereThickness}

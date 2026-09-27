@@ -774,7 +774,8 @@
             colorScale={planetoid.colorScale}
             tintShadowFloor={planetoid.tintShadowFloor}
             swirliness={planetoid.swirliness}
-            dustCloudCoverage={planetoid.enableDustClouds ? planetoid.dustCloudCoverage : 0}
+            enableDustClouds={planetoid.enableDustClouds}
+            dustCloudCoverage={planetoid.dustCloudCoverage}
             dustCloudStyle={planetoid.dustCloudStyle}
             dustCloudPalette={planetoid.dustCloudPalette}
             dustCloudOpacity={planetoid.dustCloudOpacity}
@@ -784,7 +785,8 @@
             dustCloudCoriolis={planetoid.dustCloudCoriolis}
             dustCloudNormalStrength={planetoid.dustCloudNormalStrength}
             atmospherePalette={planetoid.atmospherePalette}
-            atmosphereIntensity={planetoid.enableAtmosphere ? planetoid.atmosphereIntensity : 0}
+            enableAtmosphere={planetoid.enableAtmosphere}
+            atmosphereIntensity={planetoid.atmosphereIntensity}
             atmosphereThickness={planetoid.atmosphereThickness}
             atmosphereDropoff={planetoid.atmosphereDropoff}
             atmosphereTerminatorWrap={planetoid.atmosphereTerminatorWrap}

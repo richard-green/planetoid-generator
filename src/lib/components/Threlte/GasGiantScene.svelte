@@ -1,7 +1,7 @@
 <script lang="ts">
   import { T, useTask, useThrelte } from '@threlte/core'
   import { OrbitControls, interactivity } from '@threlte/extras'
-  import { Group, MOUSE, Vector3 } from 'three'
+  import { Group, MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
@@ -106,6 +106,7 @@
         controlsRef.target.set(...state.target)
       }
       planetarySystem?.rotation.set(0, 0, 0)
+      ringSpin = 0
     }
 
     previousViewMode = viewMode
@@ -197,14 +198,13 @@
   })
 
   const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })
-  const rotationAxis = $derived.by(() => {
-    const tilt = (ringTilt * Math.PI) / 180
-    return new Vector3(-Math.sin(tilt), Math.cos(tilt), 0).normalize()
-  })
+
+  let ringSpin = $state(0)
 
   useTask((delta) => {
-    if (viewMode !== 'mesh' || !autoRotate || !planetarySystem) return
-    planetarySystem.rotateOnAxis(rotationAxis, delta * 0.18)
+    if (viewMode !== 'mesh' || !autoRotate) return
+    if (planetarySystem) planetarySystem.rotation.y += delta * 0.18
+    ringSpin += delta * 0.06
   })
 </script>
 
@@ -226,8 +226,10 @@
 <T.AmbientLight intensity={0.08} />
 <T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
 
-<T.Group bind:ref={planetarySystem}>
-  <GasGiant bind:this={gasGiantRef} settings={planetSettings} {viewMode} />
+<T.Group>
+  <T.Group bind:ref={planetarySystem}>
+    <GasGiant bind:this={gasGiantRef} settings={planetSettings} {viewMode} />
+  </T.Group>
   {#if viewMode === 'mesh'}
     <PlanetaryRingShadow
       settings={ringSettings}
@@ -235,6 +237,12 @@
       planetRadius={2}
       lightPosition={[-5, 1, 2]}
     />
-    <PlanetaryRings settings={ringSettings} {seed} planetRadius={2} lightPosition={[-5, 1, 2]} />
+    <PlanetaryRings
+      settings={ringSettings}
+      {seed}
+      planetRadius={2}
+      lightPosition={[-5, 1, 2]}
+      spin={ringSpin}
+    />
   {/if}
 </T.Group>

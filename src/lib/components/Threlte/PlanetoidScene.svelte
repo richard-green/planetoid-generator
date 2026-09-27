@@ -20,6 +20,7 @@
     colorScale?: number
     tintShadowFloor?: number
     swirliness?: number
+    enableDustClouds?: boolean
     dustCloudCoverage?: number
     dustCloudStyle?: DustCloudStyle
     dustCloudPalette?: DustCloudPaletteName
@@ -30,6 +31,7 @@
     dustCloudCoriolis?: number
     dustCloudNormalStrength?: number
     atmospherePalette?: AtmospherePaletteName
+    enableAtmosphere?: boolean
     atmosphereIntensity?: number
     atmosphereThickness?: number
     atmosphereDropoff?: number
@@ -80,6 +82,7 @@
     colorScale = DefaultValues.colorScale,
     tintShadowFloor = DefaultValues.tintShadowFloor,
     swirliness = DefaultValues.swirliness,
+    enableDustClouds = DefaultValues.enableDustClouds,
     dustCloudCoverage = DefaultValues.dustCloudCoverage,
     dustCloudStyle = DefaultValues.dustCloudStyle,
     dustCloudPalette = DefaultValues.dustCloudPalette,
@@ -90,6 +93,7 @@
     dustCloudCoriolis = DefaultValues.dustCloudCoriolis,
     dustCloudNormalStrength = DefaultValues.dustCloudNormalStrength,
     atmospherePalette = DefaultValues.atmospherePalette,
+    enableAtmosphere = DefaultValues.enableAtmosphere,
     atmosphereIntensity = DefaultValues.atmosphereIntensity,
     atmosphereThickness = DefaultValues.atmosphereThickness,
     atmosphereDropoff = DefaultValues.atmosphereDropoff,
@@ -140,6 +144,7 @@
     colorScale,
     tintShadowFloor,
     swirliness,
+    enableDustClouds,
     dustCloudCoverage,
     dustCloudStyle,
     dustCloudPalette,
@@ -150,6 +155,7 @@
     dustCloudCoriolis,
     dustCloudNormalStrength,
     atmospherePalette,
+    enableAtmosphere,
     atmosphereIntensity,
     atmosphereThickness,
     atmosphereDropoff,
