@@ -740,6 +740,11 @@
           bind:open={viewModeSectionOpen}
           name="giant-view-mode"
           bind:value={sceneViewMode}
+          options={[
+            { value: 'mesh', label: '3D' },
+            { value: 'normal', label: 'Normal map' },
+            { value: 'texture', label: 'Texture map' },
+          ]}
         />
         <label class="toggle-row">
           <span>{GasGiantUiLabels.autoRotate}</span>

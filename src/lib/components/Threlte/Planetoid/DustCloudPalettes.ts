@@ -6,6 +6,7 @@ export const DustCloudPaletteNames = [
   'sulfur',
   'carbon',
   'verdigris',
+  'frost',
 ] as const
 
 export type DustCloudPaletteName = (typeof DustCloudPaletteNames)[number]
@@ -16,6 +17,7 @@ export const DustCloudPaletteLabels: Record<DustCloudPaletteName, string> = {
   sulfur: 'Sulfur veil',
   carbon: 'Carbon ash',
   verdigris: 'Verdigris mist',
+  frost: 'Frost white',
 }
 
 export const DustCloudPalettes: Record<DustCloudPaletteName, Palette> = {
@@ -48,5 +50,11 @@ export const DustCloudPalettes: Record<DustCloudPaletteName, Palette> = {
     { r: 63, g: 123, b: 111 },
     { r: 113, g: 177, b: 152 },
     { r: 198, g: 222, b: 184 },
+  ],
+  frost: [
+    { r: 236, g: 239, b: 244 },
+    { r: 250, g: 251, b: 253 },
+    { r: 255, g: 255, b: 255, position: 0.78 },
+    { r: 206, g: 212, b: 222 },
   ],
 }

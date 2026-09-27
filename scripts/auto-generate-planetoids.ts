@@ -58,6 +58,7 @@ type ScriptOptions = {
   dustCloudFrequency?: number
   dustCloudSwirliness?: number
   dustCloudCoriolis?: number
+  dustCloudNormalStrength?: number
   craterCount?: number
   craterScale?: number
   craterStrength?: number
@@ -120,6 +121,7 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   dustCloudFrequency: undefined,
   dustCloudSwirliness: undefined,
   dustCloudCoriolis: undefined,
+  dustCloudNormalStrength: undefined,
   craterCount: undefined,
   craterScale: undefined,
   craterStrength: undefined,

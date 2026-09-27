@@ -10,15 +10,30 @@ import {
   type NumericSanitizeSpec,
 } from '../../../utils/sanitize'
 
-export type PlanetoidViewMode = 'mesh' | 'normal' | 'texture'
+export const PlanetoidViewModeNames = [
+  'mesh',
+  'normal',
+  'texture',
+  'cloudTexture',
+  'cloudNormal',
+] as const
+export type PlanetoidViewMode = (typeof PlanetoidViewModeNames)[number]
+export const PlanetoidViewModeLabels: Record<PlanetoidViewMode, string> = {
+  mesh: '3D',
+  normal: 'Normal map',
+  texture: 'Texture map',
+  cloudTexture: 'Cloud texture map',
+  cloudNormal: 'Cloud normal map',
+}
 
-export const DustCloudStyleNames = ['wisps', 'ribs', 'curls', 'mixed'] as const
+export const DustCloudStyleNames = ['wisps', 'ribs', 'curls', 'mixed', 'worley'] as const
 export type DustCloudStyle = (typeof DustCloudStyleNames)[number]
 export const DustCloudStyleLabels: Record<DustCloudStyle, string> = {
   wisps: 'Wisps',
   ribs: 'Ribs',
   curls: 'Curls',
   mixed: 'Mixed',
+  worley: 'Worley cells',
 }
 
 export type PlanetoidPresetExcludedKey =
@@ -45,6 +60,7 @@ export type PlanetoidSettings = {
   dustCloudFrequency: number
   dustCloudSwirliness: number
   dustCloudCoriolis: number
+  dustCloudNormalStrength: number
   craterCount: number
   craterScale: number
   craterStrength: number
@@ -98,6 +114,7 @@ export type PlanetoidRangeValues = Pick<
   | 'dustCloudFrequency'
   | 'dustCloudSwirliness'
   | 'dustCloudCoriolis'
+  | 'dustCloudNormalStrength'
   | 'craterCount'
   | 'craterScale'
   | 'craterStrength'
@@ -151,6 +168,7 @@ export const DefaultValues: PlanetoidSettings = {
   dustCloudFrequency: 1,
   dustCloudSwirliness: 0.65,
   dustCloudCoriolis: 0.8,
+  dustCloudNormalStrength: 1.2,
   craterCount: 20,
   craterScale: 1,
   craterStrength: 5,
@@ -194,6 +212,7 @@ export const MinValues: PlanetoidRangeValues = {
   dustCloudFrequency: 0.25,
   dustCloudSwirliness: 0,
   dustCloudCoriolis: 0,
+  dustCloudNormalStrength: 0,
   craterCount: 0,
   craterScale: 0.25,
   craterStrength: 0,
@@ -235,6 +254,7 @@ export const MaxValues: PlanetoidRangeValues = {
   dustCloudFrequency: 4,
   dustCloudSwirliness: 2,
   dustCloudCoriolis: 2,
+  dustCloudNormalStrength: 3,
   craterCount: 120,
   craterScale: 3,
   craterStrength: 10,
@@ -276,6 +296,7 @@ export const StepValues: PlanetoidRangeValues = {
   dustCloudFrequency: 0.05,
   dustCloudSwirliness: 0.05,
   dustCloudCoriolis: 0.05,
+  dustCloudNormalStrength: 0.05,
   craterCount: 1,
   craterScale: 0.05,
   craterStrength: 0.1,
@@ -357,6 +378,11 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultValues.dustCloudCoriolis,
     min: MinValues.dustCloudCoriolis,
     max: MaxValues.dustCloudCoriolis,
+  },
+  dustCloudNormalStrength: {
+    defaultValue: DefaultValues.dustCloudNormalStrength,
+    min: MinValues.dustCloudNormalStrength,
+    max: MaxValues.dustCloudNormalStrength,
   },
   craterCount: {
     defaultValue: DefaultValues.craterCount,
@@ -542,6 +568,7 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     dustCloudFrequency: numeric.dustCloudFrequency,
     dustCloudSwirliness: numeric.dustCloudSwirliness,
     dustCloudCoriolis: numeric.dustCloudCoriolis,
+    dustCloudNormalStrength: numeric.dustCloudNormalStrength,
     craterCount: numeric.craterCount,
     craterScale: numeric.craterScale,
     craterStrength: numeric.craterStrength,
@@ -621,6 +648,7 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   dustCloudFrequency: 'Dust-cloud frequency',
   dustCloudSwirliness: 'Dust-cloud swirliness',
   dustCloudCoriolis: 'Coriolis strength',
+  dustCloudNormalStrength: 'Dust-cloud relief',
   craterCount: 'Crater count',
   craterScale: 'Crater scale',
   craterStrength: 'Crater strength',
@@ -687,6 +715,7 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   dustCloudFrequency: '--dust-cloud-frequency',
   dustCloudSwirliness: '--dust-cloud-swirliness',
   dustCloudCoriolis: '--dust-cloud-coriolis',
+  dustCloudNormalStrength: '--dust-cloud-normal-strength',
   craterCount: '--crater-count',
   craterScale: '--crater-scale',
   craterStrength: '--crater-strength',

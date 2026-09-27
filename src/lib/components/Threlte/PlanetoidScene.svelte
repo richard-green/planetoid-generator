@@ -27,6 +27,7 @@
     dustCloudFrequency?: number
     dustCloudSwirliness?: number
     dustCloudCoriolis?: number
+    dustCloudNormalStrength?: number
     seed?: number
     largeScale?: number
     mediumScale?: number
@@ -81,6 +82,7 @@
     dustCloudFrequency = DefaultValues.dustCloudFrequency,
     dustCloudSwirliness = DefaultValues.dustCloudSwirliness,
     dustCloudCoriolis = DefaultValues.dustCloudCoriolis,
+    dustCloudNormalStrength = DefaultValues.dustCloudNormalStrength,
     seed = DefaultValues.seed,
     largeScale = DefaultValues.largeScale,
     mediumScale = DefaultValues.mediumScale,
@@ -135,6 +137,7 @@
     dustCloudFrequency,
     dustCloudSwirliness,
     dustCloudCoriolis,
+    dustCloudNormalStrength,
     seed,
     largeScale,
     mediumScale,

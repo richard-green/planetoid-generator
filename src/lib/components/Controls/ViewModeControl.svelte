@@ -1,22 +1,15 @@
-<script lang="ts">
+<script lang="ts" generics="TViewMode extends string">
   import CollapsibleControl from './CollapsibleControl.svelte'
-
-  type ViewMode = 'mesh' | 'normal' | 'texture'
 
   type Props = {
     title: string
     open: boolean
     name: string
-    value: ViewMode
+    value: TViewMode
+    options: { value: TViewMode; label: string }[]
   }
 
-  let { title, open = $bindable(), name, value = $bindable() }: Props = $props()
-
-  const options: { value: ViewMode; label: string }[] = [
-    { value: 'mesh', label: '3D' },
-    { value: 'normal', label: 'Normal map' },
-    { value: 'texture', label: 'Texture map' },
-  ]
+  let { title, open = $bindable(), name, value = $bindable(), options }: Props = $props()
 </script>
 
 <CollapsibleControl {title} bind:open>

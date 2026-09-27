@@ -12,9 +12,17 @@
     value: T
     options: readonly T[]
     palettes: Record<T, readonly DisplayColor[]>
+    labels?: Partial<Record<T, string>>
   }
 
-  let { id, title = 'Palette', value = $bindable(), options, palettes }: Props = $props()
+  let {
+    id,
+    title = 'Palette',
+    value = $bindable(),
+    options,
+    palettes,
+    labels,
+  }: Props = $props()
   let dialog: HTMLDialogElement | undefined = $state(undefined)
   let draft = $state<EditableStop[]>([])
   let originalPalette: Palette = []
@@ -170,7 +178,7 @@
     <span>{title}</span>
     <select {id} bind:value>
       {#each options as option (option)}
-        <option value={option}>{option}</option>
+        <option value={option}>{labels?.[option] ?? option}</option>
       {/each}
     </select>
   </label>

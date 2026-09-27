@@ -22,6 +22,7 @@
   import {
     DustCloudPaletteLabels,
     DustCloudPaletteNames,
+    DustCloudPalettes,
   } from '../lib/components/Threlte/Planetoid/DustCloudPalettes'
   import {
     DefaultValues,
@@ -34,6 +35,8 @@
     PlanetoidCliFeatureFlags,
     PlanetoidCliToggleFlags,
     PlanetoidRangeLabels,
+    PlanetoidViewModeLabels,
+    PlanetoidViewModeNames,
     sanitizePlanetoidPresetSettings,
     StepValues,
     PlanetoidUiLabels,
@@ -95,6 +98,7 @@
     'dustCloudFrequency',
     'dustCloudSwirliness',
     'dustCloudCoriolis',
+    'dustCloudNormalStrength',
     'normalStrength',
     'craterCount',
     'craterScale',
@@ -202,6 +206,7 @@
     'dustCloudFrequency',
     'dustCloudSwirliness',
     'dustCloudCoriolis',
+    'dustCloudNormalStrength',
   ]
 
   const colorControls = textureControls.filter((control) => colorControlKeys.includes(control))
@@ -466,8 +471,7 @@
 
     if (!hasAllKeys) return null
 
-    const isValidViewMode =
-      raw.viewMode === 'mesh' || raw.viewMode === 'normal' || raw.viewMode === 'texture'
+    const isValidViewMode = PlanetoidViewModeNames.includes(raw.viewMode as PlanetoidViewMode)
 
     if (!isValidViewMode) return null
 
@@ -776,6 +780,7 @@
           dustCloudFrequency={planetoid.dustCloudFrequency}
           dustCloudSwirliness={planetoid.dustCloudSwirliness}
           dustCloudCoriolis={planetoid.dustCloudCoriolis}
+          dustCloudNormalStrength={planetoid.dustCloudNormalStrength}
           seed={planetoid.seed}
           largeScale={planetoid.largeScale}
           mediumScale={planetoid.mediumScale}
@@ -915,6 +920,10 @@
           bind:open={viewModeSectionOpen}
           name="scene-view-mode"
           bind:value={sceneViewMode}
+          options={PlanetoidViewModeNames.map((mode) => ({
+            value: mode,
+            label: PlanetoidViewModeLabels[mode],
+          }))}
         />
         <label class="toggle-row">
           <span>{PlanetoidUiLabels.autoRotate}</span>
@@ -1016,20 +1025,20 @@
       <fieldset>
         <legend>{PlanetoidUiLabels.features}</legend>
         <CollapsibleControl title={PlanetoidUiLabels.dustClouds} bind:open={dustCloudSectionOpen}>
+          <PalettePicker
+            id="planetoid-dust-cloud-palette"
+            title={PlanetoidUiLabels.dustCloudPalette}
+            options={DustCloudPaletteNames}
+            palettes={DustCloudPalettes}
+            labels={DustCloudPaletteLabels}
+            bind:value={planetoid.dustCloudPalette}
+          />
           <div class="control-grid">
             <label>
               <span>{PlanetoidUiLabels.dustCloudStyle}</span>
               <select bind:value={planetoid.dustCloudStyle}>
                 {#each DustCloudStyleNames as style (style)}
                   <option value={style}>{DustCloudStyleLabels[style]}</option>
-                {/each}
-              </select>
-            </label>
-            <label>
-              <span>{PlanetoidUiLabels.dustCloudPalette}</span>
-              <select bind:value={planetoid.dustCloudPalette}>
-                {#each DustCloudPaletteNames as cloudPalette (cloudPalette)}
-                  <option value={cloudPalette}>{DustCloudPaletteLabels[cloudPalette]}</option>
                 {/each}
               </select>
             </label>

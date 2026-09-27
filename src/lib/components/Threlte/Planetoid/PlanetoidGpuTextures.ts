@@ -88,8 +88,12 @@ type DustCloudTextureOptions = {
   dustCloudFrequency: number
   dustCloudSwirliness: number
   dustCloudCoriolis: number
+  dustCloudRelief: number
+  swirliness?: number
   palette: PaletteColor[]
 }
+
+type DustCloudNormalTextureOptions = Omit<DustCloudTextureOptions, 'palette' | 'dustCloudRelief'>
 
 const MAX_PALETTE = 16
 
@@ -121,6 +125,7 @@ const fragmentShader = `
   uniform float uDustCloudFrequency;
   uniform float uDustCloudSwirliness;
   uniform float uDustCloudCoriolis;
+  uniform float uDustCloudRelief;
   uniform float uTextureScale;
   uniform int uEnableCraters;
   uniform int uCraterCount;
@@ -188,6 +193,52 @@ const fragmentShader = `
       total += amplitude;
       amplitude *= 0.5;
       frequency *= 2.0;
+    }
+
+    return value / max(1e-6, total);
+  }
+
+  vec3 hash33(vec3 p) {
+    vec3 q = vec3(
+      dot(p, vec3(127.1, 311.7, 74.7)),
+      dot(p, vec3(269.5, 183.3, 246.1)),
+      dot(p, vec3(113.5, 271.9, 124.6))
+    );
+
+    return fract(sin(q) * 43758.5453123);
+  }
+
+  // Distance to the nearest jittered feature point in a 3D grid (Worley/cellular noise).
+  float worley3(vec3 p) {
+    vec3 cell = floor(p);
+    vec3 local = fract(p);
+    float nearest = 1.5;
+
+    for (int x = -1; x <= 1; x++) {
+      for (int y = -1; y <= 1; y++) {
+        for (int z = -1; z <= 1; z++) {
+          vec3 offset = vec3(float(x), float(y), float(z));
+          vec3 featurePoint = offset + hash33(cell + offset);
+          nearest = min(nearest, length(featurePoint - local));
+        }
+      }
+    }
+
+    return clamp(nearest, 0.0, 1.0);
+  }
+
+  // Inverted (billowy) Worley octaves: 1.0 at cell centres, 0.0 at cell boundaries.
+  float worleyFbm(vec3 p, float lacunarity, float gain) {
+    float value = 0.0;
+    float amplitude = 1.0;
+    float frequency = 1.0;
+    float total = 0.0;
+
+    for (int i = 0; i < 4; i++) {
+      value += (1.0 - worley3(p * frequency)) * amplitude;
+      total += amplitude;
+      frequency *= lacunarity;
+      amplitude *= gain;
     }
 
     return value / max(1e-6, total);
@@ -715,6 +766,113 @@ const fragmentShader = `
       darkSpeckles * 0.55 * polarHighFrequencyScale;
   }
 
+  // Returns x = signed cloud field, y = fine detail, z = final alpha, w = coverage mask.
+  // lumps is a mid-frequency field kept decorrelated from the palette input so it can
+  // add albedo variation without cancelling the palette's own density ramp.
+  vec4 dustCloudSample(vec2 uv, out float lumps) {
+    uv = wrapSurfaceUv(uv);
+
+    float theta = uv.x * TAU;
+    float phi = uv.y * PI;
+
+    vec3 spherePos = vec3(
+      sin(phi) * cos(theta),
+      cos(phi),
+      sin(phi) * sin(theta)
+    );
+
+    vec3 seed = uSeed;
+
+    float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
+    float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
+    float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
+    float swirlStrength = 0.22 * clamp(uSwirliness, 0.0, 2.0);
+    vec3 warpedSpherePos = normalize(spherePos + vec3(warpX, warpY, warpZ) * swirlStrength);
+
+    vec3 remappedPos = vec3(
+      dot(warpedSpherePos, vec3(0.00, 0.83, 0.56)),
+      dot(warpedSpherePos, vec3(0.56, 0.00, 0.83)),
+      dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
+    );
+
+    float coverage = clamp(uDustCloudCoverage, 0.0, 1.0);
+    float frequency = max(0.05, uDustCloudFrequency);
+    float cloudSwirliness = clamp(uDustCloudSwirliness, 0.0, 2.0);
+    float coriolis = spherePos.y * clamp(uDustCloudCoriolis, 0.0, 2.0);
+    vec3 cloudWarp = vec3(
+      fractalNoise(remappedPos * (frequency * 2.4) + seed * 0.91 + vec3(13.1, 37.2, 73.8)),
+      fractalNoise(remappedPos * (frequency * 2.1) + seed * 1.17 + vec3(29.4, 11.8, 47.3)),
+      fractalNoise(remappedPos * (frequency * 2.7) + seed * 1.03 + vec3(41.7, 59.6, 19.5))
+    );
+    vec3 eastward = vec3(-spherePos.z, 0.0, spherePos.x);
+    vec3 cloudPosition = normalize(
+      spherePos + cloudWarp * (0.16 * cloudSwirliness) + eastward * (0.12 * coriolis * cloudSwirliness)
+    );
+    float cloudShape = fractalNoise(cloudPosition * (7.0 * frequency) + seed * 1.37 + vec3(37.1, 11.9, 53.7));
+    float cloudDetail = fractalNoise(cloudPosition * (19.0 * frequency) + seed * 1.91 + vec3(7.3, 61.1, 29.5));
+    float cloudWisps = fractalNoise(cloudPosition * (43.0 * frequency) + seed * 2.13 + vec3(23.7, 41.3, 5.9));
+    float wispField = cloudShape + cloudDetail * 0.2 + cloudWisps * 0.06;
+
+    float ribPhase = (cloudPosition.y * (6.0 + frequency * 5.0) + cloudDetail * 1.8) * PI;
+    float ribField = (1.0 - abs(sin(ribPhase))) * 2.0 - 1.0;
+
+    float curlAngle = cloudDetail * cloudSwirliness * (1.5 + frequency) + coriolis * (2.0 + frequency * 0.25);
+    float curlCos = cos(curlAngle);
+    float curlSin = sin(curlAngle);
+    vec3 curledPosition = normalize(vec3(
+      cloudPosition.x * curlCos - cloudPosition.z * curlSin,
+      cloudPosition.y,
+      cloudPosition.x * curlSin + cloudPosition.z * curlCos
+    ));
+    float curlNoise = fractalNoise(curledPosition * (12.0 * frequency) + seed * 2.31 + vec3(43.7, 17.3, 31.1));
+    float curlSpiral = sin((atan(curledPosition.z, curledPosition.x) * 3.0 + curledPosition.y * 7.0) * frequency + cloudShape * 3.0 + coriolis * 2.0);
+    float curlField = curlNoise * 0.72 + curlSpiral * 0.28;
+
+    float cloudField = wispField;
+    if (uDustCloudStyle == 1) cloudField = mix(wispField, ribField, 0.78);
+    if (uDustCloudStyle == 2) cloudField = mix(wispField, curlField, 0.82);
+    if (uDustCloudStyle == 3) cloudField = wispField * 0.42 + ribField * 0.28 + curlField * 0.3;
+
+    if (uDustCloudStyle == 4) {
+      // Multi-octave 3D Worley evaluated directly on the sphere surface, so the
+      // clumps stay seamless across the UV seam and the poles.
+      float worleyBase = worleyFbm(
+        cloudPosition * (2.6 * frequency) + seed * 1.53 + vec3(51.3, 9.7, 77.1),
+        2.15,
+        0.52
+      );
+      float worleyFine = worleyFbm(
+        cloudPosition * (7.4 * frequency) + seed * 1.87 + vec3(5.9, 63.7, 21.3),
+        2.3,
+        0.5
+      );
+      float worleyBillow = clamp(worleyBase * 0.76 + worleyFine * 0.24, 0.0, 1.0);
+      // Averaging octaves clusters the billow tightly around 0.48. Recentre and scale it
+      // to the same spread as the other styles so coverage responds at the same rate.
+      float worleyField = (worleyBillow - 0.481) * 2.65;
+      cloudDetail = (worleyFine - 0.481) * 2.0;
+      cloudField = mix(worleyField, wispField, 0.18);
+    }
+
+    float threshold = mix(0.76, -0.3, coverage);
+    float coverageMask = smoothstep(threshold, threshold + 0.2, cloudField);
+    float cloudAlpha = coverageMask * clamp(uDustCloudOpacity, 0.0, 1.0);
+
+    lumps = fractalNoise(cloudPosition * (13.0 * frequency) + seed * 2.71 + vec3(67.3, 5.1, 89.7));
+
+    return vec4(cloudField, cloudDetail, cloudAlpha, coverageMask);
+  }
+
+  // Pseudo-height of the dust layer, used to derive the cloud normal map. The hard
+  // coverage edge is deliberately excluded: its one-texel cliff would swamp the
+  // gradient and shade the whole layer black.
+  float dustCloudHeight(vec2 uv) {
+    float lumps;
+    vec4 cloud = dustCloudSample(uv, lumps);
+    float body = clamp(cloud.x * 0.5 + 0.5, 0.0, 1.0);
+    return body * 0.85 + cloud.y * 0.08;
+  }
+
   void main() {
     vec2 uv = vUv;
     float x = uv.x * (uResolution.x - 1.0);
@@ -790,48 +948,40 @@ const fragmentShader = `
     }
 
     if (uMode == 5) {
-      float coverage = clamp(uDustCloudCoverage, 0.0, 1.0);
-      float frequency = max(0.05, uDustCloudFrequency);
-      float cloudSwirliness = clamp(uDustCloudSwirliness, 0.0, 2.0);
-      float coriolis = spherePos.y * clamp(uDustCloudCoriolis, 0.0, 2.0);
-      vec3 cloudWarp = vec3(
-        fractalNoise(remappedPos * (frequency * 2.4) + seed * 0.91 + vec3(13.1, 37.2, 73.8)),
-        fractalNoise(remappedPos * (frequency * 2.1) + seed * 1.17 + vec3(29.4, 11.8, 47.3)),
-        fractalNoise(remappedPos * (frequency * 2.7) + seed * 1.03 + vec3(41.7, 59.6, 19.5))
-      );
-      vec3 eastward = vec3(-spherePos.z, 0.0, spherePos.x);
-      vec3 cloudPosition = normalize(
-        spherePos + cloudWarp * (0.16 * cloudSwirliness) + eastward * (0.12 * coriolis * cloudSwirliness)
-      );
-      float cloudShape = fractalNoise(cloudPosition * (7.0 * frequency) + seed * 1.37 + vec3(37.1, 11.9, 53.7));
-      float cloudDetail = fractalNoise(cloudPosition * (19.0 * frequency) + seed * 1.91 + vec3(7.3, 61.1, 29.5));
-      float cloudWisps = fractalNoise(cloudPosition * (43.0 * frequency) + seed * 2.13 + vec3(23.7, 41.3, 5.9));
-      float wispField = cloudShape + cloudDetail * 0.2 + cloudWisps * 0.06;
+      float lumps;
+      vec4 cloud = dustCloudSample(uv, lumps);
+      vec3 cloudColor = mapToPalette(clamp(cloud.x * 0.72 + cloud.y * 0.35, -1.0, 1.0));
 
-      float ribPhase = (cloudPosition.y * (6.0 + frequency * 5.0) + cloudDetail * 1.8) * PI;
-      float ribField = (1.0 - abs(sin(ribPhase))) * 2.0 - 1.0;
+      // Light-independent self-shading. Lambert's cosine is flat at its maximum, so
+      // normal-map relief only reads near the terminator; baking shading into the
+      // albedo keeps cloud structure visible in full daylight too.
+      float lumpShade = mix(0.42, 1.2, clamp(lumps * 0.5 + 0.5, 0.0, 1.0));
+      float shadeStrength = clamp(uDustCloudRelief, 0.0, 2.0) * 0.65;
+      cloudColor *= mix(1.0, lumpShade, shadeStrength);
 
-      float curlAngle = cloudDetail * cloudSwirliness * (1.5 + frequency) + coriolis * (2.0 + frequency * 0.25);
-      float curlCos = cos(curlAngle);
-      float curlSin = sin(curlAngle);
-      vec3 curledPosition = normalize(vec3(
-        cloudPosition.x * curlCos - cloudPosition.z * curlSin,
-        cloudPosition.y,
-        cloudPosition.x * curlSin + cloudPosition.z * curlCos
-      ));
-      float curlNoise = fractalNoise(curledPosition * (12.0 * frequency) + seed * 2.31 + vec3(43.7, 17.3, 31.1));
-      float curlSpiral = sin((atan(curledPosition.z, curledPosition.x) * 3.0 + curledPosition.y * 7.0) * frequency + cloudShape * 3.0 + coriolis * 2.0);
-      float curlField = curlNoise * 0.72 + curlSpiral * 0.28;
+      gl_FragColor = vec4(clamp(cloudColor, 0.0, 1.0), cloud.z);
+      return;
+    }
 
-      float cloudField = wispField;
-      if (uDustCloudStyle == 1) cloudField = mix(wispField, ribField, 0.78);
-      if (uDustCloudStyle == 2) cloudField = mix(wispField, curlField, 0.82);
-      if (uDustCloudStyle == 3) cloudField = wispField * 0.42 + ribField * 0.28 + curlField * 0.3;
-      float threshold = mix(0.76, -0.3, coverage);
-      float cloudAlpha = smoothstep(threshold, threshold + 0.2, cloudField);
-      cloudAlpha *= clamp(uDustCloudOpacity, 0.0, 1.0);
-      vec3 cloudColor = mapToPalette(clamp(cloudField * 0.72 + cloudDetail * 0.35, -1.0, 1.0));
-      gl_FragColor = vec4(cloudColor, cloudAlpha);
+    if (uMode == 6) {
+      vec2 texel = 1.0 / max(uResolution, vec2(1.0));
+      // Two-texel taps low-pass the field; the cloud noise runs close to Nyquist
+      // and single-texel differences alias into speckle.
+      vec2 tap = texel * 2.0;
+
+      float hL = dustCloudHeight(uv + vec2(-tap.x, 0.0));
+      float hR = dustCloudHeight(uv + vec2(tap.x, 0.0));
+      float hD = dustCloudHeight(uv + vec2(0.0, -tap.y));
+      float hU = dustCloudHeight(uv + vec2(0.0, tap.y));
+
+      // Scale slopes by resolution so the relief looks the same at any texture size.
+      float slopeScale = uResolution.y * 0.008;
+      vec2 slope = vec2(hR - hL, hU - hD) * slopeScale;
+      // Cap the tilt at 45 degrees so steep noise never shades the dust to black.
+      slope = clamp(slope, -1.0, 1.0);
+
+      vec3 normal = normalize(vec3(-slope.x, -slope.y, 1.0));
+      gl_FragColor = vec4(clamp(normal * 0.5 + 0.5, 0.0, 1.0), 1.0);
       return;
     }
 
@@ -920,6 +1070,7 @@ const material = new ShaderMaterial({
     uDustCloudFrequency: new Uniform(DefaultValues.dustCloudFrequency),
     uDustCloudSwirliness: new Uniform(DefaultValues.dustCloudSwirliness),
     uDustCloudCoriolis: new Uniform(DefaultValues.dustCloudCoriolis),
+    uDustCloudRelief: new Uniform(DefaultValues.dustCloudNormalStrength),
     uTextureScale: new Uniform(1),
     uEnableCraters: new Uniform(1),
     uCraterCount: new Uniform(22),
@@ -1022,7 +1173,7 @@ function setPaletteUniform(palette: PaletteColor[]) {
 
 function renderTexture(
   renderer: WebGLRenderer,
-  mode: 0 | 3 | 4 | 5,
+  mode: 0 | 3 | 4 | 5 | 6,
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
@@ -1036,6 +1187,7 @@ function renderTexture(
     dustCloudFrequency?: number
     dustCloudSwirliness?: number
     dustCloudCoriolis?: number
+    dustCloudRelief?: number
     textureScale?: number
     enableCraters?: boolean
     craterCount?: number
@@ -1111,6 +1263,12 @@ function renderTexture(
     DefaultValues.dustCloudCoriolis,
     MinValues.dustCloudCoriolis,
     MaxValues.dustCloudCoriolis
+  )
+  material.uniforms.uDustCloudRelief.value = toClampedNumber(
+    options.dustCloudRelief,
+    DefaultValues.dustCloudNormalStrength,
+    MinValues.dustCloudNormalStrength,
+    MaxValues.dustCloudNormalStrength
   )
   material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
   material.uniforms.uEnableCraters.value = (options.enableCraters ?? true) ? 1 : 0
@@ -1334,7 +1492,33 @@ export function createPlanetoidDustCloudTexture(
     dustCloudSwirliness: options.dustCloudSwirliness,
     dustCloudCoriolis: options.dustCloudCoriolis,
     dustCloudStyle: DustCloudStyleNames.indexOf(options.dustCloudStyle),
+    dustCloudRelief: options.dustCloudRelief,
+    swirliness: options.swirliness,
     palette: options.palette,
+  })
+
+  texture.anisotropy = 8
+  texture.colorSpace = NoColorSpace
+
+  return texture
+}
+
+export function createPlanetoidDustCloudNormalTexture(
+  renderer: WebGLRenderer,
+  noiseOffset: NoiseOffset,
+  textureHeight: number,
+  options: DustCloudNormalTextureOptions
+) {
+  const height = Math.max(2, Math.floor(textureHeight))
+  const width = height * 2
+  const texture = renderTexture(renderer, 6, width, height, noiseOffset, {
+    dustCloudCoverage: options.dustCloudCoverage,
+    dustCloudOpacity: options.dustCloudOpacity,
+    dustCloudFrequency: options.dustCloudFrequency,
+    dustCloudSwirliness: options.dustCloudSwirliness,
+    dustCloudCoriolis: options.dustCloudCoriolis,
+    dustCloudStyle: DustCloudStyleNames.indexOf(options.dustCloudStyle),
+    swirliness: options.swirliness,
   })
 
   texture.anisotropy = 8

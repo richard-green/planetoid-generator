@@ -24,6 +24,7 @@
   } from './PlanetoidSettings'
   import {
     createPlanetoidColorTexture,
+    createPlanetoidDustCloudNormalTexture,
     createPlanetoidDustCloudTexture,
     createPlanetoidNormalTexture,
     createPlanetoidPaletteGradientTexture,
@@ -55,6 +56,7 @@
     dustCloudFrequency,
     dustCloudSwirliness,
     dustCloudCoriolis,
+    dustCloudNormalStrength,
     seed,
     largeScale,
     mediumScale,
@@ -107,6 +109,9 @@
   let dustCloudTexture = $state<ReturnType<typeof createPlanetoidDustCloudTexture> | undefined>(
     undefined
   )
+  let dustCloudNormalTexture = $state<
+    ReturnType<typeof createPlanetoidDustCloudNormalTexture> | undefined
+  >(undefined)
   let normalDebugTexture = $state<ReturnType<typeof createPlanetoidNormalTexture> | undefined>(
     undefined
   )
@@ -120,6 +125,12 @@
   const initialGeometry = createIcosphere(2, 5)
   const dustCloudGeometry = new SphereGeometry(1, 96, 64)
   const dustCloudRadius = $derived(2 + largeScale + mediumScale + smallScale + dustCloudElevation)
+  // Threlte spreads arrays into Vector2.set(); passing a Vector2 here sets x to the
+  // vector itself and y to undefined, which produces NaN normals.
+  const dustCloudNormalScale = $derived<[number, number]>([
+    dustCloudNormalStrength,
+    dustCloudNormalStrength,
+  ])
   let geometry = $state<BufferGeometry>(initialGeometry)
   let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
   let normalWeldGroups = $state<number[][]>(
@@ -589,7 +600,9 @@
         dustCloudFrequency,
         dustCloudSwirliness,
         dustCloudCoriolis,
-        palette: DustCloudPalettes[dustCloudPalette],
+        dustCloudRelief: dustCloudNormalStrength,
+        swirliness,
+        palette: trackPalette(DustCloudPalettes[dustCloudPalette]),
       }
     )
     dustCloudTexture = cloudTexture
@@ -599,6 +612,36 @@
         dustCloudTexture = undefined
       }
       disposeGeneratedTexture(cloudTexture)
+    }
+  })
+
+  $effect(() => {
+    if (!renderer || dustCloudCoverage <= 0) {
+      dustCloudNormalTexture = undefined
+      return
+    }
+
+    const cloudNormalTexture = createPlanetoidDustCloudNormalTexture(
+      renderer,
+      shapeParameters.noiseOffset,
+      normalTextureSize,
+      {
+        dustCloudCoverage,
+        dustCloudStyle,
+        dustCloudOpacity,
+        dustCloudFrequency,
+        dustCloudSwirliness,
+        dustCloudCoriolis,
+        swirliness,
+      }
+    )
+    dustCloudNormalTexture = cloudNormalTexture
+
+    return () => {
+      if (dustCloudNormalTexture === cloudNormalTexture) {
+        dustCloudNormalTexture = undefined
+      }
+      disposeGeneratedTexture(cloudNormalTexture)
     }
   })
 
@@ -647,10 +690,16 @@
     } else if (viewMode === 'texture') {
       mapPreviewMaterial.map =
         colorDebugTexture ?? (material?.map as Texture | null | undefined) ?? null
+    } else if (viewMode === 'cloudTexture') {
+      mapPreviewMaterial.map = dustCloudTexture ?? null
+    } else if (viewMode === 'cloudNormal') {
+      mapPreviewMaterial.map = dustCloudNormalTexture ?? null
     } else {
       mapPreviewMaterial.map = null
     }
 
+    // Honour the cloud alpha channel so coverage gaps are visible while debugging.
+    mapPreviewMaterial.transparent = viewMode === 'cloudTexture'
     mapPreviewMaterial.needsUpdate = true
   })
 
@@ -805,6 +854,8 @@
       >
         <T.MeshStandardMaterial
           map={dustCloudTexture}
+          normalMap={dustCloudNormalTexture}
+          normalScale={dustCloudNormalScale}
           transparent
           depthWrite={false}
           roughness={1}
