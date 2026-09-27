@@ -48,6 +48,7 @@
   let userGiantPresets = $state<GasGiantPreset[]>([])
   let userStarPresets = $state<StarPreset[]>([])
   let bodies = $state<SystemBody[]>(DefaultSystemBodies.map((body) => ({ ...body })))
+  let orbitScale = $state(1)
   let textureSize = $state<TextureSize>(DefaultTextureSize)
   let isSaving = $state(false)
 
@@ -114,32 +115,33 @@
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
       <svelte:boundary>
-      <Canvas
-        dpr={1}
-        createRenderer={(canvas) =>
-          new WebGLRenderer({
-            canvas,
-            powerPreference: 'high-performance',
-            antialias: true,
-            alpha: true,
-            preserveDrawingBuffer: true,
-          })}
-      >
-        <SolarSystemScene
-          bind:this={solarSystemScene}
-          {bodies}
-          {rockyPresets}
-          {giantPresets}
-          {starSettings}
-          {autoRotate}
-          {showOrbits}
-          {cinematic}
-          {textureSize}
-        />
-      </Canvas>
-      {#snippet failed(error)}
-        <WebGLFailure {error} />
-      {/snippet}
+        <Canvas
+          dpr={1}
+          createRenderer={(canvas) =>
+            new WebGLRenderer({
+              canvas,
+              powerPreference: 'high-performance',
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true,
+            })}
+        >
+          <SolarSystemScene
+            bind:this={solarSystemScene}
+            {bodies}
+            {rockyPresets}
+            {giantPresets}
+            {starSettings}
+            {autoRotate}
+            {showOrbits}
+            {cinematic}
+            {orbitScale}
+            {textureSize}
+          />
+        </Canvas>
+        {#snippet failed(error)}
+          <WebGLFailure {error} />
+        {/snippet}
       </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>
@@ -148,8 +150,7 @@
       <fieldset>
         <legend>Scene</legend>
         <p class="hint">
-          Drag to orbit, right-drag to pan, scroll to fly forwards, double-click a body to
-          focus it.
+          Drag to orbit, right-drag to pan, scroll to fly forwards, double-click a body to focus it.
         </p>
         <div class="save-actions" aria-label="Save and export actions">
           <div class="export-actions">
@@ -180,6 +181,10 @@
         <label class="toggle-row">
           <span>Show orbit lines</span>
           <input type="checkbox" bind:checked={showOrbits} />
+        </label>
+        <label class="compact-number-row">
+          <span>Orbit spacing</span>
+          <input type="number" min="0.25" max="10" step="0.25" bind:value={orbitScale} />
         </label>
         <TextureSizeControl
           id="solar-system-texture-size"

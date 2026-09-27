@@ -45,6 +45,7 @@
     giantPresets?: GasGiantPreset[]
     starSettings?: StarSettings
     starScale?: number
+    orbitScale?: number
     autoRotate?: boolean
     showOrbits?: boolean
     cinematic?: boolean
@@ -57,6 +58,7 @@
     giantPresets = BUILTIN_GAS_GIANT_PRESETS,
     starSettings = StarDefaults,
     starScale = 1.4,
+    orbitScale = 1,
     autoRotate = true,
     showOrbits = true,
     cinematic = false,
@@ -92,6 +94,14 @@
   const MIN_PIVOT_DISTANCE = 2.5
   const MAX_PIVOT_DISTANCE = 80
 
+  const spacing = $derived(Math.min(Math.max(Number(orbitScale) || 1, 0.25), 10))
+  const scaledRadius = (body: SystemBody) => body.orbitRadius * spacing
+  const systemExtent = $derived(
+    bodies.reduce((max, body) => Math.max(max, scaledRadius(body)), 10 * spacing)
+  )
+  // Zooming out has to keep up with the system, otherwise wide spacings clip against the pivot limit.
+  const maxPivotDistance = $derived(Math.max(MAX_PIVOT_DISTANCE, systemExtent * 2.5))
+
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
   const flyDirection = new Vector3()
 
@@ -105,6 +115,25 @@
     focusedBody = undefined
     pivotMinDistance = MIN_PIVOT_DISTANCE
   }
+
+  $effect(() => {
+    if (cinematic) return
+    pivotMaxDistance = maxPivotDistance
+  })
+
+  let appliedOrbitScale = spacing
+
+  // Re-spacing the system would otherwise leave the camera framing empty space, so move it with the orbits.
+  $effect(() => {
+    const ratio = spacing / appliedOrbitScale
+    appliedOrbitScale = spacing
+    if (ratio === 1 || cinematic || !controlsRef) return
+
+    $camera.position.multiplyScalar(ratio)
+    controlsRef.target.multiplyScalar(ratio)
+    controlsRef.update()
+    invalidate()
+  })
 
   // Rotation leaves the pivot alone, so a moved target means the user panned away.
   function focusPivotMoved(): boolean {
@@ -137,7 +166,7 @@
     $camera.position.addScaledVector(flyDirection, step)
 
     const pivotDistance = distance - step
-    const clamped = Math.min(Math.max(pivotDistance, MIN_PIVOT_DISTANCE), MAX_PIVOT_DISTANCE)
+    const clamped = Math.min(Math.max(pivotDistance, MIN_PIVOT_DISTANCE), maxPivotDistance)
     target.addScaledVector(flyDirection, clamped - pivotDistance)
 
     controlsRef.update()
@@ -183,8 +212,9 @@
 
   function orbitPosition(body: SystemBody): Vec3 {
     const angle = (body.orbitAngle * Math.PI) / 180
+    const radius = scaledRadius(body)
 
-    return [Math.cos(angle) * body.orbitRadius, 0, Math.sin(angle) * body.orbitRadius]
+    return [Math.cos(angle) * radius, 0, Math.sin(angle) * radius]
   }
 
   // Orbits stay on the ecliptic; a small tilt about the ascending node keeps them from looking flat.
@@ -301,7 +331,7 @@
   const orbits = $derived(
     bodies.map((body) => ({
       id: body.id,
-      radius: body.orbitRadius,
+      radius: scaledRadius(body),
       planeRotation: orbitPlaneRotation(body),
     }))
   )
@@ -356,7 +386,7 @@
 
     restoreControls = () => {
       pivotMinDistance = MIN_PIVOT_DISTANCE
-      pivotMaxDistance = MAX_PIVOT_DISTANCE
+      pivotMaxDistance = maxPivotDistance
       controls.enabled = previousEnabled
     }
   }
@@ -444,7 +474,7 @@
     focusedBody = body
     pivotMinDistance = Math.max(0.05, body.radius * 1.15)
 
-    const framing = MathUtils.clamp(body.radius * 2.6, pivotMinDistance, MAX_PIVOT_DISTANCE)
+    const framing = MathUtils.clamp(body.radius * 2.6, pivotMinDistance, maxPivotDistance)
     const direction = new Vector3().subVectors($camera.position, body.center)
     if (direction.lengthSq() < 1e-6) direction.set(0, 0.35, 1)
     direction.normalize()

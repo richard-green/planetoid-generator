@@ -1,5 +1,8 @@
 import { GasGiantPaletteNames, type GasGiantPaletteName } from './GasGiantPalettes'
-import { AtmospherePaletteNames, type AtmospherePaletteName } from '../Atmosphere/AtmospherePalettes'
+import {
+  AtmospherePaletteNames,
+  type AtmospherePaletteName,
+} from '../Atmosphere/AtmospherePalettes'
 import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import { DefaultRingValues, sanitizeRingSettings, type RingSettings } from '../Rings/RingSettings'
 import {

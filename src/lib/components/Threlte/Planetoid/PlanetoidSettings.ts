@@ -1,6 +1,9 @@
 import { PlanetoidPaletteNames, type PlanetoidPaletteName } from './PlanetoidPalettes'
 import { DustCloudPaletteNames, type DustCloudPaletteName } from './DustCloudPalettes'
-import { AtmospherePaletteNames, type AtmospherePaletteName } from '../Atmosphere/AtmospherePalettes'
+import {
+  AtmospherePaletteNames,
+  type AtmospherePaletteName,
+} from '../Atmosphere/AtmospherePalettes'
 import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import {
   sanitizeBoolean,

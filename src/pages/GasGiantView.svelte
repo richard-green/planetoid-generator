@@ -315,10 +315,7 @@
       args.push(RingCliFlagByRangeKey[key], String(settings[key]))
     }
 
-    args.push(
-      GasGiantCliFeatureFlags.atmospherePalette,
-      quoteCliValue(settings.atmospherePalette)
-    )
+    args.push(GasGiantCliFeatureFlags.atmospherePalette, quoteCliValue(settings.atmospherePalette))
     args.push(
       GasGiantCliToggleFlags.atmosphereEnabled,
       toBooleanCliValue(settings.enableAtmosphere)
@@ -630,67 +627,67 @@
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
       <svelte:boundary>
-      <Canvas
-        dpr={1}
-        createRenderer={(canvas) =>
-          new WebGLRenderer({
-            canvas,
-            powerPreference: 'high-performance',
-            antialias: true,
-            alpha: true,
-            preserveDrawingBuffer: true,
-          })}
-      >
-        <GasGiantScene
-          bind:this={gasGiantScene}
-          viewMode={sceneViewMode}
-          seed={gasGiant.seed}
-          autoRotate={gasGiant.autoRotate}
-          palette={gasGiant.palette}
-          surfaceTint={gasGiant.surfaceTint}
-          colorScale={gasGiant.colorScale}
-          tintShadowFloor={gasGiant.tintShadowFloor}
-          cloudBandCount={gasGiant.cloudBandCount}
-          cloudBandSharpness={gasGiant.cloudBandSharpness}
-          cloudChaos={gasGiant.cloudChaos}
-          enableStorms={effectiveStormsEnabled}
-          stormCount={gasGiant.stormCount}
-          stormScale={gasGiant.stormScale}
-          stormPower={gasGiant.stormPower}
-          stormStrength={gasGiant.stormStrength}
-          stormColorStrength={gasGiant.stormColorStrength}
-          normalStrength={gasGiant.normalStrength}
-          roughness={gasGiant.roughness}
-          metalness={gasGiant.metalness}
-          enableAtmosphere={gasGiant.enableAtmosphere}
-          atmospherePalette={gasGiant.atmospherePalette}
-          atmosphereIntensity={gasGiant.atmosphereIntensity}
-          atmosphereThickness={gasGiant.atmosphereThickness}
-          atmosphereDropoff={gasGiant.atmosphereDropoff}
-          atmosphereTerminatorWrap={gasGiant.atmosphereTerminatorWrap}
-          normalTextureSize={gasGiant.normalTextureSize}
-          colorTextureSize={gasGiant.colorTextureSize}
-          enableRings={effectiveRingsEnabled}
-          ringPalette={gasGiant.ringPalette}
-          ringInnerRadius={gasGiant.ringInnerRadius}
-          ringOuterRadius={gasGiant.ringOuterRadius}
-          ringTilt={gasGiant.ringTilt}
-          ringBandCount={gasGiant.ringBandCount}
-          ringBandSharpness={gasGiant.ringBandSharpness}
-          ringBandRegularity={gasGiant.ringBandRegularity}
-          ringDensity={gasGiant.ringDensity}
-          ringTextureScale={gasGiant.ringTextureScale}
-          ringGranularity={gasGiant.ringGranularity}
-          ringPaletteInfluence={gasGiant.ringPaletteInfluence}
-          ringSolarization={gasGiant.ringSolarization}
-          ringOpacity={gasGiant.ringOpacity}
-          ringNoise={gasGiant.ringNoise}
-          ringGlitter={gasGiant.ringGlitter}
-        />
-      </Canvas>
-      {#snippet failed(error)}
-        <WebGLFailure {error} />
-      {/snippet}
+        <Canvas
+          dpr={1}
+          createRenderer={(canvas) =>
+            new WebGLRenderer({
+              canvas,
+              powerPreference: 'high-performance',
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true,
+            })}
+        >
+          <GasGiantScene
+            bind:this={gasGiantScene}
+            viewMode={sceneViewMode}
+            seed={gasGiant.seed}
+            autoRotate={gasGiant.autoRotate}
+            palette={gasGiant.palette}
+            surfaceTint={gasGiant.surfaceTint}
+            colorScale={gasGiant.colorScale}
+            tintShadowFloor={gasGiant.tintShadowFloor}
+            cloudBandCount={gasGiant.cloudBandCount}
+            cloudBandSharpness={gasGiant.cloudBandSharpness}
+            cloudChaos={gasGiant.cloudChaos}
+            enableStorms={effectiveStormsEnabled}
+            stormCount={gasGiant.stormCount}
+            stormScale={gasGiant.stormScale}
+            stormPower={gasGiant.stormPower}
+            stormStrength={gasGiant.stormStrength}
+            stormColorStrength={gasGiant.stormColorStrength}
+            normalStrength={gasGiant.normalStrength}
+            roughness={gasGiant.roughness}
+            metalness={gasGiant.metalness}
+            enableAtmosphere={gasGiant.enableAtmosphere}
+            atmospherePalette={gasGiant.atmospherePalette}
+            atmosphereIntensity={gasGiant.atmosphereIntensity}
+            atmosphereThickness={gasGiant.atmosphereThickness}
+            atmosphereDropoff={gasGiant.atmosphereDropoff}
+            atmosphereTerminatorWrap={gasGiant.atmosphereTerminatorWrap}
+            normalTextureSize={gasGiant.normalTextureSize}
+            colorTextureSize={gasGiant.colorTextureSize}
+            enableRings={effectiveRingsEnabled}
+            ringPalette={gasGiant.ringPalette}
+            ringInnerRadius={gasGiant.ringInnerRadius}
+            ringOuterRadius={gasGiant.ringOuterRadius}
+            ringTilt={gasGiant.ringTilt}
+            ringBandCount={gasGiant.ringBandCount}
+            ringBandSharpness={gasGiant.ringBandSharpness}
+            ringBandRegularity={gasGiant.ringBandRegularity}
+            ringDensity={gasGiant.ringDensity}
+            ringTextureScale={gasGiant.ringTextureScale}
+            ringGranularity={gasGiant.ringGranularity}
+            ringPaletteInfluence={gasGiant.ringPaletteInfluence}
+            ringSolarization={gasGiant.ringSolarization}
+            ringOpacity={gasGiant.ringOpacity}
+            ringNoise={gasGiant.ringNoise}
+            ringGlitter={gasGiant.ringGlitter}
+          />
+        </Canvas>
+        {#snippet failed(error)}
+          <WebGLFailure {error} />
+        {/snippet}
       </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>

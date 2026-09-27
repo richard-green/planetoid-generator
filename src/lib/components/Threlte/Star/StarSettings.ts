@@ -120,7 +120,7 @@ export const DefaultValues: StarSettings = {
   sunspotNeighbours: 5,
   penumbraScale: 1,
   sunspotDarkness: 1,
-  autoRotate: true,
+  autoRotate: false,
 }
 
 export const MinValues: StarRangeValues = {

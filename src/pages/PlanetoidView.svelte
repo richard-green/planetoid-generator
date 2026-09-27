@@ -756,81 +756,81 @@
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
       <svelte:boundary>
-      <Canvas
-        dpr={1}
-        createRenderer={(canvas) =>
-          new WebGLRenderer({
-            canvas,
-            powerPreference: 'high-performance',
-            antialias: true,
-            alpha: true,
-            preserveDrawingBuffer: true,
-          })}
-      >
-        <PlanetoidScene
-          bind:this={planetoidScene}
-          palette={planetoid.palette}
-          surfaceTint={planetoid.surfaceTint}
-          colorScale={planetoid.colorScale}
-          tintShadowFloor={planetoid.tintShadowFloor}
-          swirliness={planetoid.swirliness}
-          dustCloudCoverage={planetoid.enableDustClouds ? planetoid.dustCloudCoverage : 0}
-          dustCloudStyle={planetoid.dustCloudStyle}
-          dustCloudPalette={planetoid.dustCloudPalette}
-          dustCloudOpacity={planetoid.dustCloudOpacity}
-          dustCloudElevation={planetoid.dustCloudElevation}
-          dustCloudFrequency={planetoid.dustCloudFrequency}
-          dustCloudSwirliness={planetoid.dustCloudSwirliness}
-          dustCloudCoriolis={planetoid.dustCloudCoriolis}
-          dustCloudNormalStrength={planetoid.dustCloudNormalStrength}
-          atmospherePalette={planetoid.atmospherePalette}
-          atmosphereIntensity={planetoid.enableAtmosphere ? planetoid.atmosphereIntensity : 0}
-          atmosphereThickness={planetoid.atmosphereThickness}
-          atmosphereDropoff={planetoid.atmosphereDropoff}
-          atmosphereTerminatorWrap={planetoid.atmosphereTerminatorWrap}
-          seed={planetoid.seed}
-          largeScale={planetoid.largeScale}
-          mediumScale={planetoid.mediumScale}
-          smallScale={planetoid.smallScale}
-          mediumFrequency={planetoid.mediumFrequency}
-          smallFrequency={planetoid.smallFrequency}
-          triangleDetail={planetoid.triangleDetail}
-          normalStrength={planetoid.normalStrength}
-          craterCount={planetoid.craterCount}
-          craterScale={planetoid.craterScale}
-          craterStrength={planetoid.craterStrength}
-          craterSharpness={planetoid.craterSharpness}
-          craterColorStrength={planetoid.craterColorStrength}
-          enableCraters={effectiveCratersEnabled}
-          enableVolcanoes={effectiveVolcanoesEnabled}
-          volcanoCount={effectiveVolcanoesEnabled ? planetoid.volcanoCount : 0}
-          volcanoScale={planetoid.volcanoScale}
-          volcanoStrength={effectiveVolcanoesEnabled ? planetoid.volcanoStrength : 0}
-          volcanoColorStrength={effectiveVolcanoesEnabled ? planetoid.volcanoColorStrength : 0}
-          ridgeColorWeight={planetoid.ridgeColorWeight}
-          riftColorWeight={planetoid.riftColorWeight}
-          enableRidges={effectiveRidgesEnabled}
-          enableRifts={effectiveRiftsEnabled}
-          ridgeStrength={effectiveRidgesEnabled ? planetoid.ridgeStrength : 0}
-          ridgeFrequency={planetoid.ridgeFrequency}
-          ridgeSharpness={planetoid.ridgeSharpness}
-          riftStrength={effectiveRiftsEnabled ? planetoid.riftStrength : 0}
-          riftFrequency={planetoid.riftFrequency}
-          riftWidth={planetoid.riftWidth}
-          riftSharpness={planetoid.riftSharpness}
-          ridgesRiftsBlend={planetoid.ridgesRiftsBlend}
-          normalTextureSize={planetoid.normalTextureSize}
-          colorTextureSize={planetoid.colorTextureSize}
-          roughness={planetoid.roughness}
-          metalness={planetoid.metalness}
-          autoRotate={planetoid.autoRotate}
-          showDebugMeshes={sceneViewMode === 'mesh' ? planetoid.showDebugMeshes : false}
-          viewMode={sceneViewMode}
-        />
-      </Canvas>
-      {#snippet failed(error)}
-        <WebGLFailure {error} />
-      {/snippet}
+        <Canvas
+          dpr={1}
+          createRenderer={(canvas) =>
+            new WebGLRenderer({
+              canvas,
+              powerPreference: 'high-performance',
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true,
+            })}
+        >
+          <PlanetoidScene
+            bind:this={planetoidScene}
+            palette={planetoid.palette}
+            surfaceTint={planetoid.surfaceTint}
+            colorScale={planetoid.colorScale}
+            tintShadowFloor={planetoid.tintShadowFloor}
+            swirliness={planetoid.swirliness}
+            dustCloudCoverage={planetoid.enableDustClouds ? planetoid.dustCloudCoverage : 0}
+            dustCloudStyle={planetoid.dustCloudStyle}
+            dustCloudPalette={planetoid.dustCloudPalette}
+            dustCloudOpacity={planetoid.dustCloudOpacity}
+            dustCloudElevation={planetoid.dustCloudElevation}
+            dustCloudFrequency={planetoid.dustCloudFrequency}
+            dustCloudSwirliness={planetoid.dustCloudSwirliness}
+            dustCloudCoriolis={planetoid.dustCloudCoriolis}
+            dustCloudNormalStrength={planetoid.dustCloudNormalStrength}
+            atmospherePalette={planetoid.atmospherePalette}
+            atmosphereIntensity={planetoid.enableAtmosphere ? planetoid.atmosphereIntensity : 0}
+            atmosphereThickness={planetoid.atmosphereThickness}
+            atmosphereDropoff={planetoid.atmosphereDropoff}
+            atmosphereTerminatorWrap={planetoid.atmosphereTerminatorWrap}
+            seed={planetoid.seed}
+            largeScale={planetoid.largeScale}
+            mediumScale={planetoid.mediumScale}
+            smallScale={planetoid.smallScale}
+            mediumFrequency={planetoid.mediumFrequency}
+            smallFrequency={planetoid.smallFrequency}
+            triangleDetail={planetoid.triangleDetail}
+            normalStrength={planetoid.normalStrength}
+            craterCount={planetoid.craterCount}
+            craterScale={planetoid.craterScale}
+            craterStrength={planetoid.craterStrength}
+            craterSharpness={planetoid.craterSharpness}
+            craterColorStrength={planetoid.craterColorStrength}
+            enableCraters={effectiveCratersEnabled}
+            enableVolcanoes={effectiveVolcanoesEnabled}
+            volcanoCount={effectiveVolcanoesEnabled ? planetoid.volcanoCount : 0}
+            volcanoScale={planetoid.volcanoScale}
+            volcanoStrength={effectiveVolcanoesEnabled ? planetoid.volcanoStrength : 0}
+            volcanoColorStrength={effectiveVolcanoesEnabled ? planetoid.volcanoColorStrength : 0}
+            ridgeColorWeight={planetoid.ridgeColorWeight}
+            riftColorWeight={planetoid.riftColorWeight}
+            enableRidges={effectiveRidgesEnabled}
+            enableRifts={effectiveRiftsEnabled}
+            ridgeStrength={effectiveRidgesEnabled ? planetoid.ridgeStrength : 0}
+            ridgeFrequency={planetoid.ridgeFrequency}
+            ridgeSharpness={planetoid.ridgeSharpness}
+            riftStrength={effectiveRiftsEnabled ? planetoid.riftStrength : 0}
+            riftFrequency={planetoid.riftFrequency}
+            riftWidth={planetoid.riftWidth}
+            riftSharpness={planetoid.riftSharpness}
+            ridgesRiftsBlend={planetoid.ridgesRiftsBlend}
+            normalTextureSize={planetoid.normalTextureSize}
+            colorTextureSize={planetoid.colorTextureSize}
+            roughness={planetoid.roughness}
+            metalness={planetoid.metalness}
+            autoRotate={planetoid.autoRotate}
+            showDebugMeshes={sceneViewMode === 'mesh' ? planetoid.showDebugMeshes : false}
+            viewMode={sceneViewMode}
+          />
+        </Canvas>
+        {#snippet failed(error)}
+          <WebGLFailure {error} />
+        {/snippet}
       </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>

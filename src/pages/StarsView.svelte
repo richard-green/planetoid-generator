@@ -318,56 +318,56 @@
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
       <svelte:boundary>
-      <Canvas
-        dpr={1}
-        createRenderer={(canvas) =>
-          new WebGLRenderer({
-            canvas,
-            powerPreference: 'high-performance',
-            antialias: true,
-            alpha: true,
-            preserveDrawingBuffer: true,
-          })}
-      >
-        <StarsScene
-          bind:this={starScene}
-          {seed}
-          {textureScale}
-          {bandContrast}
-          {bandSwirl}
-          {granularity}
-          {turbulence}
-          {convection}
-          {sunspotCount}
-          {sunspotScale}
-          {sunspotPower}
-          {sunspotJaggedness}
-          {sunspotNeighbours}
-          {penumbraScale}
-          {sunspotDarkness}
-          {brightness}
-          {saturation}
-          {contrast}
-          {palette}
-          {limbBrightness}
-          {haloIntensity}
-          {haloFalloff}
-          {haloSize}
-          {haloTurbulence}
-          {plasmaIntensity}
-          {plasmaSurfaceIntensity}
-          {plasmaExtent}
-          {plasmaTurbulence}
-          {plasmaSharpness}
-          {plasmaTextureScale}
-          {colorTextureSize}
-          {autoRotate}
-          showStarSurface={starSurfaceVisible}
-        />
-      </Canvas>
-      {#snippet failed(error)}
-        <WebGLFailure {error} />
-      {/snippet}
+        <Canvas
+          dpr={1}
+          createRenderer={(canvas) =>
+            new WebGLRenderer({
+              canvas,
+              powerPreference: 'high-performance',
+              antialias: true,
+              alpha: true,
+              preserveDrawingBuffer: true,
+            })}
+        >
+          <StarsScene
+            bind:this={starScene}
+            {seed}
+            {textureScale}
+            {bandContrast}
+            {bandSwirl}
+            {granularity}
+            {turbulence}
+            {convection}
+            {sunspotCount}
+            {sunspotScale}
+            {sunspotPower}
+            {sunspotJaggedness}
+            {sunspotNeighbours}
+            {penumbraScale}
+            {sunspotDarkness}
+            {brightness}
+            {saturation}
+            {contrast}
+            {palette}
+            {limbBrightness}
+            {haloIntensity}
+            {haloFalloff}
+            {haloSize}
+            {haloTurbulence}
+            {plasmaIntensity}
+            {plasmaSurfaceIntensity}
+            {plasmaExtent}
+            {plasmaTurbulence}
+            {plasmaSharpness}
+            {plasmaTextureScale}
+            {colorTextureSize}
+            {autoRotate}
+            showStarSurface={starSurfaceVisible}
+          />
+        </Canvas>
+        {#snippet failed(error)}
+          <WebGLFailure {error} />
+        {/snippet}
       </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>

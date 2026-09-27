@@ -182,7 +182,6 @@
       {fragmentShader}
       {uniforms}
       transparent={true}
-      depthTest={false}
       depthWrite={false}
       toneMapped={false}
     />

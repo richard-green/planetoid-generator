@@ -15,14 +15,7 @@
     labels?: Partial<Record<T, string>>
   }
 
-  let {
-    id,
-    title = 'Palette',
-    value = $bindable(),
-    options,
-    palettes,
-    labels,
-  }: Props = $props()
+  let { id, title = 'Palette', value = $bindable(), options, palettes, labels }: Props = $props()
   let dialog: HTMLDialogElement | undefined = $state(undefined)
   let draft = $state<EditableStop[]>([])
   let originalPalette: Palette = []
