@@ -395,5 +395,6 @@ input[type='color'] {
   .canvas-shell {
     width: min(100%, calc(100vh - 2rem));
     justify-self: center;
+    position: static;
   }
 }

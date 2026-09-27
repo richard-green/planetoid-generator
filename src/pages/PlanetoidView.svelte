@@ -20,11 +20,18 @@
     PlanetoidPaletteNames,
   } from '../lib/components/Threlte/Planetoid/PlanetoidPalettes'
   import {
+    DustCloudPaletteLabels,
+    DustCloudPaletteNames,
+  } from '../lib/components/Threlte/Planetoid/DustCloudPalettes'
+  import {
     DefaultValues,
+    DustCloudStyleLabels,
+    DustCloudStyleNames,
     MaxValues,
     MinValues,
     mergePlanetoidPresetSettings,
     PlanetoidCliFlagByRangeKey,
+    PlanetoidCliFeatureFlags,
     PlanetoidCliToggleFlags,
     PlanetoidRangeLabels,
     sanitizePlanetoidPresetSettings,
@@ -51,6 +58,8 @@
     | 'enableVolcanoes'
     | 'normalTextureSize'
     | 'colorTextureSize'
+    | 'dustCloudPalette'
+    | 'dustCloudStyle'
   >
 
   const PLANETOID_SETTINGS_STORAGE_KEY = 'planetoid-view-settings-v1'
@@ -80,6 +89,12 @@
     'colorScale',
     'tintShadowFloor',
     'swirliness',
+    'dustCloudCoverage',
+    'dustCloudOpacity',
+    'dustCloudElevation',
+    'dustCloudFrequency',
+    'dustCloudSwirliness',
+    'dustCloudCoriolis',
     'normalStrength',
     'craterCount',
     'craterScale',
@@ -136,6 +151,7 @@
   let volcanoSectionOpen = $state(false)
   let ridgeSectionOpen = $state(true)
   let riftSectionOpen = $state(true)
+  let dustCloudSectionOpen = $state(true)
   let textureResolutionSectionOpen = $state(false)
   let materialPropertiesSectionOpen = $state(true)
   let geometryPropertiesSectionOpen = $state(true)
@@ -179,6 +195,14 @@
     'riftSharpness',
     'riftColorWeight',
   ]
+  const dustCloudControlKeys: NumericControlKey[] = [
+    'dustCloudCoverage',
+    'dustCloudOpacity',
+    'dustCloudElevation',
+    'dustCloudFrequency',
+    'dustCloudSwirliness',
+    'dustCloudCoriolis',
+  ]
 
   const colorControls = textureControls.filter((control) => colorControlKeys.includes(control))
   const materialControls = textureControls.filter((control) =>
@@ -188,6 +212,9 @@
   const volcanoControls = textureControls.filter((control) => volcanoControlKeys.includes(control))
   const ridgeControls = textureControls.filter((control) => ridgeControlKeys.includes(control))
   const riftControls = textureControls.filter((control) => riftControlKeys.includes(control))
+  const dustCloudControls = textureControls.filter((control) =>
+    dustCloudControlKeys.includes(control)
+  )
 
   const effectiveCratersEnabled = $derived(cratersEnabled)
   const volcanoSectionEnabled = $derived(volcanoesEnabled)
@@ -303,6 +330,10 @@
       quoteCliValue(settings.palette),
       '--surface-tint',
       quoteCliValue(settings.surfaceTint),
+      PlanetoidCliFeatureFlags.dustCloudStyle,
+      settings.dustCloudStyle,
+      PlanetoidCliFeatureFlags.dustCloudPalette,
+      settings.dustCloudPalette,
       '--view-mode',
       mode,
     ]
@@ -737,6 +768,14 @@
           colorScale={planetoid.colorScale}
           tintShadowFloor={planetoid.tintShadowFloor}
           swirliness={planetoid.swirliness}
+          dustCloudCoverage={planetoid.dustCloudCoverage}
+          dustCloudStyle={planetoid.dustCloudStyle}
+          dustCloudPalette={planetoid.dustCloudPalette}
+          dustCloudOpacity={planetoid.dustCloudOpacity}
+          dustCloudElevation={planetoid.dustCloudElevation}
+          dustCloudFrequency={planetoid.dustCloudFrequency}
+          dustCloudSwirliness={planetoid.dustCloudSwirliness}
+          dustCloudCoriolis={planetoid.dustCloudCoriolis}
           seed={planetoid.seed}
           largeScale={planetoid.largeScale}
           mediumScale={planetoid.mediumScale}
@@ -976,6 +1015,39 @@
 
       <fieldset>
         <legend>{PlanetoidUiLabels.features}</legend>
+        <CollapsibleControl title={PlanetoidUiLabels.dustClouds} bind:open={dustCloudSectionOpen}>
+          <div class="control-grid">
+            <label>
+              <span>{PlanetoidUiLabels.dustCloudStyle}</span>
+              <select bind:value={planetoid.dustCloudStyle}>
+                {#each DustCloudStyleNames as style (style)}
+                  <option value={style}>{DustCloudStyleLabels[style]}</option>
+                {/each}
+              </select>
+            </label>
+            <label>
+              <span>{PlanetoidUiLabels.dustCloudPalette}</span>
+              <select bind:value={planetoid.dustCloudPalette}>
+                {#each DustCloudPaletteNames as cloudPalette (cloudPalette)}
+                  <option value={cloudPalette}>{DustCloudPaletteLabels[cloudPalette]}</option>
+                {/each}
+              </select>
+            </label>
+            {#each dustCloudControls as control (control)}
+              <label class="compact-number-row">
+                <span>{PlanetoidRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
+                />
+              </label>
+            {/each}
+          </div>
+        </CollapsibleControl>
+
         <CollapsibleControl
           title={PlanetoidUiLabels.craters}
           bind:open={craterSectionOpen}

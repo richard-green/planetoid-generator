@@ -22,6 +22,7 @@
 
   const fallbackPath = routes[0]?.path ?? '/'
   const WELCOME_SEEN_STORAGE_KEY = 'planetoid-generator-welcome-seen-v1'
+  const stackedLayoutQuery = window.matchMedia('(max-width: 900px)')
 
   let welcomeDialogElement: HTMLDialogElement | undefined = $state(undefined)
   let showWelcomeDialog = $state(false)
@@ -106,6 +107,23 @@
     }
   }
 
+  function handleMainWheelCapture(event: WheelEvent): void {
+    if (
+      !stackedLayoutQuery.matches ||
+      event.ctrlKey ||
+      !(event.target instanceof HTMLCanvasElement)
+    ) {
+      return
+    }
+
+    event.preventDefault()
+    event.stopPropagation()
+    ;(event.currentTarget as HTMLElement).scrollBy({
+      top: event.deltaY,
+      left: event.deltaX,
+    })
+  }
+
   function onWelcomeDialogCancel(event: Event): void {
     event.preventDefault()
     closeWelcomeDialog()
@@ -167,7 +185,7 @@
 <svelte:window onhashchange={handleHashChange} />
 
 <div class="app-shell">
-  <main>
+  <main onwheelcapture={handleMainWheelCapture}>
     {#if activeRoute}
       <activeRoute.component onOpenWelcome={openWelcomeDialog} />
     {/if}

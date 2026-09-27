@@ -8,6 +8,7 @@
     MeshBasicMaterial,
     MeshStandardMaterial,
     PerspectiveCamera,
+    SphereGeometry,
     Vector2,
     Vector3,
     WebGLRenderTarget,
@@ -23,6 +24,7 @@
   } from './PlanetoidSettings'
   import {
     createPlanetoidColorTexture,
+    createPlanetoidDustCloudTexture,
     createPlanetoidNormalTexture,
     createPlanetoidPaletteGradientTexture,
     disposeGeneratedTexture,
@@ -30,6 +32,7 @@
   import { SvelteMap } from 'svelte/reactivity'
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { PlanetoidPalettes } from './PlanetoidPalettes'
+  import { DustCloudPalettes } from './DustCloudPalettes'
 
   type Props = {
     settings: PlanetoidSettings & { viewMode: PlanetoidViewMode }
@@ -44,6 +47,14 @@
     colorScale,
     tintShadowFloor,
     swirliness,
+    dustCloudCoverage,
+    dustCloudStyle,
+    dustCloudPalette,
+    dustCloudOpacity,
+    dustCloudElevation,
+    dustCloudFrequency,
+    dustCloudSwirliness,
+    dustCloudCoriolis,
     seed,
     largeScale,
     mediumScale,
@@ -93,6 +104,9 @@
   let normalDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let colorDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let paletteDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
+  let dustCloudTexture = $state<ReturnType<typeof createPlanetoidDustCloudTexture> | undefined>(
+    undefined
+  )
   let normalDebugTexture = $state<ReturnType<typeof createPlanetoidNormalTexture> | undefined>(
     undefined
   )
@@ -104,6 +118,8 @@
   >(undefined)
   let color = $derived(new Color('#ffffff'))
   const initialGeometry = createIcosphere(2, 5)
+  const dustCloudGeometry = new SphereGeometry(1, 96, 64)
+  const dustCloudRadius = $derived(2 + largeScale + mediumScale + smallScale + dustCloudElevation)
   let geometry = $state<BufferGeometry>(initialGeometry)
   let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
   let normalWeldGroups = $state<number[][]>(
@@ -557,6 +573,36 @@
   })
 
   $effect(() => {
+    if (!renderer || dustCloudCoverage <= 0) {
+      dustCloudTexture = undefined
+      return
+    }
+
+    const cloudTexture = createPlanetoidDustCloudTexture(
+      renderer,
+      shapeParameters.noiseOffset,
+      colorTextureSize,
+      {
+        dustCloudCoverage,
+        dustCloudStyle,
+        dustCloudOpacity,
+        dustCloudFrequency,
+        dustCloudSwirliness,
+        dustCloudCoriolis,
+        palette: DustCloudPalettes[dustCloudPalette],
+      }
+    )
+    dustCloudTexture = cloudTexture
+
+    return () => {
+      if (dustCloudTexture === cloudTexture) {
+        dustCloudTexture = undefined
+      }
+      disposeGeneratedTexture(cloudTexture)
+    }
+  })
+
+  $effect(() => {
     if (!renderer) return
 
     if (!showDebugMeshes) {
@@ -730,6 +776,7 @@
 
   onDestroy(() => {
     geometry.dispose()
+    dustCloudGeometry.dispose()
   })
 
   useTask((delta) => {
@@ -750,6 +797,21 @@
 {#if viewMode === 'mesh'}
   <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
     <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
+    {#if dustCloudCoverage > 0 && dustCloudTexture}
+      <T.Mesh
+        geometry={dustCloudGeometry}
+        scale={[dustCloudRadius, dustCloudRadius, dustCloudRadius]}
+        renderOrder={1}
+      >
+        <T.MeshStandardMaterial
+          map={dustCloudTexture}
+          transparent
+          depthWrite={false}
+          roughness={1}
+          metalness={0}
+        />
+      </T.Mesh>
+    {/if}
   </T.Mesh>
 
   {#if showDebugMeshes}

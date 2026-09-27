@@ -9,13 +9,20 @@ import {
   type PlanetoidPaletteName as PaletteName,
 } from '../src/lib/components/Threlte/Planetoid/PlanetoidPalettes'
 import {
+  DustCloudPaletteNames,
+  type DustCloudPaletteName,
+} from '../src/lib/components/Threlte/Planetoid/DustCloudPalettes'
+import {
+  DustCloudStyleNames,
   MaxValues,
   MinValues,
+  PlanetoidCliFeatureFlags,
   PlanetoidCliFlagByRangeKey,
   PlanetoidCliToggleFlags,
   PlanetoidRangeLabels,
   PlanetoidUiLabels,
   type PlanetoidRangeKey,
+  type DustCloudStyle,
 } from '../src/lib/components/Threlte/Planetoid/PlanetoidSettings'
 
 const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as PlanetoidRangeKey[]).filter(
@@ -39,10 +46,18 @@ type ScriptOptions = {
   step: number
   viewMode?: 'mesh' | 'normal' | 'texture'
   palette?: string
+  dustCloudPalette?: DustCloudPaletteName
+  dustCloudStyle?: DustCloudStyle
   surfaceTint?: string
   colorScale?: number
   tintShadowFloor?: number
   swirliness?: number
+  dustCloudCoverage?: number
+  dustCloudOpacity?: number
+  dustCloudElevation?: number
+  dustCloudFrequency?: number
+  dustCloudSwirliness?: number
+  dustCloudCoriolis?: number
   craterCount?: number
   craterScale?: number
   craterStrength?: number
@@ -93,10 +108,18 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   step: 1,
   viewMode: undefined,
   palette: undefined,
+  dustCloudPalette: undefined,
+  dustCloudStyle: undefined,
   surfaceTint: undefined,
   colorScale: undefined,
   tintShadowFloor: undefined,
   swirliness: undefined,
+  dustCloudCoverage: undefined,
+  dustCloudOpacity: undefined,
+  dustCloudElevation: undefined,
+  dustCloudFrequency: undefined,
+  dustCloudSwirliness: undefined,
+  dustCloudCoriolis: undefined,
   craterCount: undefined,
   craterScale: undefined,
   craterStrength: undefined,
@@ -163,6 +186,8 @@ type ScriptLocators = {
   planetoidNavLink: Locator
   seedInput: Locator
   paletteSelect: Locator
+  dustCloudPaletteSelect: Locator
+  dustCloudStyleSelect: Locator
   viewModeRadios: Record<NonNullable<ScriptOptions['viewMode']>, Locator>
   surfaceTintInput: Locator
   autoRotateToggle: Locator
@@ -194,6 +219,12 @@ function buildLocators(page: Page): ScriptLocators {
     }),
     seedInput: page.locator(selectors.numberInputByLabel(PlanetoidUiLabels.seed)).first(),
     paletteSelect: page.locator(selectors.selectByLabel(PlanetoidUiLabels.palette)).first(),
+    dustCloudPaletteSelect: page
+      .locator(selectors.selectByLabel(PlanetoidUiLabels.dustCloudPalette))
+      .first(),
+    dustCloudStyleSelect: page
+      .locator(selectors.selectByLabel(PlanetoidUiLabels.dustCloudStyle))
+      .first(),
     viewModeRadios: {
       mesh: page.locator(selectors.sceneViewModeRadio('mesh')).first(),
       normal: page.locator(selectors.sceneViewModeRadio('normal')).first(),
@@ -320,6 +351,24 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === PlanetoidCliFeatureFlags.dustCloudPalette && next) {
+      if (!DustCloudPaletteNames.includes(next as DustCloudPaletteName)) {
+        throw new Error(`Invalid dust-cloud-palette: ${next}`)
+      }
+      options.dustCloudPalette = next as DustCloudPaletteName
+      i++
+      continue
+    }
+
+    if (arg === PlanetoidCliFeatureFlags.dustCloudStyle && next) {
+      if (!DustCloudStyleNames.includes(next as DustCloudStyle)) {
+        throw new Error(`Invalid dust-cloud-style: ${next}`)
+      }
+      options.dustCloudStyle = next as DustCloudStyle
+      i++
+      continue
+    }
+
     if (arg === '--view-mode' && next) {
       if (next !== 'mesh' && next !== 'normal' && next !== 'texture') {
         throw new Error(`Invalid view-mode: ${next}. Expected one of: mesh, normal, texture`)
@@ -400,6 +449,8 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --step <n>              Seed increment per image (default: 1)',
           '  --view-mode <name>      mesh | normal | texture',
           '  --palette <name>        Palette name (example: oxidizedBasalt)',
+          `  ${PlanetoidCliFeatureFlags.dustCloudStyle} <name> Cloud shape: ${DustCloudStyleNames.join(' | ')}`,
+          `  ${PlanetoidCliFeatureFlags.dustCloudPalette} <name> Cloud palette: ${DustCloudPaletteNames.join(' | ')}`,
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
           ...NUMERIC_HELP_LINES,
           `  ${PlanetoidCliToggleFlags.autoRotate} <bool>    Enable/disable auto-rotate`,
@@ -490,10 +541,17 @@ async function main() {
       `step=${options.step}`,
       `viewMode=${options.viewMode ?? 'unchanged'}`,
       `palette=${options.palette ?? 'unchanged'}`,
+      `dustCloudPalette=${options.dustCloudPalette ?? 'unchanged'}`,
+      `dustCloudStyle=${options.dustCloudStyle ?? 'unchanged'}`,
       `surfaceTint=${options.surfaceTint ?? 'unchanged'}`,
       `colorScale=${options.colorScale ?? 'unchanged'}`,
       `tintShadowFloor=${options.tintShadowFloor ?? 'unchanged'}`,
       `swirliness=${options.swirliness ?? 'unchanged'}`,
+      `dustCloudCoverage=${options.dustCloudCoverage ?? 'unchanged'}`,
+      `dustCloudOpacity=${options.dustCloudOpacity ?? 'unchanged'}`,
+      `dustCloudElevation=${options.dustCloudElevation ?? 'unchanged'}`,
+      `dustCloudFrequency=${options.dustCloudFrequency ?? 'unchanged'}`,
+      `dustCloudSwirliness=${options.dustCloudSwirliness ?? 'unchanged'}`,
       `craterCount=${options.craterCount ?? 'unchanged'}`,
       `craterScale=${options.craterScale ?? 'unchanged'}`,
       `craterStrength=${options.craterStrength ?? 'unchanged'}`,
@@ -581,6 +639,8 @@ async function main() {
       planetoidNavLink,
       seedInput,
       paletteSelect,
+      dustCloudPaletteSelect,
+      dustCloudStyleSelect,
       viewModeRadios,
       surfaceTintInput,
       autoRotateToggle,
@@ -659,6 +719,20 @@ async function main() {
       await paletteSelect.selectOption(requestedPalette)
       await page.waitForTimeout(options.frameSettleMs)
       logger.info('Palette applied and settle delay complete')
+    }
+
+    if (options.dustCloudPalette) {
+      await ensureLocatorVisible(dustCloudPaletteSelect)
+      logger.info(`Applying dust-cloud palette: ${options.dustCloudPalette}`)
+      await dustCloudPaletteSelect.selectOption(options.dustCloudPalette)
+      await page.waitForTimeout(options.frameSettleMs)
+    }
+
+    if (options.dustCloudStyle) {
+      await ensureLocatorVisible(dustCloudStyleSelect)
+      logger.info(`Applying dust-cloud style: ${options.dustCloudStyle}`)
+      await dustCloudStyleSelect.selectOption(options.dustCloudStyle)
+      await page.waitForTimeout(options.frameSettleMs)
     }
 
     if (options.viewMode) {

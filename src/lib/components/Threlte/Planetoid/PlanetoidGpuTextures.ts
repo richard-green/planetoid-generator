@@ -18,7 +18,13 @@ import {
   type WebGLRenderer,
 } from 'three'
 import { getPalettePosition, type PaletteColor } from '../../../types/palette'
-import { DefaultValues, MaxValues, MinValues } from './PlanetoidSettings'
+import {
+  DefaultValues,
+  DustCloudStyleNames,
+  MaxValues,
+  MinValues,
+  type DustCloudStyle,
+} from './PlanetoidSettings'
 
 type NoiseOffset = { x: number; y: number; z: number }
 
@@ -75,6 +81,16 @@ type ColorTextureOptions = {
   volcanoColorStrength?: number
 }
 
+type DustCloudTextureOptions = {
+  dustCloudCoverage: number
+  dustCloudStyle: DustCloudStyle
+  dustCloudOpacity: number
+  dustCloudFrequency: number
+  dustCloudSwirliness: number
+  dustCloudCoriolis: number
+  palette: PaletteColor[]
+}
+
 const MAX_PALETTE = 16
 
 // Higher values make crater rims narrower and crisper.
@@ -99,6 +115,12 @@ const fragmentShader = `
   uniform vec3 uTint;
   uniform float uTintShadowFloor;
   uniform float uSwirliness;
+  uniform float uDustCloudCoverage;
+  uniform int uDustCloudStyle;
+  uniform float uDustCloudOpacity;
+  uniform float uDustCloudFrequency;
+  uniform float uDustCloudSwirliness;
+  uniform float uDustCloudCoriolis;
   uniform float uTextureScale;
   uniform int uEnableCraters;
   uniform int uCraterCount;
@@ -767,6 +789,52 @@ const fragmentShader = `
       return;
     }
 
+    if (uMode == 5) {
+      float coverage = clamp(uDustCloudCoverage, 0.0, 1.0);
+      float frequency = max(0.05, uDustCloudFrequency);
+      float cloudSwirliness = clamp(uDustCloudSwirliness, 0.0, 2.0);
+      float coriolis = spherePos.y * clamp(uDustCloudCoriolis, 0.0, 2.0);
+      vec3 cloudWarp = vec3(
+        fractalNoise(remappedPos * (frequency * 2.4) + seed * 0.91 + vec3(13.1, 37.2, 73.8)),
+        fractalNoise(remappedPos * (frequency * 2.1) + seed * 1.17 + vec3(29.4, 11.8, 47.3)),
+        fractalNoise(remappedPos * (frequency * 2.7) + seed * 1.03 + vec3(41.7, 59.6, 19.5))
+      );
+      vec3 eastward = vec3(-spherePos.z, 0.0, spherePos.x);
+      vec3 cloudPosition = normalize(
+        spherePos + cloudWarp * (0.16 * cloudSwirliness) + eastward * (0.12 * coriolis * cloudSwirliness)
+      );
+      float cloudShape = fractalNoise(cloudPosition * (7.0 * frequency) + seed * 1.37 + vec3(37.1, 11.9, 53.7));
+      float cloudDetail = fractalNoise(cloudPosition * (19.0 * frequency) + seed * 1.91 + vec3(7.3, 61.1, 29.5));
+      float cloudWisps = fractalNoise(cloudPosition * (43.0 * frequency) + seed * 2.13 + vec3(23.7, 41.3, 5.9));
+      float wispField = cloudShape + cloudDetail * 0.2 + cloudWisps * 0.06;
+
+      float ribPhase = (cloudPosition.y * (6.0 + frequency * 5.0) + cloudDetail * 1.8) * PI;
+      float ribField = (1.0 - abs(sin(ribPhase))) * 2.0 - 1.0;
+
+      float curlAngle = cloudDetail * cloudSwirliness * (1.5 + frequency) + coriolis * (2.0 + frequency * 0.25);
+      float curlCos = cos(curlAngle);
+      float curlSin = sin(curlAngle);
+      vec3 curledPosition = normalize(vec3(
+        cloudPosition.x * curlCos - cloudPosition.z * curlSin,
+        cloudPosition.y,
+        cloudPosition.x * curlSin + cloudPosition.z * curlCos
+      ));
+      float curlNoise = fractalNoise(curledPosition * (12.0 * frequency) + seed * 2.31 + vec3(43.7, 17.3, 31.1));
+      float curlSpiral = sin((atan(curledPosition.z, curledPosition.x) * 3.0 + curledPosition.y * 7.0) * frequency + cloudShape * 3.0 + coriolis * 2.0);
+      float curlField = curlNoise * 0.72 + curlSpiral * 0.28;
+
+      float cloudField = wispField;
+      if (uDustCloudStyle == 1) cloudField = mix(wispField, ribField, 0.78);
+      if (uDustCloudStyle == 2) cloudField = mix(wispField, curlField, 0.82);
+      if (uDustCloudStyle == 3) cloudField = wispField * 0.42 + ribField * 0.28 + curlField * 0.3;
+      float threshold = mix(0.76, -0.3, coverage);
+      float cloudAlpha = smoothstep(threshold, threshold + 0.2, cloudField);
+      cloudAlpha *= clamp(uDustCloudOpacity, 0.0, 1.0);
+      vec3 cloudColor = mapToPalette(clamp(cloudField * 0.72 + cloudDetail * 0.35, -1.0, 1.0));
+      gl_FragColor = vec4(cloudColor, cloudAlpha);
+      return;
+    }
+
     float colorLarge = fractalNoise(remappedPos * 2.0 + seed);
     float colorMedium = fractalNoise(remappedPos * 6.0 + seed);
     float colorFine = fractalNoise(remappedPos * 40.0 + seed);
@@ -846,6 +914,12 @@ const material = new ShaderMaterial({
     uTint: new Uniform(new Vector3(1, 1, 1)),
     uTintShadowFloor: new Uniform(0.18),
     uSwirliness: new Uniform(1),
+    uDustCloudCoverage: new Uniform(DefaultValues.dustCloudCoverage),
+    uDustCloudStyle: new Uniform(DustCloudStyleNames.indexOf(DefaultValues.dustCloudStyle)),
+    uDustCloudOpacity: new Uniform(DefaultValues.dustCloudOpacity),
+    uDustCloudFrequency: new Uniform(DefaultValues.dustCloudFrequency),
+    uDustCloudSwirliness: new Uniform(DefaultValues.dustCloudSwirliness),
+    uDustCloudCoriolis: new Uniform(DefaultValues.dustCloudCoriolis),
     uTextureScale: new Uniform(1),
     uEnableCraters: new Uniform(1),
     uCraterCount: new Uniform(22),
@@ -948,7 +1022,7 @@ function setPaletteUniform(palette: PaletteColor[]) {
 
 function renderTexture(
   renderer: WebGLRenderer,
-  mode: 0 | 3 | 4,
+  mode: 0 | 3 | 4 | 5,
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
@@ -956,6 +1030,12 @@ function renderTexture(
     surfaceTint?: string
     tintShadowFloor?: number
     swirliness?: number
+    dustCloudCoverage?: number
+    dustCloudStyle?: number
+    dustCloudOpacity?: number
+    dustCloudFrequency?: number
+    dustCloudSwirliness?: number
+    dustCloudCoriolis?: number
     textureScale?: number
     enableCraters?: boolean
     craterCount?: number
@@ -1000,6 +1080,37 @@ function renderTexture(
     DefaultValues.swirliness,
     MinValues.swirliness,
     MaxValues.swirliness
+  )
+  material.uniforms.uDustCloudCoverage.value = toClampedNumber(
+    options.dustCloudCoverage,
+    DefaultValues.dustCloudCoverage,
+    MinValues.dustCloudCoverage,
+    MaxValues.dustCloudCoverage
+  )
+  material.uniforms.uDustCloudStyle.value = options.dustCloudStyle ?? 0
+  material.uniforms.uDustCloudOpacity.value = toClampedNumber(
+    options.dustCloudOpacity,
+    DefaultValues.dustCloudOpacity,
+    MinValues.dustCloudOpacity,
+    MaxValues.dustCloudOpacity
+  )
+  material.uniforms.uDustCloudFrequency.value = toClampedNumber(
+    options.dustCloudFrequency,
+    DefaultValues.dustCloudFrequency,
+    MinValues.dustCloudFrequency,
+    MaxValues.dustCloudFrequency
+  )
+  material.uniforms.uDustCloudSwirliness.value = toClampedNumber(
+    options.dustCloudSwirliness,
+    DefaultValues.dustCloudSwirliness,
+    MinValues.dustCloudSwirliness,
+    MaxValues.dustCloudSwirliness
+  )
+  material.uniforms.uDustCloudCoriolis.value = toClampedNumber(
+    options.dustCloudCoriolis,
+    DefaultValues.dustCloudCoriolis,
+    MinValues.dustCloudCoriolis,
+    MaxValues.dustCloudCoriolis
   )
   material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
   material.uniforms.uEnableCraters.value = (options.enableCraters ?? true) ? 1 : 0
@@ -1200,6 +1311,30 @@ export function createPlanetoidColorTexture(
     ridgesRiftsBlend: options.ridgesRiftsBlend,
     debugMidline: options.debugMidline,
     palette: planetoidPalette,
+  })
+
+  texture.anisotropy = 8
+  texture.colorSpace = NoColorSpace
+
+  return texture
+}
+
+export function createPlanetoidDustCloudTexture(
+  renderer: WebGLRenderer,
+  noiseOffset: NoiseOffset,
+  textureHeight: number,
+  options: DustCloudTextureOptions
+) {
+  const height = Math.max(2, Math.floor(textureHeight))
+  const width = height * 2
+  const texture = renderTexture(renderer, 5, width, height, noiseOffset, {
+    dustCloudCoverage: options.dustCloudCoverage,
+    dustCloudOpacity: options.dustCloudOpacity,
+    dustCloudFrequency: options.dustCloudFrequency,
+    dustCloudSwirliness: options.dustCloudSwirliness,
+    dustCloudCoriolis: options.dustCloudCoriolis,
+    dustCloudStyle: DustCloudStyleNames.indexOf(options.dustCloudStyle),
+    palette: options.palette,
   })
 
   texture.anisotropy = 8

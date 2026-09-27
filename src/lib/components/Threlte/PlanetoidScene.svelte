@@ -7,7 +7,9 @@
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import Planetoid from './Planetoid/Planetoid.svelte'
   import { DefaultValues, type PlanetoidViewMode } from './Planetoid/PlanetoidSettings'
+  import type { DustCloudStyle } from './Planetoid/PlanetoidSettings'
   import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
+  import type { DustCloudPaletteName } from './Planetoid/DustCloudPalettes'
   import type { TextureSize } from '../../types/textureSize'
 
   type Props = {
@@ -17,6 +19,14 @@
     colorScale?: number
     tintShadowFloor?: number
     swirliness?: number
+    dustCloudCoverage?: number
+    dustCloudStyle?: DustCloudStyle
+    dustCloudPalette?: DustCloudPaletteName
+    dustCloudOpacity?: number
+    dustCloudElevation?: number
+    dustCloudFrequency?: number
+    dustCloudSwirliness?: number
+    dustCloudCoriolis?: number
     seed?: number
     largeScale?: number
     mediumScale?: number
@@ -63,6 +73,14 @@
     colorScale = DefaultValues.colorScale,
     tintShadowFloor = DefaultValues.tintShadowFloor,
     swirliness = DefaultValues.swirliness,
+    dustCloudCoverage = DefaultValues.dustCloudCoverage,
+    dustCloudStyle = DefaultValues.dustCloudStyle,
+    dustCloudPalette = DefaultValues.dustCloudPalette,
+    dustCloudOpacity = DefaultValues.dustCloudOpacity,
+    dustCloudElevation = DefaultValues.dustCloudElevation,
+    dustCloudFrequency = DefaultValues.dustCloudFrequency,
+    dustCloudSwirliness = DefaultValues.dustCloudSwirliness,
+    dustCloudCoriolis = DefaultValues.dustCloudCoriolis,
     seed = DefaultValues.seed,
     largeScale = DefaultValues.largeScale,
     mediumScale = DefaultValues.mediumScale,
@@ -109,6 +127,14 @@
     colorScale,
     tintShadowFloor,
     swirliness,
+    dustCloudCoverage,
+    dustCloudStyle,
+    dustCloudPalette,
+    dustCloudOpacity,
+    dustCloudElevation,
+    dustCloudFrequency,
+    dustCloudSwirliness,
+    dustCloudCoriolis,
     seed,
     largeScale,
     mediumScale,

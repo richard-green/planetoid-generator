@@ -1,4 +1,5 @@
 import { PlanetoidPaletteNames, type PlanetoidPaletteName } from './PlanetoidPalettes'
+import { DustCloudPaletteNames, type DustCloudPaletteName } from './DustCloudPalettes'
 import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import {
   sanitizeBoolean,
@@ -10,6 +11,15 @@ import {
 } from '../../../utils/sanitize'
 
 export type PlanetoidViewMode = 'mesh' | 'normal' | 'texture'
+
+export const DustCloudStyleNames = ['wisps', 'ribs', 'curls', 'mixed'] as const
+export type DustCloudStyle = (typeof DustCloudStyleNames)[number]
+export const DustCloudStyleLabels: Record<DustCloudStyle, string> = {
+  wisps: 'Wisps',
+  ribs: 'Ribs',
+  curls: 'Curls',
+  mixed: 'Mixed',
+}
 
 export type PlanetoidPresetExcludedKey =
   'seed' | 'autoRotate' | 'showDebugMeshes' | 'normalTextureSize' | 'colorTextureSize'
@@ -27,6 +37,14 @@ export type PlanetoidSettings = {
   colorScale: number
   tintShadowFloor: number
   swirliness: number
+  dustCloudCoverage: number
+  dustCloudStyle: DustCloudStyle
+  dustCloudPalette: DustCloudPaletteName
+  dustCloudOpacity: number
+  dustCloudElevation: number
+  dustCloudFrequency: number
+  dustCloudSwirliness: number
+  dustCloudCoriolis: number
   craterCount: number
   craterScale: number
   craterStrength: number
@@ -74,6 +92,12 @@ export type PlanetoidRangeValues = Pick<
   | 'colorScale'
   | 'tintShadowFloor'
   | 'swirliness'
+  | 'dustCloudCoverage'
+  | 'dustCloudOpacity'
+  | 'dustCloudElevation'
+  | 'dustCloudFrequency'
+  | 'dustCloudSwirliness'
+  | 'dustCloudCoriolis'
   | 'craterCount'
   | 'craterScale'
   | 'craterStrength'
@@ -119,6 +143,14 @@ export const DefaultValues: PlanetoidSettings = {
   colorScale: 1,
   tintShadowFloor: 0.18,
   swirliness: 1,
+  dustCloudCoverage: 0.4,
+  dustCloudStyle: 'mixed',
+  dustCloudPalette: 'silicate',
+  dustCloudOpacity: 0.68,
+  dustCloudElevation: 0.15,
+  dustCloudFrequency: 1,
+  dustCloudSwirliness: 0.65,
+  dustCloudCoriolis: 0.8,
   craterCount: 20,
   craterScale: 1,
   craterStrength: 5,
@@ -156,6 +188,12 @@ export const MinValues: PlanetoidRangeValues = {
   colorScale: 0.0,
   tintShadowFloor: 0,
   swirliness: 0,
+  dustCloudCoverage: 0,
+  dustCloudOpacity: 0,
+  dustCloudElevation: 0.01,
+  dustCloudFrequency: 0.25,
+  dustCloudSwirliness: 0,
+  dustCloudCoriolis: 0,
   craterCount: 0,
   craterScale: 0.25,
   craterStrength: 0,
@@ -191,6 +229,12 @@ export const MaxValues: PlanetoidRangeValues = {
   colorScale: 2,
   tintShadowFloor: 0.8,
   swirliness: 2,
+  dustCloudCoverage: 1,
+  dustCloudOpacity: 1,
+  dustCloudElevation: 1,
+  dustCloudFrequency: 4,
+  dustCloudSwirliness: 2,
+  dustCloudCoriolis: 2,
   craterCount: 120,
   craterScale: 3,
   craterStrength: 10,
@@ -226,6 +270,12 @@ export const StepValues: PlanetoidRangeValues = {
   colorScale: 0.1,
   tintShadowFloor: 0.01,
   swirliness: 0.05,
+  dustCloudCoverage: 0.05,
+  dustCloudOpacity: 0.05,
+  dustCloudElevation: 0.01,
+  dustCloudFrequency: 0.05,
+  dustCloudSwirliness: 0.05,
+  dustCloudCoriolis: 0.05,
   craterCount: 1,
   craterScale: 0.05,
   craterStrength: 0.1,
@@ -277,6 +327,36 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultValues.swirliness,
     min: MinValues.swirliness,
     max: MaxValues.swirliness,
+  },
+  dustCloudCoverage: {
+    defaultValue: DefaultValues.dustCloudCoverage,
+    min: MinValues.dustCloudCoverage,
+    max: MaxValues.dustCloudCoverage,
+  },
+  dustCloudOpacity: {
+    defaultValue: DefaultValues.dustCloudOpacity,
+    min: MinValues.dustCloudOpacity,
+    max: MaxValues.dustCloudOpacity,
+  },
+  dustCloudElevation: {
+    defaultValue: DefaultValues.dustCloudElevation,
+    min: MinValues.dustCloudElevation,
+    max: MaxValues.dustCloudElevation,
+  },
+  dustCloudFrequency: {
+    defaultValue: DefaultValues.dustCloudFrequency,
+    min: MinValues.dustCloudFrequency,
+    max: MaxValues.dustCloudFrequency,
+  },
+  dustCloudSwirliness: {
+    defaultValue: DefaultValues.dustCloudSwirliness,
+    min: MinValues.dustCloudSwirliness,
+    max: MaxValues.dustCloudSwirliness,
+  },
+  dustCloudCoriolis: {
+    defaultValue: DefaultValues.dustCloudCoriolis,
+    min: MinValues.dustCloudCoriolis,
+    max: MaxValues.dustCloudCoriolis,
   },
   craterCount: {
     defaultValue: DefaultValues.craterCount,
@@ -435,6 +515,18 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
   const enableRifts = sanitizeBoolean(raw, 'enableRifts', DefaultValues.enableRifts)
 
   const palette = sanitizeEnum(raw, 'palette', PlanetoidPaletteNames, DefaultValues.palette)
+  const dustCloudPalette = sanitizeEnum(
+    raw,
+    'dustCloudPalette',
+    DustCloudPaletteNames,
+    DefaultValues.dustCloudPalette
+  )
+  const dustCloudStyle = sanitizeEnum(
+    raw,
+    'dustCloudStyle',
+    DustCloudStyleNames,
+    DefaultValues.dustCloudStyle
+  )
   const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
   return {
     palette,
@@ -442,6 +534,14 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     colorScale: numeric.colorScale,
     tintShadowFloor: numeric.tintShadowFloor,
     swirliness: numeric.swirliness,
+    dustCloudCoverage: numeric.dustCloudCoverage,
+    dustCloudStyle,
+    dustCloudPalette,
+    dustCloudOpacity: numeric.dustCloudOpacity,
+    dustCloudElevation: numeric.dustCloudElevation,
+    dustCloudFrequency: numeric.dustCloudFrequency,
+    dustCloudSwirliness: numeric.dustCloudSwirliness,
+    dustCloudCoriolis: numeric.dustCloudCoriolis,
     craterCount: numeric.craterCount,
     craterScale: numeric.craterScale,
     craterStrength: numeric.craterStrength,
@@ -515,6 +615,12 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   colorScale: 'Color scale',
   tintShadowFloor: 'Tint shadow floor',
   swirliness: 'Swirliness',
+  dustCloudCoverage: 'Dust-cloud coverage',
+  dustCloudOpacity: 'Dust-cloud opacity',
+  dustCloudElevation: 'Dust-cloud elevation',
+  dustCloudFrequency: 'Dust-cloud frequency',
+  dustCloudSwirliness: 'Dust-cloud swirliness',
+  dustCloudCoriolis: 'Coriolis strength',
   craterCount: 'Crater count',
   craterScale: 'Crater scale',
   craterStrength: 'Crater strength',
@@ -559,6 +665,9 @@ export const PlanetoidUiLabels = {
   material: 'Material',
   properties: 'Properties',
   features: 'Features',
+  dustClouds: 'Dust clouds',
+  dustCloudStyle: 'Cloud formation',
+  dustCloudPalette: 'Cloud palette',
   craters: 'Craters',
   volcanoes: 'Volcanoes',
   ridges: 'Ridges',
@@ -572,6 +681,12 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   colorScale: '--color-scale',
   tintShadowFloor: '--tint-shadow-floor',
   swirliness: '--swirliness',
+  dustCloudCoverage: '--dust-cloud-coverage',
+  dustCloudOpacity: '--dust-cloud-opacity',
+  dustCloudElevation: '--dust-cloud-elevation',
+  dustCloudFrequency: '--dust-cloud-frequency',
+  dustCloudSwirliness: '--dust-cloud-swirliness',
+  dustCloudCoriolis: '--dust-cloud-coriolis',
   craterCount: '--crater-count',
   craterScale: '--crater-scale',
   craterStrength: '--crater-strength',
@@ -609,4 +724,9 @@ export const PlanetoidCliToggleFlags = {
   ridgesEnabled: '--ridges-enabled',
   riftsEnabled: '--rifts-enabled',
   volcanoesEnabled: '--volcanoes-enabled',
+} as const
+
+export const PlanetoidCliFeatureFlags = {
+  dustCloudStyle: '--dust-cloud-style',
+  dustCloudPalette: '--dust-cloud-palette',
 } as const
