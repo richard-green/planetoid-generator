@@ -19,6 +19,7 @@ export type RingSettings = {
   ringDensity: number
   ringTextureScale: number
   ringGranularity: number
+  ringPaletteInfluence: number
   ringSolarization: number
   ringOpacity: number
   ringNoise: number
@@ -36,6 +37,7 @@ export type RingRangeValues = Pick<
   | 'ringDensity'
   | 'ringTextureScale'
   | 'ringGranularity'
+  | 'ringPaletteInfluence'
   | 'ringSolarization'
   | 'ringOpacity'
   | 'ringNoise'
@@ -56,6 +58,7 @@ export const DefaultRingValues: RingSettings = {
   ringDensity: 0.65,
   ringTextureScale: 7,
   ringGranularity: 0.35,
+  ringPaletteInfluence: 1,
   ringSolarization: 1,
   ringOpacity: 0.7,
   ringNoise: 0.35,
@@ -66,12 +69,13 @@ export const RingMinValues: RingRangeValues = {
   ringInnerRadius: 1.05,
   ringOuterRadius: 1.15,
   ringTilt: -45,
-  ringBandCount: 2,
+  ringBandCount: 1,
   ringBandSharpness: 0,
   ringBandRegularity: 0,
   ringDensity: 0.05,
   ringTextureScale: 0,
   ringGranularity: 0,
+  ringPaletteInfluence: 0,
   ringSolarization: 0,
   ringOpacity: 0.05,
   ringNoise: 0,
@@ -88,6 +92,7 @@ export const RingMaxValues: RingRangeValues = {
   ringDensity: 1,
   ringTextureScale: 24,
   ringGranularity: 1,
+  ringPaletteInfluence: 1,
   ringSolarization: 1,
   ringOpacity: 1,
   ringNoise: 1,
@@ -104,6 +109,7 @@ export const RingStepValues: RingRangeValues = {
   ringDensity: 0.05,
   ringTextureScale: 0.5,
   ringGranularity: 0.05,
+  ringPaletteInfluence: 0.05,
   ringSolarization: 0.05,
   ringOpacity: 0.05,
   ringNoise: 0.05,
@@ -120,6 +126,7 @@ export const RingRangeLabels: Record<RingRangeKey, string> = {
   ringDensity: 'Density',
   ringTextureScale: 'Texture scale',
   ringGranularity: 'Granularity',
+  ringPaletteInfluence: 'Palette influence',
   ringSolarization: 'Solarization',
   ringOpacity: 'Opacity',
   ringNoise: 'Noise',
@@ -136,6 +143,7 @@ export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
   ringDensity: '--ring-density',
   ringTextureScale: '--ring-texture-scale',
   ringGranularity: '--ring-granularity',
+  ringPaletteInfluence: '--ring-palette-influence',
   ringSolarization: '--ring-solarization',
   ringOpacity: '--ring-opacity',
   ringNoise: '--ring-noise',
@@ -193,6 +201,11 @@ const RING_NUMERIC_SPECS: Record<RingRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultRingValues.ringGranularity,
     min: RingMinValues.ringGranularity,
     max: RingMaxValues.ringGranularity,
+  },
+  ringPaletteInfluence: {
+    defaultValue: DefaultRingValues.ringPaletteInfluence,
+    min: RingMinValues.ringPaletteInfluence,
+    max: RingMaxValues.ringPaletteInfluence,
   },
   ringSolarization: {
     defaultValue: DefaultRingValues.ringSolarization,

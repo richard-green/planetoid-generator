@@ -27,7 +27,7 @@
   let { planetRadius, thickness, dropoff, intensity, terminatorWrap, palette }: Props = $props()
 
   const MAX_PALETTE_SIZE = 8
-  const RAY_STEPS = 16
+  const RAY_STEPS = 8
 
   const { invalidate } = useThrelte()
   const geometry = new SphereGeometry(1, 128, 96)
@@ -143,24 +143,23 @@
     vec3 paletteColor(float amount) {
       int size = max(2, min(uPaletteSize, ${MAX_PALETTE_SIZE}));
       float position = clamp(amount, 0.0, 1.0);
-      int index = 0;
-      for (int i = 0; i < ${MAX_PALETTE_SIZE} - 1; i++) {
-        if (i < size - 1 && position >= uPalettePositions[i]) index = i;
-      }
-      index = min(index, size - 2);
       vec3 first = uPalette[0];
       vec3 second = uPalette[1];
       float startPosition = uPalettePositions[0];
       float endPosition = uPalettePositions[1];
 
-      for (int i = 0; i < ${MAX_PALETTE_SIZE}; i++) {
-        if (i == index) {
-          first = uPalette[i];
-          startPosition = uPalettePositions[i];
-        }
-        if (i == index + 1) {
-          second = uPalette[i];
-          endPosition = uPalettePositions[i];
+      for (int i = 0; i < ${MAX_PALETTE_SIZE - 1}; i++) {
+        if (i >= size - 1) break;
+        float nextPosition = uPalettePositions[i + 1];
+        if (position < nextPosition) break;
+        first = uPalette[i + 1];
+        startPosition = nextPosition;
+        int nextIndex = min(i + 2, size - 1);
+        second = uPalette[nextIndex];
+        endPosition = uPalettePositions[nextIndex];
+        if (i == size - 2) {
+          second = first;
+          endPosition = startPosition;
         }
       }
 

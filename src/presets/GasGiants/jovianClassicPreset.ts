@@ -6,8 +6,8 @@ export const jovianClassicPreset: GasGiantPreset = {
   name: 'Jovian Classic',
   settings: {
     ...DefaultValues,
-    autoRotate: true,
     palette: 'jovianBands',
+    atmospherePalette: 'titan',
     surfaceTint: '#d8d1b8',
     colorScale: 1.25,
     tintShadowFloor: 0.3,

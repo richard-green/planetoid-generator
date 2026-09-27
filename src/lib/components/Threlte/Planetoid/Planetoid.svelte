@@ -34,8 +34,8 @@
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { PlanetoidPalettes } from './PlanetoidPalettes'
   import { DustCloudPalettes } from './DustCloudPalettes'
-  import { AtmospherePalettes } from './AtmospherePalettes'
-  import PlanetoidAtmosphere from './PlanetoidAtmosphere.svelte'
+  import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
+  import PlanetoidAtmosphere from '../Atmosphere/BodyAtmosphere.svelte'
 
   type Props = {
     settings: PlanetoidSettings & { viewMode: PlanetoidViewMode }

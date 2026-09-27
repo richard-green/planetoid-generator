@@ -15,7 +15,7 @@ import {
 import {
   AtmospherePaletteNames,
   type AtmospherePaletteName,
-} from '../src/lib/components/Threlte/Planetoid/AtmospherePalettes'
+} from '../src/lib/components/Threlte/Atmosphere/AtmospherePalettes'
 import {
   DustCloudStyleNames,
   MaxValues,
@@ -101,6 +101,8 @@ type ScriptOptions = {
   ridgesEnabled?: boolean
   riftsEnabled?: boolean
   volcanoesEnabled?: boolean
+  dustCloudsEnabled?: boolean
+  atmosphereEnabled?: boolean
   baseUrl: string
   outputDir: string
   frameSettleMs: number
@@ -169,6 +171,8 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   ridgesEnabled: undefined,
   riftsEnabled: undefined,
   volcanoesEnabled: undefined,
+  dustCloudsEnabled: undefined,
+  atmosphereEnabled: undefined,
   baseUrl: 'http://127.0.0.1:5173/planetoids',
   outputDir: path.resolve('public/generated/planetoid'),
   frameSettleMs: 50,
@@ -215,12 +219,16 @@ type ScriptLocators = {
     ridgesEnabled: Locator
     riftsEnabled: Locator
     volcanoesEnabled: Locator
+    dustCloudsEnabled: Locator
+    atmosphereEnabled: Locator
   }
   sectionSummaries: {
     craters: Locator
     ridges: Locator
     rifts: Locator
     volcanoes: Locator
+    dustClouds: Locator
+    atmosphere: Locator
   }
   canvas: Locator
 }
@@ -276,12 +284,24 @@ function buildLocators(page: Page): ScriptLocators {
       volcanoesEnabled: page
         .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.volcanoes))
         .first(),
+      dustCloudsEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.dustClouds))
+        .first(),
+      atmosphereEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.atmosphere))
+        .first(),
     },
     sectionSummaries: {
       craters: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.craters)).first(),
       ridges: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.ridges)).first(),
       rifts: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.rifts)).first(),
       volcanoes: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.volcanoes)).first(),
+      dustClouds: page
+        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.dustClouds))
+        .first(),
+      atmosphere: page
+        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.atmosphere))
+        .first(),
     },
     canvas: page.locator(selectors.canvas),
   }
@@ -467,6 +487,18 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === PlanetoidCliToggleFlags.dustCloudsEnabled && next) {
+      options.dustCloudsEnabled = parseBoolean(next, 'dust-clouds-enabled')
+      i++
+      continue
+    }
+
+    if (arg === PlanetoidCliToggleFlags.atmosphereEnabled && next) {
+      options.atmosphereEnabled = parseBoolean(next, 'atmosphere-enabled')
+      i++
+      continue
+    }
+
     if (arg === '--help') {
       console.log(
         [
@@ -489,6 +521,8 @@ function parseArgs(argv: string[]): ScriptOptions {
           `  ${PlanetoidCliToggleFlags.ridgesEnabled} <bool> Enable/disable ridges section`,
           `  ${PlanetoidCliToggleFlags.riftsEnabled} <bool>  Enable/disable rifts section`,
           `  ${PlanetoidCliToggleFlags.volcanoesEnabled} <bool> Enable/disable volcanoes section`,
+          `  ${PlanetoidCliToggleFlags.dustCloudsEnabled} <bool> Enable/disable dust clouds`,
+          `  ${PlanetoidCliToggleFlags.atmosphereEnabled} <bool> Enable/disable atmosphere`,
           '  --base-url <url>        Planetoid page URL (default: http://127.0.0.1:5173/planetoids)',
           '  --output-dir <path>     Output directory (default: public/generated/planetoid)',
           '  --frame-settle-ms <n>   Delay after updates in ms (default: 50)',
@@ -614,6 +648,8 @@ async function main() {
       `ridgesEnabled=${options.ridgesEnabled ?? 'unchanged'}`,
       `riftsEnabled=${options.riftsEnabled ?? 'unchanged'}`,
       `volcanoesEnabled=${options.volcanoesEnabled ?? 'unchanged'}`,
+      `dustCloudsEnabled=${options.dustCloudsEnabled ?? 'unchanged'}`,
+      `atmosphereEnabled=${options.atmosphereEnabled ?? 'unchanged'}`,
       `baseUrl=${options.baseUrl}`,
       `outputDir=${options.outputDir}`,
       `frameSettleMs=${options.frameSettleMs}`,
@@ -716,6 +752,8 @@ async function main() {
     await sectionToggles.ridgesEnabled.waitFor({ state: 'visible' })
     await sectionToggles.riftsEnabled.waitFor({ state: 'visible' })
     await sectionToggles.volcanoesEnabled.waitFor({ state: 'visible' })
+    await sectionToggles.dustCloudsEnabled.waitFor({ state: 'visible' })
+    await sectionToggles.atmosphereEnabled.waitFor({ state: 'visible' })
     await canvas.waitFor({ state: 'visible' })
     logger.info('All required UI elements are visible')
 
@@ -723,6 +761,8 @@ async function main() {
     await ensureSectionOpen(sectionSummaries.ridges)
     await ensureSectionOpen(sectionSummaries.rifts)
     await ensureSectionOpen(sectionSummaries.volcanoes)
+    await ensureSectionOpen(sectionSummaries.dustClouds)
+    await ensureSectionOpen(sectionSummaries.atmosphere)
 
     async function ensureLocatorVisible(locator: Locator) {
       if (await locator.isVisible().catch(() => false)) {
@@ -832,6 +872,16 @@ async function main() {
       sectionToggles.volcanoesEnabled,
       options.volcanoesEnabled
     )
+    await applyToggleOverride(
+      'dust clouds enabled',
+      sectionToggles.dustCloudsEnabled,
+      options.dustCloudsEnabled
+    )
+    await applyToggleOverride(
+      'atmosphere enabled',
+      sectionToggles.atmosphereEnabled,
+      options.atmosphereEnabled
+    )
 
     if (
       normalizedSurfaceTint ||
@@ -844,7 +894,9 @@ async function main() {
       options.cratersEnabled !== undefined ||
       options.ridgesEnabled !== undefined ||
       options.riftsEnabled !== undefined ||
-      options.volcanoesEnabled !== undefined
+      options.volcanoesEnabled !== undefined ||
+      options.dustCloudsEnabled !== undefined ||
+      options.atmosphereEnabled !== undefined
     ) {
       await page.waitForTimeout(options.frameSettleMs)
       logger.info('Material/surface overrides applied and settle delay complete')

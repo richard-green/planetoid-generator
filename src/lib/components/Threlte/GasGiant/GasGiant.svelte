@@ -11,6 +11,8 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { trackPalette } from '../../../types/paletteState.svelte'
+  import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
+  import BodyAtmosphere from '../Atmosphere/BodyAtmosphere.svelte'
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
   import type { GasGiantSettings, GasGiantViewMode } from '../GasGiant/GasGiantSettings'
   import {
@@ -44,6 +46,12 @@
     roughness,
     metalness,
     autoRotate,
+    enableAtmosphere,
+    atmospherePalette,
+    atmosphereIntensity,
+    atmosphereThickness,
+    atmosphereDropoff,
+    atmosphereTerminatorWrap,
     normalTextureSize,
     colorTextureSize,
   } = $derived(settings)
@@ -58,6 +66,9 @@
   const { renderer } = useThrelte()
 
   const geometry = new IcosahedronGeometry(2, 18)
+  const planetRadius = 2
+
+  const showAtmosphere = $derived(enableAtmosphere && atmosphereIntensity > 0)
 
   $effect(() => {
     if (!mapPreviewMaterial) return
@@ -272,6 +283,17 @@
   <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
     <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
   </T.Mesh>
+
+  {#if showAtmosphere}
+    <BodyAtmosphere
+      {planetRadius}
+      thickness={atmosphereThickness}
+      dropoff={atmosphereDropoff}
+      intensity={atmosphereIntensity}
+      terminatorWrap={atmosphereTerminatorWrap}
+      palette={AtmospherePalettes[atmospherePalette]}
+    />
+  {/if}
 {:else}
   <T.Mesh scale={[3.8, 3.8, 1]} renderOrder={10}>
     <T.PlaneGeometry args={[1.8, 0.9]} />

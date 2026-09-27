@@ -28,6 +28,7 @@
     uDensity: new Uniform(0),
     uTextureScale: new Uniform(0),
     uGranularity: new Uniform(0),
+    uPaletteInfluence: new Uniform(0),
     uSolarization: new Uniform(0),
     uOpacity: new Uniform(0),
     uNoise: new Uniform(0),
@@ -65,6 +66,7 @@
     uniforms.uDensity.value = settings.ringDensity
     uniforms.uTextureScale.value = settings.ringTextureScale
     uniforms.uGranularity.value = settings.ringGranularity
+    uniforms.uPaletteInfluence.value = settings.ringPaletteInfluence
     uniforms.uSolarization.value = settings.ringSolarization
     uniforms.uOpacity.value = settings.ringOpacity
     uniforms.uNoise.value = settings.ringNoise
@@ -118,6 +120,7 @@
     uniform float uDensity;
     uniform float uTextureScale;
     uniform float uGranularity;
+    uniform float uPaletteInfluence;
     uniform float uSolarization;
     uniform float uOpacity;
     uniform float uNoise;
@@ -174,7 +177,7 @@
     }
 
     vec4 variableBandInfo(float radial) {
-      int count = int(floor(clamp(uBandCount, 2.0, 64.0) + 0.5));
+      int count = int(floor(clamp(uBandCount, 1.0, 64.0) + 0.5));
       float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
       float widthLow = mix(1.0, 0.02, variance);
       float widthHigh = mix(1.0, 8.0, variance);
@@ -279,13 +282,18 @@
       );
       float grain = clamp(coarseGrain * 0.7 + fineGrain * 0.3, 0.0, 1.0);
       float edgeFade = smoothstep(0.0, 0.025, radial) * smoothstep(0.0, 0.035, 1.0 - radial);
-      float colorPosition = clamp(band.w + (grain - 0.5) * 0.16, 0.0, 1.0);
+      float paletteInfluence = clamp(uPaletteInfluence, 0.0, 1.0);
+      float colorPosition = clamp(
+        mix(0.5, band.w + (grain - 0.5) * 0.16, paletteInfluence),
+        0.0,
+        1.0
+      );
       float granularVariation = mix(1.0, mix(0.68, 1.22, grain), uGranularity);
       float illumination = mix(0.2, 1.0, planetShadow());
       vec3 baseColor = paletteColor(colorPosition);
       float solarCurve = 1.0 - abs(grain * 2.0 - 1.0);
       float solarMask = smoothstep(0.38, 0.88, solarCurve) * uSolarization;
-      float solarPosition = fract(1.0 - colorPosition + band.z * 0.37);
+      float solarPosition = fract(1.0 - colorPosition + band.z * 0.37 * paletteInfluence);
       vec3 solarColor = paletteColor(solarPosition);
       vec3 color = mix(baseColor, solarColor, solarMask * 0.72);
       color *= mix(granularVariation, 2.0 - granularVariation, solarMask * 0.55);

@@ -3,6 +3,7 @@ import { ioPreset } from './ioPreset'
 import { marsPreset } from './marsPreset'
 import { metallicCratersPreset } from './metallicCratersPreset'
 import { mineralAsteroidPreset } from './mineralAsteroid'
+import { noxiousPreset } from './noxiousPreset'
 import { potatoPreset } from './potatoPreset'
 import { rockyClassicPreset } from './rockyClassicPreset'
 import { volcanicRiftPreset } from './volcanicRiftPreset'
@@ -14,6 +15,7 @@ export const BUILTIN_PRESETS = [
   iceworldPreset,
   marsPreset,
   ioPreset,
+  noxiousPreset,
   volcanicRiftPreset,
   metallicCratersPreset,
   mineralAsteroidPreset,

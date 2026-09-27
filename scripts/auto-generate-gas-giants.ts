@@ -10,6 +10,7 @@ import {
 } from '../src/lib/components/Threlte/GasGiant/GasGiantPalettes'
 import {
   GasGiantCliFlagByRangeKey,
+  GasGiantCliFeatureFlags,
   GasGiantCliToggleFlags,
   GasGiantRangeLabels,
   GasGiantUiLabels,
@@ -18,6 +19,10 @@ import {
   type GasGiantRangeKey,
   type GasGiantViewMode,
 } from '../src/lib/components/Threlte/GasGiant/GasGiantSettings'
+import {
+  AtmospherePaletteNames,
+  type AtmospherePaletteName,
+} from '../src/lib/components/Threlte/Atmosphere/AtmospherePalettes'
 import {
   RingPaletteNames,
   type RingPaletteName,
@@ -66,6 +71,8 @@ type ScriptOptions = {
   stormsEnabled?: boolean
   ringsEnabled?: boolean
   ringPalette?: string
+  atmosphereEnabled?: boolean
+  atmospherePalette?: string
   viewMode?: GasGiantViewMode
   baseUrl: string
   outputDir: string
@@ -88,6 +95,8 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   stormsEnabled: undefined,
   ringsEnabled: undefined,
   ringPalette: undefined,
+  atmosphereEnabled: undefined,
+  atmospherePalette: undefined,
   viewMode: undefined,
   seed: undefined,
   colorScale: undefined,
@@ -132,6 +141,8 @@ type ScriptLocators = {
   stormsEnabledToggle: Locator
   ringsEnabledToggle: Locator
   ringPaletteSelect: Locator
+  atmosphereEnabledToggle: Locator
+  atmospherePaletteSelect: Locator
   numericInputByKey: Record<GasGiantRangeKey, Locator>
   ringNumericInputByKey: Record<RingRangeKey, Locator>
   canvas: Locator
@@ -153,6 +164,12 @@ function buildLocators(page: Page): ScriptLocators {
       .first(),
     ringsEnabledToggle: page.locator(selectors.sectionToggleBySummaryLabel('Rings')).first(),
     ringPaletteSelect: page.locator(selectors.selectByLabel('Ring palette')).first(),
+    atmosphereEnabledToggle: page
+      .locator(selectors.sectionToggleBySummaryLabel(GasGiantUiLabels.atmosphere))
+      .first(),
+    atmospherePaletteSelect: page
+      .locator(selectors.selectByLabel(GasGiantUiLabels.atmospherePalette))
+      .first(),
     numericInputByKey: Object.fromEntries(
       (Object.keys(MinValues) as GasGiantRangeKey[]).map((key) => [
         key,
@@ -281,6 +298,12 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === GasGiantCliFeatureFlags.atmospherePalette && next) {
+      options.atmospherePalette = next
+      i++
+      continue
+    }
+
     if (arg === '--base-url' && next) {
       options.baseUrl = next
       i++
@@ -317,6 +340,12 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === GasGiantCliToggleFlags.atmosphereEnabled && next) {
+      options.atmosphereEnabled = parseBoolean(next, 'atmosphere-enabled')
+      i++
+      continue
+    }
+
     if (arg === '--help') {
       console.log(
         [
@@ -335,6 +364,8 @@ function parseArgs(argv: string[]): ScriptOptions {
           `  ${GasGiantCliToggleFlags.autoRotate} <bool> Enable/disable auto-rotate`,
           `  ${GasGiantCliToggleFlags.stormsEnabled} <bool> Enable/disable storm systems`,
           `  ${RingCliFlags.enabled} <bool> Enable/disable rings`,
+          `  ${GasGiantCliFeatureFlags.atmospherePalette} <name> Atmosphere palette name`,
+          `  ${GasGiantCliToggleFlags.atmosphereEnabled} <bool> Enable/disable atmosphere`,
           '  --base-url <url>        Giant page URL (default: http://127.0.0.1:5173/giants)',
           '  --output-dir <path>     Output directory (default: public/generated/giants)',
           '  --frame-settle-ms <n>   Delay after updates in ms (default: 50)',
@@ -364,6 +395,12 @@ function normalizeRingPalette(input: string | undefined): RingPaletteName | unde
   if (!input) return undefined
   const normalized = input.trim().toLowerCase()
   return RingPaletteNames.find((value) => value.toLowerCase() === normalized)
+}
+
+function normalizeAtmospherePalette(input: string | undefined): AtmospherePaletteName | undefined {
+  if (!input) return undefined
+  const normalized = input.trim().toLowerCase()
+  return AtmospherePaletteNames.find((value) => value.toLowerCase() === normalized)
 }
 
 function assertRange(name: string, value: number | undefined, min: number, max: number) {
@@ -457,6 +494,13 @@ async function main() {
     )
   }
 
+  const requestedAtmospherePalette = normalizeAtmospherePalette(options.atmospherePalette)
+  if (options.atmospherePalette && !requestedAtmospherePalette) {
+    throw new Error(
+      `atmosphere-palette is invalid. Received: ${options.atmospherePalette}. Valid values: ${AtmospherePaletteNames.join(', ')}`
+    )
+  }
+
   await mkdir(options.outputDir, { recursive: true })
 
   const browser = await firefox.launch({ headless: true })
@@ -476,6 +520,8 @@ async function main() {
       stormsEnabledToggle,
       ringsEnabledToggle,
       ringPaletteSelect,
+      atmosphereEnabledToggle,
+      atmospherePaletteSelect,
       numericInputByKey,
       ringNumericInputByKey,
       canvas,
@@ -552,6 +598,11 @@ async function main() {
     await applyToggleOverride('auto rotate', autoRotateToggle, options.autoRotate)
     await applyToggleOverride('storms enabled', stormsEnabledToggle, options.stormsEnabled)
     await applyToggleOverride('rings enabled', ringsEnabledToggle, options.ringsEnabled)
+    await applyToggleOverride(
+      'atmosphere enabled',
+      atmosphereEnabledToggle,
+      options.atmosphereEnabled
+    )
 
     if (options.viewMode) {
       const viewModeRadio = page
@@ -566,6 +617,11 @@ async function main() {
       await ringPaletteSelect.selectOption(requestedRingPalette)
     }
 
+    if (requestedAtmospherePalette) {
+      await ensureLocatorVisible(atmospherePaletteSelect)
+      await atmospherePaletteSelect.selectOption(requestedAtmospherePalette)
+    }
+
     for (const key of RING_RANGE_KEYS) {
       await applyNumericOverride(RingRangeLabels[key], ringNumericInputByKey[key], options[key])
     }
@@ -576,6 +632,8 @@ async function main() {
       options.autoRotate !== undefined ||
       options.stormsEnabled !== undefined ||
       options.ringsEnabled !== undefined ||
+      options.atmosphereEnabled !== undefined ||
+      requestedAtmospherePalette ||
       options.viewMode !== undefined ||
       requestedRingPalette ||
       RING_RANGE_KEYS.some((key) => typeof options[key] === 'number')

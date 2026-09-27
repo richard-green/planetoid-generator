@@ -7,6 +7,9 @@ export const tempestBeltsPreset: GasGiantPreset = {
   settings: {
     ...DefaultValues,
     palette: 'stormAzure',
+    atmospherePalette: 'glacial',
+    atmosphereIntensity: 0.4,
+    atmosphereThickness:0.03,
     surfaceTint: '#d8d1b8',
     colorScale: 1.45,
     tintShadowFloor: 0.3,

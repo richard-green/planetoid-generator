@@ -103,7 +103,7 @@
     }
 
     vec3 variableBandInfo(float radial) {
-      int count = int(floor(clamp(uBandCount, 2.0, 64.0) + 0.5));
+      int count = int(floor(clamp(uBandCount, 1.0, 64.0) + 0.5));
       float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
       float widthLow = mix(1.0, 0.02, variance);
       float widthHigh = mix(1.0, 8.0, variance);

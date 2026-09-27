@@ -4,6 +4,7 @@
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
+  import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
@@ -20,6 +21,11 @@
   } from '../lib/components/Threlte/GasGiant/GasGiantPalettes'
   import { RingPaletteNames, RingPalettes } from '../lib/components/Threlte/Rings/RingPalettes'
   import {
+    AtmospherePaletteLabels,
+    AtmospherePaletteNames,
+    AtmospherePalettes,
+  } from '../lib/components/Threlte/Atmosphere/AtmospherePalettes'
+  import {
     RingCliFlagByRangeKey,
     RingCliFlags,
     RingMaxValues,
@@ -31,6 +37,7 @@
   import {
     DefaultValues,
     GasGiantCliFlagByRangeKey,
+    GasGiantCliFeatureFlags,
     GasGiantCliToggleFlags,
     GasGiantRangeLabels,
     GasGiantUiLabels,
@@ -55,6 +62,7 @@
     cloudSettingsSectionOpen: boolean
     stormSectionOpen: boolean
     ringSectionOpen: boolean
+    atmosphereSectionOpen: boolean
     materialPropertiesSectionOpen: boolean
     textureResolutionSectionOpen: boolean
     stormsEnabled: boolean
@@ -90,6 +98,10 @@
     'normalStrength',
     'roughness',
     'metalness',
+    'atmosphereIntensity',
+    'atmosphereThickness',
+    'atmosphereDropoff',
+    'atmosphereTerminatorWrap',
   ]
 
   const colorControlKeys: RangeControlKey[] = ['colorScale', 'tintShadowFloor']
@@ -102,6 +114,12 @@
     'stormColorStrength',
   ]
   const materialControlKeys: RangeControlKey[] = ['normalStrength', 'roughness', 'metalness']
+  const atmosphereControlKeys: RangeControlKey[] = [
+    'atmosphereIntensity',
+    'atmosphereThickness',
+    'atmosphereDropoff',
+    'atmosphereTerminatorWrap',
+  ]
   const ringControls: RingRangeKey[] = [
     'ringInnerRadius',
     'ringOuterRadius',
@@ -112,6 +130,7 @@
     'ringDensity',
     'ringTextureScale',
     'ringGranularity',
+    'ringPaletteInfluence',
     'ringSolarization',
     'ringOpacity',
     'ringNoise',
@@ -123,6 +142,9 @@
   const stormControls = numericControls.filter((control) => stormControlKeys.includes(control))
   const materialControls = numericControls.filter((control) =>
     materialControlKeys.includes(control)
+  )
+  const atmosphereControls = numericControls.filter((control) =>
+    atmosphereControlKeys.includes(control)
   )
 
   let canvasShell: HTMLDivElement | undefined = $state(undefined)
@@ -141,12 +163,11 @@
   let cloudSettingsSectionOpen = $state(true)
   let stormSectionOpen = $state(true)
   let ringSectionOpen = $state(DEFAULT_GAS_GIANT_SETTINGS.enableRings)
+  let atmosphereSectionOpen = $state(DEFAULT_GAS_GIANT_SETTINGS.enableAtmosphere)
   let materialPropertiesSectionOpen = $state(true)
   let textureResolutionSectionOpen = $state(false)
   let stormsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
   let ringsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableRings)
-  let wasStormsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableStorms)
-  let wasRingsEnabled = $state(DEFAULT_GAS_GIANT_SETTINGS.enableRings)
 
   let presetsMenuOpen = $state(false)
   let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
@@ -293,6 +314,15 @@
     for (const key of ringControls) {
       args.push(RingCliFlagByRangeKey[key], String(settings[key]))
     }
+
+    args.push(
+      GasGiantCliFeatureFlags.atmospherePalette,
+      quoteCliValue(settings.atmospherePalette)
+    )
+    args.push(
+      GasGiantCliToggleFlags.atmosphereEnabled,
+      toBooleanCliValue(settings.enableAtmosphere)
+    )
 
     args.push(GasGiantCliToggleFlags.autoRotate, toBooleanCliValue(settings.autoRotate))
     args.push(GasGiantCliToggleFlags.stormsEnabled, toBooleanCliValue(toggles.stormsEnabled))
@@ -443,6 +473,10 @@
         typeof raw.ringSectionOpen === 'boolean'
           ? raw.ringSectionOpen
           : DEFAULT_GAS_GIANT_SETTINGS.enableRings,
+      atmosphereSectionOpen:
+        typeof raw.atmosphereSectionOpen === 'boolean'
+          ? raw.atmosphereSectionOpen
+          : DEFAULT_GAS_GIANT_SETTINGS.enableAtmosphere,
       materialPropertiesSectionOpen: raw.materialPropertiesSectionOpen as boolean,
       textureResolutionSectionOpen: raw.textureResolutionSectionOpen as boolean,
       stormsEnabled: raw.stormsEnabled as boolean,
@@ -473,6 +507,7 @@
       cloudSettingsSectionOpen = restoredUiState.cloudSettingsSectionOpen
       stormSectionOpen = restoredUiState.stormSectionOpen
       ringSectionOpen = restoredUiState.ringSectionOpen
+      atmosphereSectionOpen = restoredUiState.atmosphereSectionOpen
       materialPropertiesSectionOpen = restoredUiState.materialPropertiesSectionOpen
       textureResolutionSectionOpen = restoredUiState.textureResolutionSectionOpen
       stormsEnabled = restoredUiState.stormsEnabled
@@ -482,8 +517,6 @@
       ringsEnabled = gasGiant.enableRings
     }
 
-    wasStormsEnabled = stormsEnabled
-    wasRingsEnabled = ringsEnabled
     sectionTogglesHydrated = true
   })
 
@@ -498,6 +531,7 @@
         cloudSettingsSectionOpen,
         stormSectionOpen,
         ringSectionOpen,
+        atmosphereSectionOpen,
         materialPropertiesSectionOpen,
         textureResolutionSectionOpen,
         stormsEnabled,
@@ -542,20 +576,6 @@
       localStorage.setItem(GAS_GIANT_PRESETS_STORAGE_KEY, JSON.stringify(userPresets))
     } catch (error) {
       console.warn('Failed to persist gas giant presets to localStorage', error)
-    }
-  })
-
-  $effect(() => {
-    if (!sectionTogglesHydrated) return
-
-    if (effectiveStormsEnabled !== wasStormsEnabled) {
-      stormSectionOpen = effectiveStormsEnabled
-      wasStormsEnabled = effectiveStormsEnabled
-    }
-
-    if (effectiveRingsEnabled !== wasRingsEnabled) {
-      ringSectionOpen = effectiveRingsEnabled
-      wasRingsEnabled = effectiveRingsEnabled
     }
   })
 
@@ -609,6 +629,7 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
+      <svelte:boundary>
       <Canvas
         dpr={1}
         createRenderer={(canvas) =>
@@ -641,6 +662,12 @@
           normalStrength={gasGiant.normalStrength}
           roughness={gasGiant.roughness}
           metalness={gasGiant.metalness}
+          enableAtmosphere={gasGiant.enableAtmosphere}
+          atmospherePalette={gasGiant.atmospherePalette}
+          atmosphereIntensity={gasGiant.atmosphereIntensity}
+          atmosphereThickness={gasGiant.atmosphereThickness}
+          atmosphereDropoff={gasGiant.atmosphereDropoff}
+          atmosphereTerminatorWrap={gasGiant.atmosphereTerminatorWrap}
           normalTextureSize={gasGiant.normalTextureSize}
           colorTextureSize={gasGiant.colorTextureSize}
           enableRings={effectiveRingsEnabled}
@@ -654,12 +681,17 @@
           ringDensity={gasGiant.ringDensity}
           ringTextureScale={gasGiant.ringTextureScale}
           ringGranularity={gasGiant.ringGranularity}
+          ringPaletteInfluence={gasGiant.ringPaletteInfluence}
           ringSolarization={gasGiant.ringSolarization}
           ringOpacity={gasGiant.ringOpacity}
           ringNoise={gasGiant.ringNoise}
           ringGlitter={gasGiant.ringGlitter}
         />
       </Canvas>
+      {#snippet failed(error)}
+        <WebGLFailure {error} />
+      {/snippet}
+      </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>
 
@@ -903,6 +935,36 @@
                     ? clampRingRadii
                     : undefined}
                   disabled={!effectiveRingsEnabled}
+                />
+              </label>
+            {/each}
+          </div>
+        </CollapsibleControl>
+
+        <CollapsibleControl
+          title={GasGiantUiLabels.atmosphere}
+          bind:open={atmosphereSectionOpen}
+          bind:enabled={gasGiant.enableAtmosphere}
+        >
+          <PalettePicker
+            id="gas-giant-atmosphere-palette"
+            title={GasGiantUiLabels.atmospherePalette}
+            options={AtmospherePaletteNames}
+            palettes={AtmospherePalettes}
+            labels={AtmospherePaletteLabels}
+            bind:value={gasGiant.atmospherePalette}
+          />
+          <div class="control-grid">
+            {#each atmosphereControls as control (control)}
+              <label class="compact-number-row">
+                <span>{GasGiantRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={gasGiant[control]}
+                  disabled={!gasGiant.enableAtmosphere}
                 />
               </label>
             {/each}

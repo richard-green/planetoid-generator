@@ -11,6 +11,8 @@ export const metallicCratersPreset: PlanetoidPreset = {
     ...DefaultValues,
     palette: 'mineralVeins',
     surfaceTint: '#b8b4ad',
+    enableAtmosphere: false,
+    enableDustClouds: false,
     craterCount: 44,
     craterStrength: 6.8,
     craterColorStrength: 1.4,

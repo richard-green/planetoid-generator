@@ -10,7 +10,7 @@
   import type { DustCloudStyle } from './Planetoid/PlanetoidSettings'
   import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
   import type { DustCloudPaletteName } from './Planetoid/DustCloudPalettes'
-  import type { AtmospherePaletteName } from './Planetoid/AtmospherePalettes'
+  import type { AtmospherePaletteName } from './Atmosphere/AtmospherePalettes'
   import type { TextureSize } from '../../types/textureSize'
 
   type Props = {

@@ -12,6 +12,23 @@
 
   const hasToggle = $derived(enabled !== undefined)
 
+  let previousEnabled: boolean | undefined = enabled
+
+  // A disabled section is always collapsed; re-enabling it expands it again.
+  $effect(() => {
+    if (enabled === undefined) return
+
+    const wasEnabled = previousEnabled
+    previousEnabled = enabled
+
+    if (!enabled) {
+      if (open) open = false
+      return
+    }
+
+    if (!wasEnabled) open = true
+  })
+
   function onSummaryClick(event: MouseEvent) {
     if (hasToggle && !enabled) event.preventDefault()
   }

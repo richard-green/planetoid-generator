@@ -7,6 +7,7 @@ export const iceCalmPreset: GasGiantPreset = {
   settings: {
     ...DefaultValues,
     palette: 'iceGiantTeal',
+    atmospherePalette: 'glacial',
     colorScale: 1.15,
     cloudBandCount: 9,
     cloudBandSharpness: 0.35,

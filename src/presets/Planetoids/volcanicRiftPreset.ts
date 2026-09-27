@@ -11,6 +11,8 @@ export const volcanicRiftPreset: PlanetoidPreset = {
     ...DefaultValues,
     palette: 'emberFaults',
     surfaceTint: '#cf9b7d',
+    enableAtmosphere: false,
+    enableDustClouds: false,
     colorScale: 0.92,
     volcanoCount: 24,
     volcanoStrength: 2.2,

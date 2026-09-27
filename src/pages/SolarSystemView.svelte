@@ -4,6 +4,7 @@
   import '../styles/common.css'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
+  import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import { DefaultTextureSize, type TextureSize } from '../lib/types/textureSize'
   import SolarSystemScene from '../lib/components/Threlte/SolarSystemScene.svelte'
@@ -112,6 +113,7 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
+      <svelte:boundary>
       <Canvas
         dpr={1}
         createRenderer={(canvas) =>
@@ -135,6 +137,10 @@
           {textureSize}
         />
       </Canvas>
+      {#snippet failed(error)}
+        <WebGLFailure {error} />
+      {/snippet}
+      </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>
 

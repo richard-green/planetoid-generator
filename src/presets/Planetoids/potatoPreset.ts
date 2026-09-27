@@ -27,6 +27,8 @@ export const potatoPreset: PlanetoidPreset = {
     enableRidges: false,
     enableRifts: false,
     enableVolcanoes: false,
+    enableAtmosphere: false,
+    enableDustClouds: false,
     ridgeStrength: 2,
     ridgeFrequency: 2.5,
     ridgeSharpness: 2.5,

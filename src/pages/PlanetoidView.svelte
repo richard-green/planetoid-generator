@@ -5,6 +5,7 @@
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
+  import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
@@ -28,7 +29,7 @@
     AtmospherePaletteLabels,
     AtmospherePaletteNames,
     AtmospherePalettes,
-  } from '../lib/components/Threlte/Planetoid/AtmospherePalettes'
+  } from '../lib/components/Threlte/Atmosphere/AtmospherePalettes'
   import {
     DefaultValues,
     DustCloudStyleLabels,
@@ -64,6 +65,8 @@
     | 'enableRidges'
     | 'enableRifts'
     | 'enableVolcanoes'
+    | 'enableDustClouds'
+    | 'enableAtmosphere'
     | 'normalTextureSize'
     | 'colorTextureSize'
     | 'dustCloudPalette'
@@ -172,10 +175,6 @@
   let geometryPropertiesSectionOpen = $state(true)
   let sectionTogglesHydrated = $state(false)
   let presetsHydrated = $state(false)
-  let wasCratersEnabled = $state(true)
-  let wasVolcanoesEnabled = $state(false)
-  let wasRidgesEnabled = $state(true)
-  let wasRiftsEnabled = $state(true)
   let presetsMenuOpen = $state(false)
   let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
   let presetsManagerOpen = $state(false)
@@ -381,6 +380,14 @@
     args.push(PlanetoidCliToggleFlags.ridgesEnabled, toBooleanCliValue(toggles.ridgesEnabled))
     args.push(PlanetoidCliToggleFlags.riftsEnabled, toBooleanCliValue(toggles.riftsEnabled))
     args.push(PlanetoidCliToggleFlags.volcanoesEnabled, toBooleanCliValue(toggles.volcanoesEnabled))
+    args.push(
+      PlanetoidCliToggleFlags.dustCloudsEnabled,
+      toBooleanCliValue(settings.enableDustClouds)
+    )
+    args.push(
+      PlanetoidCliToggleFlags.atmosphereEnabled,
+      toBooleanCliValue(settings.enableAtmosphere)
+    )
 
     args.push(PlanetoidCliFlagByRangeKey.seed, '1')
     args.push('--step', '1')
@@ -576,10 +583,6 @@
       riftsEnabled = planetoid.enableRifts
     }
 
-    wasCratersEnabled = cratersEnabled
-    wasVolcanoesEnabled = volcanoSectionEnabled
-    wasRidgesEnabled = ridgeSectionEnabled
-    wasRiftsEnabled = riftSectionEnabled
     sectionTogglesHydrated = true
   })
 
@@ -642,30 +645,6 @@
       localStorage.setItem(PLANETOID_PRESETS_STORAGE_KEY, JSON.stringify(userPresets))
     } catch (error) {
       console.warn('Failed to persist planetoid presets to localStorage', error)
-    }
-  })
-
-  $effect(() => {
-    if (!sectionTogglesHydrated) return
-
-    if (effectiveCratersEnabled !== wasCratersEnabled) {
-      craterSectionOpen = effectiveCratersEnabled
-      wasCratersEnabled = effectiveCratersEnabled
-    }
-
-    if (volcanoSectionEnabled !== wasVolcanoesEnabled) {
-      volcanoSectionOpen = volcanoSectionEnabled
-      wasVolcanoesEnabled = volcanoSectionEnabled
-    }
-
-    if (ridgeSectionEnabled !== wasRidgesEnabled) {
-      ridgeSectionOpen = ridgeSectionEnabled
-      wasRidgesEnabled = ridgeSectionEnabled
-    }
-
-    if (riftSectionEnabled !== wasRiftsEnabled) {
-      riftSectionOpen = riftSectionEnabled
-      wasRiftsEnabled = riftSectionEnabled
     }
   })
 
@@ -776,6 +755,7 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
+      <svelte:boundary>
       <Canvas
         dpr={1}
         createRenderer={(canvas) =>
@@ -794,7 +774,7 @@
           colorScale={planetoid.colorScale}
           tintShadowFloor={planetoid.tintShadowFloor}
           swirliness={planetoid.swirliness}
-          dustCloudCoverage={planetoid.dustCloudCoverage}
+          dustCloudCoverage={planetoid.enableDustClouds ? planetoid.dustCloudCoverage : 0}
           dustCloudStyle={planetoid.dustCloudStyle}
           dustCloudPalette={planetoid.dustCloudPalette}
           dustCloudOpacity={planetoid.dustCloudOpacity}
@@ -804,7 +784,7 @@
           dustCloudCoriolis={planetoid.dustCloudCoriolis}
           dustCloudNormalStrength={planetoid.dustCloudNormalStrength}
           atmospherePalette={planetoid.atmospherePalette}
-          atmosphereIntensity={planetoid.atmosphereIntensity}
+          atmosphereIntensity={planetoid.enableAtmosphere ? planetoid.atmosphereIntensity : 0}
           atmosphereThickness={planetoid.atmosphereThickness}
           atmosphereDropoff={planetoid.atmosphereDropoff}
           atmosphereTerminatorWrap={planetoid.atmosphereTerminatorWrap}
@@ -848,6 +828,10 @@
           viewMode={sceneViewMode}
         />
       </Canvas>
+      {#snippet failed(error)}
+        <WebGLFailure {error} />
+      {/snippet}
+      </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>
 
@@ -1051,61 +1035,73 @@
 
       <fieldset>
         <legend>{PlanetoidUiLabels.features}</legend>
-        <CollapsibleControl title={PlanetoidUiLabels.dustClouds} bind:open={dustCloudSectionOpen}>
-          <PalettePicker
-            id="planetoid-dust-cloud-palette"
-            title={PlanetoidUiLabels.dustCloudPalette}
-            options={DustCloudPaletteNames}
-            palettes={DustCloudPalettes}
-            labels={DustCloudPaletteLabels}
-            bind:value={planetoid.dustCloudPalette}
-          />
-          <div class="control-grid">
-            <label>
-              <span>{PlanetoidUiLabels.dustCloudStyle}</span>
-              <select bind:value={planetoid.dustCloudStyle}>
-                {#each DustCloudStyleNames as style (style)}
-                  <option value={style}>{DustCloudStyleLabels[style]}</option>
-                {/each}
-              </select>
-            </label>
-            {#each dustCloudControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                />
+        <CollapsibleControl
+          title={PlanetoidUiLabels.dustClouds}
+          bind:open={dustCloudSectionOpen}
+          bind:enabled={planetoid.enableDustClouds}
+        >
+          <div inert={!planetoid.enableDustClouds}>
+            <PalettePicker
+              id="planetoid-dust-cloud-palette"
+              title={PlanetoidUiLabels.dustCloudPalette}
+              options={DustCloudPaletteNames}
+              palettes={DustCloudPalettes}
+              labels={DustCloudPaletteLabels}
+              bind:value={planetoid.dustCloudPalette}
+            />
+            <div class="control-grid">
+              <label>
+                <span>{PlanetoidUiLabels.dustCloudStyle}</span>
+                <select bind:value={planetoid.dustCloudStyle}>
+                  {#each DustCloudStyleNames as style (style)}
+                    <option value={style}>{DustCloudStyleLabels[style]}</option>
+                  {/each}
+                </select>
               </label>
-            {/each}
+              {#each dustCloudControls as control (control)}
+                <label class="compact-number-row">
+                  <span>{PlanetoidRangeLabels[control]}</span>
+                  <input
+                    type="number"
+                    min={MinValues[control]}
+                    max={MaxValues[control]}
+                    step={StepValues[control]}
+                    bind:value={planetoid[control]}
+                  />
+                </label>
+              {/each}
+            </div>
           </div>
         </CollapsibleControl>
 
-        <CollapsibleControl title={PlanetoidUiLabels.atmosphere} bind:open={atmosphereSectionOpen}>
-          <PalettePicker
-            id="planetoid-atmosphere-palette"
-            title={PlanetoidUiLabels.atmospherePalette}
-            options={AtmospherePaletteNames}
-            palettes={AtmospherePalettes}
-            labels={AtmospherePaletteLabels}
-            bind:value={planetoid.atmospherePalette}
-          />
-          <div class="control-grid">
-            {#each atmosphereControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                />
-              </label>
-            {/each}
+        <CollapsibleControl
+          title={PlanetoidUiLabels.atmosphere}
+          bind:open={atmosphereSectionOpen}
+          bind:enabled={planetoid.enableAtmosphere}
+        >
+          <div inert={!planetoid.enableAtmosphere}>
+            <PalettePicker
+              id="planetoid-atmosphere-palette"
+              title={PlanetoidUiLabels.atmospherePalette}
+              options={AtmospherePaletteNames}
+              palettes={AtmospherePalettes}
+              labels={AtmospherePaletteLabels}
+              bind:value={planetoid.atmospherePalette}
+            />
+            <div class="control-grid">
+              {#each atmosphereControls as control (control)}
+                <label class="compact-number-row">
+                  <span>{PlanetoidRangeLabels[control]}</span>
+                  <input
+                    type="number"
+                    min={MinValues[control]}
+                    max={MaxValues[control]}
+                    step={StepValues[control]}
+                    bind:value={planetoid[control]}
+                  />
+                </label>
+              {/each}
+            </div>
           </div>
         </CollapsibleControl>
 

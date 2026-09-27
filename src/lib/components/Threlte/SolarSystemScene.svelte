@@ -240,6 +240,7 @@
       ringDensity: settings.ringDensity,
       ringTextureScale: settings.ringTextureScale,
       ringGranularity: settings.ringGranularity,
+      ringPaletteInfluence: settings.ringPaletteInfluence,
       ringSolarization: settings.ringSolarization,
       ringOpacity: settings.ringOpacity,
       ringNoise: settings.ringNoise,

@@ -1,4 +1,4 @@
-import { bandedNoStormsPreset } from './bandedNoStormsPreset'
+import { bandedNoStormsPreset } from './sereneGreenPreset'
 import { iceCalmPreset } from './iceCalmPreset'
 import { jovianClassicPreset } from './jovianClassicPreset'
 import { tempestBeltsPreset } from './tempestBeltsPreset'

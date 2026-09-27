@@ -4,6 +4,7 @@
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
+  import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import PresetManager, {
     type PresetListItem,
@@ -316,6 +317,7 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
+      <svelte:boundary>
       <Canvas
         dpr={1}
         createRenderer={(canvas) =>
@@ -363,6 +365,10 @@
           showStarSurface={starSurfaceVisible}
         />
       </Canvas>
+      {#snippet failed(error)}
+        <WebGLFailure {error} />
+      {/snippet}
+      </svelte:boundary>
       <FullscreenControl target={canvasShell} />
     </div>
 

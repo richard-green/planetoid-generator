@@ -1,6 +1,6 @@
 import { PlanetoidPaletteNames, type PlanetoidPaletteName } from './PlanetoidPalettes'
 import { DustCloudPaletteNames, type DustCloudPaletteName } from './DustCloudPalettes'
-import { AtmospherePaletteNames, type AtmospherePaletteName } from './AtmospherePalettes'
+import { AtmospherePaletteNames, type AtmospherePaletteName } from '../Atmosphere/AtmospherePalettes'
 import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import {
   sanitizeBoolean,
@@ -47,6 +47,8 @@ export type PlanetoidSettings = {
   enableRidges: boolean
   enableRifts: boolean
   enableVolcanoes: boolean
+  enableDustClouds: boolean
+  enableAtmosphere: boolean
   seed: number
   palette: PlanetoidPaletteName
   surfaceTint: string
@@ -164,6 +166,8 @@ export const DefaultValues: PlanetoidSettings = {
   enableRidges: false,
   enableRifts: false,
   enableVolcanoes: false,
+  enableAtmosphere: false,
+  enableDustClouds: false,
   seed: 1,
   palette: 'rocky',
   surfaceTint: '#ffffff',
@@ -586,6 +590,8 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
   const enableVolcanoes = sanitizeBoolean(raw, 'enableVolcanoes', DefaultValues.enableVolcanoes)
   const enableRidges = sanitizeBoolean(raw, 'enableRidges', DefaultValues.enableRidges)
   const enableRifts = sanitizeBoolean(raw, 'enableRifts', DefaultValues.enableRifts)
+  const enableDustClouds = sanitizeBoolean(raw, 'enableDustClouds', DefaultValues.enableDustClouds)
+  const enableAtmosphere = sanitizeBoolean(raw, 'enableAtmosphere', DefaultValues.enableAtmosphere)
 
   const palette = sanitizeEnum(raw, 'palette', PlanetoidPaletteNames, DefaultValues.palette)
   const dustCloudPalette = sanitizeEnum(
@@ -642,6 +648,8 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     enableVolcanoes,
     enableRidges,
     enableRifts,
+    enableDustClouds,
+    enableAtmosphere,
     ridgeStrength: numeric.ridgeStrength,
     ridgeFrequency: numeric.ridgeFrequency,
     ridgeSharpness: numeric.ridgeSharpness,
@@ -821,6 +829,8 @@ export const PlanetoidCliToggleFlags = {
   ridgesEnabled: '--ridges-enabled',
   riftsEnabled: '--rifts-enabled',
   volcanoesEnabled: '--volcanoes-enabled',
+  dustCloudsEnabled: '--dust-clouds-enabled',
+  atmosphereEnabled: '--atmosphere-enabled',
 } as const
 
 export const PlanetoidCliFeatureFlags = {

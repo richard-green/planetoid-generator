@@ -27,6 +27,8 @@ export const mineralAsteroidPreset: PlanetoidPreset = {
     enableVolcanoes: false,
     enableRidges: true,
     enableRifts: true,
+    enableAtmosphere: false,
+    enableDustClouds: false,
     ridgeStrength: 0.4,
     ridgeFrequency: 2.5,
     ridgeSharpness: 4,

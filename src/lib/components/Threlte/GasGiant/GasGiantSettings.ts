@@ -1,4 +1,5 @@
 import { GasGiantPaletteNames, type GasGiantPaletteName } from './GasGiantPalettes'
+import { AtmospherePaletteNames, type AtmospherePaletteName } from '../Atmosphere/AtmospherePalettes'
 import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import { DefaultRingValues, sanitizeRingSettings, type RingSettings } from '../Rings/RingSettings'
 import {
@@ -31,6 +32,12 @@ export type GasGiantSettings = RingSettings & {
   normalStrength: number
   roughness: number
   metalness: number
+  enableAtmosphere: boolean
+  atmospherePalette: AtmospherePaletteName
+  atmosphereIntensity: number
+  atmosphereThickness: number
+  atmosphereDropoff: number
+  atmosphereTerminatorWrap: number
   normalTextureSize: TextureSize
   colorTextureSize: TextureSize
 }
@@ -51,6 +58,10 @@ export type GasGiantRangeValues = Pick<
   | 'normalStrength'
   | 'roughness'
   | 'metalness'
+  | 'atmosphereIntensity'
+  | 'atmosphereThickness'
+  | 'atmosphereDropoff'
+  | 'atmosphereTerminatorWrap'
 >
 
 export type GasGiantRangeKey = keyof GasGiantRangeValues
@@ -75,6 +86,12 @@ export const DefaultValues: GasGiantSettings = {
   normalStrength: 0.5,
   roughness: 0.82,
   metalness: 0.05,
+  enableAtmosphere: true,
+  atmospherePalette: 'glacial',
+  atmosphereIntensity: 1.2,
+  atmosphereThickness: 0.06,
+  atmosphereDropoff: 4,
+  atmosphereTerminatorWrap: 0.3,
   normalTextureSize: 1024,
   colorTextureSize: 1024,
 }
@@ -94,6 +111,10 @@ export const MinValues: GasGiantRangeValues = {
   normalStrength: 0,
   roughness: 0,
   metalness: 0,
+  atmosphereIntensity: 0,
+  atmosphereThickness: 0.01,
+  atmosphereDropoff: 0.25,
+  atmosphereTerminatorWrap: 0,
 }
 
 export const MaxValues: GasGiantRangeValues = {
@@ -111,6 +132,10 @@ export const MaxValues: GasGiantRangeValues = {
   normalStrength: 1,
   roughness: 1,
   metalness: 1,
+  atmosphereIntensity: 5,
+  atmosphereThickness: 0.5,
+  atmosphereDropoff: 16,
+  atmosphereTerminatorWrap: 1,
 }
 
 export const StepValues: GasGiantRangeValues = {
@@ -128,6 +153,10 @@ export const StepValues: GasGiantRangeValues = {
   normalStrength: 0.05,
   roughness: 0.01,
   metalness: 0.01,
+  atmosphereIntensity: 0.05,
+  atmosphereThickness: 0.01,
+  atmosphereDropoff: 0.25,
+  atmosphereTerminatorWrap: 0.05,
 }
 
 const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
@@ -204,6 +233,26 @@ const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
     min: MinValues.metalness,
     max: MaxValues.metalness,
   },
+  atmosphereIntensity: {
+    defaultValue: DefaultValues.atmosphereIntensity,
+    min: MinValues.atmosphereIntensity,
+    max: MaxValues.atmosphereIntensity,
+  },
+  atmosphereThickness: {
+    defaultValue: DefaultValues.atmosphereThickness,
+    min: MinValues.atmosphereThickness,
+    max: MaxValues.atmosphereThickness,
+  },
+  atmosphereDropoff: {
+    defaultValue: DefaultValues.atmosphereDropoff,
+    min: MinValues.atmosphereDropoff,
+    max: MaxValues.atmosphereDropoff,
+  },
+  atmosphereTerminatorWrap: {
+    defaultValue: DefaultValues.atmosphereTerminatorWrap,
+    min: MinValues.atmosphereTerminatorWrap,
+    max: MaxValues.atmosphereTerminatorWrap,
+  },
 }
 
 export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
@@ -238,6 +287,17 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
     normalStrength: numeric.normalStrength,
     roughness: numeric.roughness,
     metalness: numeric.metalness,
+    enableAtmosphere: sanitizeBoolean(raw, 'enableAtmosphere', DefaultValues.enableAtmosphere),
+    atmospherePalette: sanitizeEnum(
+      raw,
+      'atmospherePalette',
+      AtmospherePaletteNames,
+      DefaultValues.atmospherePalette
+    ),
+    atmosphereIntensity: numeric.atmosphereIntensity,
+    atmosphereThickness: numeric.atmosphereThickness,
+    atmosphereDropoff: numeric.atmosphereDropoff,
+    atmosphereTerminatorWrap: numeric.atmosphereTerminatorWrap,
     normalTextureSize: sanitizeTextureSize(
       migratedRaw.normalTextureSize,
       DefaultValues.normalTextureSize
@@ -261,6 +321,10 @@ export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
   normalStrength: 'Normal strength',
   roughness: 'Roughness',
   metalness: 'Metalness',
+  atmosphereIntensity: 'Atmosphere intensity',
+  atmosphereThickness: 'Atmosphere thickness',
+  atmosphereDropoff: 'Atmosphere dropoff',
+  atmosphereTerminatorWrap: 'Terminator wrap',
 }
 
 export const GasGiantUiLabels = {
@@ -275,6 +339,8 @@ export const GasGiantUiLabels = {
   textureResolution: 'Texture resolution',
   cloudBands: 'Cloud bands',
   stormSystems: 'Storm systems',
+  atmosphere: 'Atmosphere',
+  atmospherePalette: 'Atmosphere palette',
   properties: 'Properties',
   palette: 'Palette',
   surfaceTint: 'Surface tint',
@@ -296,9 +362,18 @@ export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
   normalStrength: '--normal-strength',
   roughness: '--roughness',
   metalness: '--metalness',
+  atmosphereIntensity: '--atmosphere-intensity',
+  atmosphereThickness: '--atmosphere-thickness',
+  atmosphereDropoff: '--atmosphere-dropoff',
+  atmosphereTerminatorWrap: '--atmosphere-terminator-wrap',
 }
 
 export const GasGiantCliToggleFlags = {
   autoRotate: '--auto-rotate',
   stormsEnabled: '--storms-enabled',
+  atmosphereEnabled: '--atmosphere-enabled',
+} as const
+
+export const GasGiantCliFeatureFlags = {
+  atmospherePalette: '--atmosphere-palette',
 } as const
