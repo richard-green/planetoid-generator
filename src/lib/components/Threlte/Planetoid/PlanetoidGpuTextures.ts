@@ -244,18 +244,68 @@ const fragmentShader = `
     return value / max(1e-6, total);
   }
 
+  // Sine-free hash (Dave Hoskins) so large seed offsets keep full precision.
+  vec3 gradientHash3(vec3 p) {
+    p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yxz + 33.33);
+    return normalize(fract((p.xxy + p.yxx) * p.zyx) * 2.0 - 1.0 + 1e-4);
+  }
+
+  // Classic 3D Perlin gradient noise, roughly in [-0.9, 0.9].
+  float perlin3(vec3 p) {
+    vec3 i = floor(p);
+    vec3 f = fract(p);
+    vec3 u = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+
+    float n000 = dot(gradientHash3(i), f);
+    float n100 = dot(gradientHash3(i + vec3(1.0, 0.0, 0.0)), f - vec3(1.0, 0.0, 0.0));
+    float n010 = dot(gradientHash3(i + vec3(0.0, 1.0, 0.0)), f - vec3(0.0, 1.0, 0.0));
+    float n110 = dot(gradientHash3(i + vec3(1.0, 1.0, 0.0)), f - vec3(1.0, 1.0, 0.0));
+    float n001 = dot(gradientHash3(i + vec3(0.0, 0.0, 1.0)), f - vec3(0.0, 0.0, 1.0));
+    float n101 = dot(gradientHash3(i + vec3(1.0, 0.0, 1.0)), f - vec3(1.0, 0.0, 1.0));
+    float n011 = dot(gradientHash3(i + vec3(0.0, 1.0, 1.0)), f - vec3(0.0, 1.0, 1.0));
+    float n111 = dot(gradientHash3(i + vec3(1.0, 1.0, 1.0)), f - vec3(1.0, 1.0, 1.0));
+
+    return mix(
+      mix(mix(n000, n100, u.x), mix(n010, n110, u.x), u.y),
+      mix(mix(n001, n101, u.x), mix(n011, n111, u.x), u.y),
+      u.z
+    );
+  }
+
+  // Musgrave-style ridged multifractal: each octave is weighted by the previous
+  // one, so fine detail clusters on crests and valleys stay smooth. Returns [0, 1].
+  float ridgedMultiPerlin(vec3 p, float exponent) {
+    float sum = 0.0;
+    float amplitude = 1.0;
+    float norm = 0.0;
+    float weight = 1.0;
+
+    for (int i = 0; i < 6; i++) {
+      float n = 1.0 - abs(perlin3(p) * 1.4);
+      n = pow(clamp(n, 0.0, 1.0), exponent) * weight;
+      weight = clamp(n * 2.0, 0.0, 1.0);
+      sum += n * amplitude;
+      norm += amplitude;
+      amplitude *= 0.5;
+      p = p * 2.03 + vec3(1.7, 9.2, 4.3);
+    }
+
+    return sum / max(1e-6, norm);
+  }
+
   vec2 ridgeRiftSignals(vec3 p, vec3 seed) {
     float ridgeFrequency = max(0.1, uRidgeFrequency);
     float riftFrequency = max(0.1, uRiftFrequency);
 
-    float ridgeNoise = fractalNoise(p * ridgeFrequency + seed * 0.91 + vec3(17.7, 53.2, 91.4));
-    float ridgeRaw = 1.0 - abs(ridgeNoise);
+    vec3 ridgePos = p * (ridgeFrequency * 1.2) + seed * 0.91 + vec3(17.7, 53.2, 91.4);
     // Higher ridge sharpness should produce narrower, crisper ridge crests.
-    float ridgeSharp = pow(
-      clamp(ridgeRaw, 0.0, 1.0),
-      mix(0.6, 4.2, clamp((uRidgeSharpness - 0.5) / 3.5, 0.0, 1.0))
-    );
-    float ridgeHeight = ridgeSharp * uRidgeStrength;
+    float ridgeExponent = mix(1.5, 6.0, clamp((uRidgeSharpness - 0.5) / 3.5, 0.0, 1.0));
+    float ridgeField = ridgedMultiPerlin(ridgePos, ridgeExponent);
+    // Low-frequency mask confines ridges to discrete ranges separated by plains.
+    float rangeNoise = perlin3(p * (ridgeFrequency * 0.45) + seed * 0.73 + vec3(83.1, 7.9, 29.4)) * 1.4;
+    float rangeMask = smoothstep(-0.05, 0.35, rangeNoise);
+    float ridgeHeight = ridgeField * rangeMask * uRidgeStrength;
 
     float riftNoise = fractalNoise(p * riftFrequency + seed * 1.17 + vec3(61.3, 13.9, 37.5));
     float riftCrossing = abs(riftNoise);

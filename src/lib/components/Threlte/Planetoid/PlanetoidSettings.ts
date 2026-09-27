@@ -1,5 +1,6 @@
 import { PlanetoidPaletteNames, type PlanetoidPaletteName } from './PlanetoidPalettes'
 import { DustCloudPaletteNames, type DustCloudPaletteName } from './DustCloudPalettes'
+import { AtmospherePaletteNames, type AtmospherePaletteName } from './AtmospherePalettes'
 import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
 import {
   sanitizeBoolean,
@@ -61,6 +62,11 @@ export type PlanetoidSettings = {
   dustCloudSwirliness: number
   dustCloudCoriolis: number
   dustCloudNormalStrength: number
+  atmospherePalette: AtmospherePaletteName
+  atmosphereIntensity: number
+  atmosphereThickness: number
+  atmosphereDropoff: number
+  atmosphereTerminatorWrap: number
   craterCount: number
   craterScale: number
   craterStrength: number
@@ -115,6 +121,10 @@ export type PlanetoidRangeValues = Pick<
   | 'dustCloudSwirliness'
   | 'dustCloudCoriolis'
   | 'dustCloudNormalStrength'
+  | 'atmosphereIntensity'
+  | 'atmosphereThickness'
+  | 'atmosphereDropoff'
+  | 'atmosphereTerminatorWrap'
   | 'craterCount'
   | 'craterScale'
   | 'craterStrength'
@@ -169,6 +179,11 @@ export const DefaultValues: PlanetoidSettings = {
   dustCloudSwirliness: 0.65,
   dustCloudCoriolis: 0.8,
   dustCloudNormalStrength: 1.2,
+  atmospherePalette: 'terran',
+  atmosphereIntensity: 1.2,
+  atmosphereThickness: 0.12,
+  atmosphereDropoff: 4,
+  atmosphereTerminatorWrap: 0.3,
   craterCount: 20,
   craterScale: 1,
   craterStrength: 5,
@@ -213,6 +228,10 @@ export const MinValues: PlanetoidRangeValues = {
   dustCloudSwirliness: 0,
   dustCloudCoriolis: 0,
   dustCloudNormalStrength: 0,
+  atmosphereIntensity: 0,
+  atmosphereThickness: 0.01,
+  atmosphereDropoff: 0.25,
+  atmosphereTerminatorWrap: 0,
   craterCount: 0,
   craterScale: 0.25,
   craterStrength: 0,
@@ -255,6 +274,10 @@ export const MaxValues: PlanetoidRangeValues = {
   dustCloudSwirliness: 2,
   dustCloudCoriolis: 2,
   dustCloudNormalStrength: 3,
+  atmosphereIntensity: 5,
+  atmosphereThickness: 1,
+  atmosphereDropoff: 16,
+  atmosphereTerminatorWrap: 1,
   craterCount: 120,
   craterScale: 3,
   craterStrength: 10,
@@ -297,6 +320,10 @@ export const StepValues: PlanetoidRangeValues = {
   dustCloudSwirliness: 0.05,
   dustCloudCoriolis: 0.05,
   dustCloudNormalStrength: 0.05,
+  atmosphereIntensity: 0.05,
+  atmosphereThickness: 0.01,
+  atmosphereDropoff: 0.25,
+  atmosphereTerminatorWrap: 0.05,
   craterCount: 1,
   craterScale: 0.05,
   craterStrength: 0.1,
@@ -383,6 +410,26 @@ const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
     defaultValue: DefaultValues.dustCloudNormalStrength,
     min: MinValues.dustCloudNormalStrength,
     max: MaxValues.dustCloudNormalStrength,
+  },
+  atmosphereIntensity: {
+    defaultValue: DefaultValues.atmosphereIntensity,
+    min: MinValues.atmosphereIntensity,
+    max: MaxValues.atmosphereIntensity,
+  },
+  atmosphereThickness: {
+    defaultValue: DefaultValues.atmosphereThickness,
+    min: MinValues.atmosphereThickness,
+    max: MaxValues.atmosphereThickness,
+  },
+  atmosphereDropoff: {
+    defaultValue: DefaultValues.atmosphereDropoff,
+    min: MinValues.atmosphereDropoff,
+    max: MaxValues.atmosphereDropoff,
+  },
+  atmosphereTerminatorWrap: {
+    defaultValue: DefaultValues.atmosphereTerminatorWrap,
+    min: MinValues.atmosphereTerminatorWrap,
+    max: MaxValues.atmosphereTerminatorWrap,
   },
   craterCount: {
     defaultValue: DefaultValues.craterCount,
@@ -553,6 +600,12 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     DustCloudStyleNames,
     DefaultValues.dustCloudStyle
   )
+  const atmospherePalette = sanitizeEnum(
+    raw,
+    'atmospherePalette',
+    AtmospherePaletteNames,
+    DefaultValues.atmospherePalette
+  )
   const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
   return {
     palette,
@@ -569,6 +622,11 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     dustCloudSwirliness: numeric.dustCloudSwirliness,
     dustCloudCoriolis: numeric.dustCloudCoriolis,
     dustCloudNormalStrength: numeric.dustCloudNormalStrength,
+    atmospherePalette,
+    atmosphereIntensity: numeric.atmosphereIntensity,
+    atmosphereThickness: numeric.atmosphereThickness,
+    atmosphereDropoff: numeric.atmosphereDropoff,
+    atmosphereTerminatorWrap: numeric.atmosphereTerminatorWrap,
     craterCount: numeric.craterCount,
     craterScale: numeric.craterScale,
     craterStrength: numeric.craterStrength,
@@ -649,6 +707,10 @@ export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
   dustCloudSwirliness: 'Dust-cloud swirliness',
   dustCloudCoriolis: 'Coriolis strength',
   dustCloudNormalStrength: 'Dust-cloud relief',
+  atmosphereIntensity: 'Atmosphere intensity',
+  atmosphereThickness: 'Atmosphere thickness',
+  atmosphereDropoff: 'Atmosphere drop-off',
+  atmosphereTerminatorWrap: 'Terminator wrap',
   craterCount: 'Crater count',
   craterScale: 'Crater scale',
   craterStrength: 'Crater strength',
@@ -696,6 +758,8 @@ export const PlanetoidUiLabels = {
   dustClouds: 'Dust clouds',
   dustCloudStyle: 'Cloud formation',
   dustCloudPalette: 'Cloud palette',
+  atmosphere: 'Atmosphere',
+  atmospherePalette: 'Atmosphere palette',
   craters: 'Craters',
   volcanoes: 'Volcanoes',
   ridges: 'Ridges',
@@ -716,6 +780,10 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
   dustCloudSwirliness: '--dust-cloud-swirliness',
   dustCloudCoriolis: '--dust-cloud-coriolis',
   dustCloudNormalStrength: '--dust-cloud-normal-strength',
+  atmosphereIntensity: '--atmosphere-intensity',
+  atmosphereThickness: '--atmosphere-thickness',
+  atmosphereDropoff: '--atmosphere-dropoff',
+  atmosphereTerminatorWrap: '--atmosphere-terminator-wrap',
   craterCount: '--crater-count',
   craterScale: '--crater-scale',
   craterStrength: '--crater-strength',
@@ -758,4 +826,5 @@ export const PlanetoidCliToggleFlags = {
 export const PlanetoidCliFeatureFlags = {
   dustCloudStyle: '--dust-cloud-style',
   dustCloudPalette: '--dust-cloud-palette',
+  atmospherePalette: '--atmosphere-palette',
 } as const

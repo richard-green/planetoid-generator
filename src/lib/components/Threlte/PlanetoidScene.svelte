@@ -10,6 +10,7 @@
   import type { DustCloudStyle } from './Planetoid/PlanetoidSettings'
   import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
   import type { DustCloudPaletteName } from './Planetoid/DustCloudPalettes'
+  import type { AtmospherePaletteName } from './Planetoid/AtmospherePalettes'
   import type { TextureSize } from '../../types/textureSize'
 
   type Props = {
@@ -28,6 +29,11 @@
     dustCloudSwirliness?: number
     dustCloudCoriolis?: number
     dustCloudNormalStrength?: number
+    atmospherePalette?: AtmospherePaletteName
+    atmosphereIntensity?: number
+    atmosphereThickness?: number
+    atmosphereDropoff?: number
+    atmosphereTerminatorWrap?: number
     seed?: number
     largeScale?: number
     mediumScale?: number
@@ -83,6 +89,11 @@
     dustCloudSwirliness = DefaultValues.dustCloudSwirliness,
     dustCloudCoriolis = DefaultValues.dustCloudCoriolis,
     dustCloudNormalStrength = DefaultValues.dustCloudNormalStrength,
+    atmospherePalette = DefaultValues.atmospherePalette,
+    atmosphereIntensity = DefaultValues.atmosphereIntensity,
+    atmosphereThickness = DefaultValues.atmosphereThickness,
+    atmosphereDropoff = DefaultValues.atmosphereDropoff,
+    atmosphereTerminatorWrap = DefaultValues.atmosphereTerminatorWrap,
     seed = DefaultValues.seed,
     largeScale = DefaultValues.largeScale,
     mediumScale = DefaultValues.mediumScale,
@@ -138,6 +149,11 @@
     dustCloudSwirliness,
     dustCloudCoriolis,
     dustCloudNormalStrength,
+    atmospherePalette,
+    atmosphereIntensity,
+    atmosphereThickness,
+    atmosphereDropoff,
+    atmosphereTerminatorWrap,
     seed,
     largeScale,
     mediumScale,

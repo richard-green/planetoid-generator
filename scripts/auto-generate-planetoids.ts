@@ -13,6 +13,10 @@ import {
   type DustCloudPaletteName,
 } from '../src/lib/components/Threlte/Planetoid/DustCloudPalettes'
 import {
+  AtmospherePaletteNames,
+  type AtmospherePaletteName,
+} from '../src/lib/components/Threlte/Planetoid/AtmospherePalettes'
+import {
   DustCloudStyleNames,
   MaxValues,
   MinValues,
@@ -48,6 +52,7 @@ type ScriptOptions = {
   palette?: string
   dustCloudPalette?: DustCloudPaletteName
   dustCloudStyle?: DustCloudStyle
+  atmospherePalette?: AtmospherePaletteName
   surfaceTint?: string
   colorScale?: number
   tintShadowFloor?: number
@@ -59,6 +64,10 @@ type ScriptOptions = {
   dustCloudSwirliness?: number
   dustCloudCoriolis?: number
   dustCloudNormalStrength?: number
+  atmosphereIntensity?: number
+  atmosphereThickness?: number
+  atmosphereDropoff?: number
+  atmosphereTerminatorWrap?: number
   craterCount?: number
   craterScale?: number
   craterStrength?: number
@@ -111,6 +120,7 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   palette: undefined,
   dustCloudPalette: undefined,
   dustCloudStyle: undefined,
+  atmospherePalette: undefined,
   surfaceTint: undefined,
   colorScale: undefined,
   tintShadowFloor: undefined,
@@ -122,6 +132,10 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   dustCloudSwirliness: undefined,
   dustCloudCoriolis: undefined,
   dustCloudNormalStrength: undefined,
+  atmosphereIntensity: undefined,
+  atmosphereThickness: undefined,
+  atmosphereDropoff: undefined,
+  atmosphereTerminatorWrap: undefined,
   craterCount: undefined,
   craterScale: undefined,
   craterStrength: undefined,
@@ -190,6 +204,7 @@ type ScriptLocators = {
   paletteSelect: Locator
   dustCloudPaletteSelect: Locator
   dustCloudStyleSelect: Locator
+  atmospherePaletteSelect: Locator
   viewModeRadios: Record<NonNullable<ScriptOptions['viewMode']>, Locator>
   surfaceTintInput: Locator
   autoRotateToggle: Locator
@@ -226,6 +241,9 @@ function buildLocators(page: Page): ScriptLocators {
       .first(),
     dustCloudStyleSelect: page
       .locator(selectors.selectByLabel(PlanetoidUiLabels.dustCloudStyle))
+      .first(),
+    atmospherePaletteSelect: page
+      .locator(selectors.selectByLabel(PlanetoidUiLabels.atmospherePalette))
       .first(),
     viewModeRadios: {
       mesh: page.locator(selectors.sceneViewModeRadio('mesh')).first(),
@@ -371,6 +389,15 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === PlanetoidCliFeatureFlags.atmospherePalette && next) {
+      if (!AtmospherePaletteNames.includes(next as AtmospherePaletteName)) {
+        throw new Error(`Invalid atmosphere-palette: ${next}`)
+      }
+      options.atmospherePalette = next as AtmospherePaletteName
+      i++
+      continue
+    }
+
     if (arg === '--view-mode' && next) {
       if (next !== 'mesh' && next !== 'normal' && next !== 'texture') {
         throw new Error(`Invalid view-mode: ${next}. Expected one of: mesh, normal, texture`)
@@ -453,6 +480,7 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --palette <name>        Palette name (example: oxidizedBasalt)',
           `  ${PlanetoidCliFeatureFlags.dustCloudStyle} <name> Cloud shape: ${DustCloudStyleNames.join(' | ')}`,
           `  ${PlanetoidCliFeatureFlags.dustCloudPalette} <name> Cloud palette: ${DustCloudPaletteNames.join(' | ')}`,
+          `  ${PlanetoidCliFeatureFlags.atmospherePalette} <name> Atmosphere palette: ${AtmospherePaletteNames.join(' | ')}`,
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
           ...NUMERIC_HELP_LINES,
           `  ${PlanetoidCliToggleFlags.autoRotate} <bool>    Enable/disable auto-rotate`,
@@ -545,6 +573,7 @@ async function main() {
       `palette=${options.palette ?? 'unchanged'}`,
       `dustCloudPalette=${options.dustCloudPalette ?? 'unchanged'}`,
       `dustCloudStyle=${options.dustCloudStyle ?? 'unchanged'}`,
+      `atmospherePalette=${options.atmospherePalette ?? 'unchanged'}`,
       `surfaceTint=${options.surfaceTint ?? 'unchanged'}`,
       `colorScale=${options.colorScale ?? 'unchanged'}`,
       `tintShadowFloor=${options.tintShadowFloor ?? 'unchanged'}`,
@@ -643,6 +672,7 @@ async function main() {
       paletteSelect,
       dustCloudPaletteSelect,
       dustCloudStyleSelect,
+      atmospherePaletteSelect,
       viewModeRadios,
       surfaceTintInput,
       autoRotateToggle,
@@ -734,6 +764,13 @@ async function main() {
       await ensureLocatorVisible(dustCloudStyleSelect)
       logger.info(`Applying dust-cloud style: ${options.dustCloudStyle}`)
       await dustCloudStyleSelect.selectOption(options.dustCloudStyle)
+      await page.waitForTimeout(options.frameSettleMs)
+    }
+
+    if (options.atmospherePalette) {
+      await ensureLocatorVisible(atmospherePaletteSelect)
+      logger.info(`Applying atmosphere palette: ${options.atmospherePalette}`)
+      await atmospherePaletteSelect.selectOption(options.atmospherePalette)
       await page.waitForTimeout(options.frameSettleMs)
     }
 

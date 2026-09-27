@@ -41,6 +41,7 @@
   let canvasShell = $state<HTMLDivElement | undefined>(undefined)
   let autoRotate = $state(true)
   let showOrbits = $state(true)
+  let cinematic = $state(false)
   let starPresetId = $state(BUILTIN_STAR_PRESETS[0]?.id ?? '')
   let userRockyPresets = $state<PlanetoidPreset[]>([])
   let userGiantPresets = $state<GasGiantPreset[]>([])
@@ -130,6 +131,7 @@
           {starSettings}
           {autoRotate}
           {showOrbits}
+          {cinematic}
           {textureSize}
         />
       </Canvas>
@@ -139,7 +141,10 @@
     <div class="controls">
       <fieldset>
         <legend>Scene</legend>
-        <p class="hint">Drag to orbit, right-drag to pan, scroll to fly forwards.</p>
+        <p class="hint">
+          Drag to orbit, right-drag to pan, scroll to fly forwards, double-click a body to
+          focus it.
+        </p>
         <div class="save-actions" aria-label="Save and export actions">
           <div class="export-actions">
             <button
@@ -150,6 +155,15 @@
               aria-label="Save scene PNG"
             >
               PNG
+            </button>
+            <button
+              class="action"
+              type="button"
+              onclick={() => (cinematic = !cinematic)}
+              aria-pressed={cinematic}
+              aria-label={cinematic ? 'Stop cinematic flyover' : 'Play cinematic flyover'}
+            >
+              {cinematic ? 'Stop tour' : 'Tour'}
             </button>
           </div>
         </div>

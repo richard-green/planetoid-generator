@@ -25,6 +25,11 @@
     DustCloudPalettes,
   } from '../lib/components/Threlte/Planetoid/DustCloudPalettes'
   import {
+    AtmospherePaletteLabels,
+    AtmospherePaletteNames,
+    AtmospherePalettes,
+  } from '../lib/components/Threlte/Planetoid/AtmospherePalettes'
+  import {
     DefaultValues,
     DustCloudStyleLabels,
     DustCloudStyleNames,
@@ -63,6 +68,7 @@
     | 'colorTextureSize'
     | 'dustCloudPalette'
     | 'dustCloudStyle'
+    | 'atmospherePalette'
   >
 
   const PLANETOID_SETTINGS_STORAGE_KEY = 'planetoid-view-settings-v1'
@@ -99,6 +105,10 @@
     'dustCloudSwirliness',
     'dustCloudCoriolis',
     'dustCloudNormalStrength',
+    'atmosphereIntensity',
+    'atmosphereThickness',
+    'atmosphereDropoff',
+    'atmosphereTerminatorWrap',
     'normalStrength',
     'craterCount',
     'craterScale',
@@ -156,6 +166,7 @@
   let ridgeSectionOpen = $state(true)
   let riftSectionOpen = $state(true)
   let dustCloudSectionOpen = $state(true)
+  let atmosphereSectionOpen = $state(true)
   let textureResolutionSectionOpen = $state(false)
   let materialPropertiesSectionOpen = $state(true)
   let geometryPropertiesSectionOpen = $state(true)
@@ -208,6 +219,12 @@
     'dustCloudCoriolis',
     'dustCloudNormalStrength',
   ]
+  const atmosphereControlKeys: NumericControlKey[] = [
+    'atmosphereIntensity',
+    'atmosphereThickness',
+    'atmosphereDropoff',
+    'atmosphereTerminatorWrap',
+  ]
 
   const colorControls = textureControls.filter((control) => colorControlKeys.includes(control))
   const materialControls = textureControls.filter((control) =>
@@ -219,6 +236,9 @@
   const riftControls = textureControls.filter((control) => riftControlKeys.includes(control))
   const dustCloudControls = textureControls.filter((control) =>
     dustCloudControlKeys.includes(control)
+  )
+  const atmosphereControls = textureControls.filter((control) =>
+    atmosphereControlKeys.includes(control)
   )
 
   const effectiveCratersEnabled = $derived(cratersEnabled)
@@ -339,6 +359,8 @@
       settings.dustCloudStyle,
       PlanetoidCliFeatureFlags.dustCloudPalette,
       settings.dustCloudPalette,
+      PlanetoidCliFeatureFlags.atmospherePalette,
+      settings.atmospherePalette,
       '--view-mode',
       mode,
     ]
@@ -781,6 +803,11 @@
           dustCloudSwirliness={planetoid.dustCloudSwirliness}
           dustCloudCoriolis={planetoid.dustCloudCoriolis}
           dustCloudNormalStrength={planetoid.dustCloudNormalStrength}
+          atmospherePalette={planetoid.atmospherePalette}
+          atmosphereIntensity={planetoid.atmosphereIntensity}
+          atmosphereThickness={planetoid.atmosphereThickness}
+          atmosphereDropoff={planetoid.atmosphereDropoff}
+          atmosphereTerminatorWrap={planetoid.atmosphereTerminatorWrap}
           seed={planetoid.seed}
           largeScale={planetoid.largeScale}
           mediumScale={planetoid.mediumScale}
@@ -1043,6 +1070,31 @@
               </select>
             </label>
             {#each dustCloudControls as control (control)}
+              <label class="compact-number-row">
+                <span>{PlanetoidRangeLabels[control]}</span>
+                <input
+                  type="number"
+                  min={MinValues[control]}
+                  max={MaxValues[control]}
+                  step={StepValues[control]}
+                  bind:value={planetoid[control]}
+                />
+              </label>
+            {/each}
+          </div>
+        </CollapsibleControl>
+
+        <CollapsibleControl title={PlanetoidUiLabels.atmosphere} bind:open={atmosphereSectionOpen}>
+          <PalettePicker
+            id="planetoid-atmosphere-palette"
+            title={PlanetoidUiLabels.atmospherePalette}
+            options={AtmospherePaletteNames}
+            palettes={AtmospherePalettes}
+            labels={AtmospherePaletteLabels}
+            bind:value={planetoid.atmospherePalette}
+          />
+          <div class="control-grid">
+            {#each atmosphereControls as control (control)}
               <label class="compact-number-row">
                 <span>{PlanetoidRangeLabels[control]}</span>
                 <input

@@ -34,6 +34,8 @@
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { PlanetoidPalettes } from './PlanetoidPalettes'
   import { DustCloudPalettes } from './DustCloudPalettes'
+  import { AtmospherePalettes } from './AtmospherePalettes'
+  import PlanetoidAtmosphere from './PlanetoidAtmosphere.svelte'
 
   type Props = {
     settings: PlanetoidSettings & { viewMode: PlanetoidViewMode }
@@ -57,6 +59,11 @@
     dustCloudSwirliness,
     dustCloudCoriolis,
     dustCloudNormalStrength,
+    atmospherePalette,
+    atmosphereIntensity,
+    atmosphereThickness,
+    atmosphereDropoff,
+    atmosphereTerminatorWrap,
     seed,
     largeScale,
     mediumScale,
@@ -125,6 +132,7 @@
   const initialGeometry = createIcosphere(2, 5)
   const dustCloudGeometry = new SphereGeometry(1, 96, 64)
   const dustCloudRadius = $derived(2 + largeScale + mediumScale + smallScale + dustCloudElevation)
+  const atmospherePlanetRadius = $derived(meanRadius)
   // Threlte spreads arrays into Vector2.set(); passing a Vector2 here sets x to the
   // vector itself and y to undefined, which produces NaN normals.
   const dustCloudNormalScale = $derived<[number, number]>([
@@ -138,6 +146,7 @@
   )
   let disposableGeometry: BufferGeometry = initialGeometry
   let massCentre = $state(new Vector3())
+  let meanRadius = $state(2)
 
   const { camera, size, renderer } = useThrelte()
 
@@ -388,6 +397,18 @@
     return new Vector3((minX + maxX) / 2, (minY + maxY) / 2, (minZ + maxZ) / 2)
   }
 
+  function meanDistanceFrom(targetGeometry: BufferGeometry, centre: Vector3) {
+    const position = targetGeometry.attributes.position
+    const vertex = new Vector3()
+    let total = 0
+
+    for (let i = 0; i < position.count; i++) {
+      total += vertex.fromBufferAttribute(position, i).distanceTo(centre)
+    }
+
+    return position.count > 0 ? total / position.count : 2
+  }
+
   function deformGeometry(
     targetGeometry: BufferGeometry,
     sourcePositions: Float32Array,
@@ -496,7 +517,9 @@
       smallFrequency
     )
 
-    massCentre = centreOfMass(geometry)
+    const centre = centreOfMass(geometry)
+    massCentre = centre
+    meanRadius = meanDistanceFrom(geometry, centre)
   })
 
   $effect(() => {
@@ -864,6 +887,17 @@
       </T.Mesh>
     {/if}
   </T.Mesh>
+
+  {#if atmosphereIntensity > 0}
+    <PlanetoidAtmosphere
+      planetRadius={atmospherePlanetRadius}
+      thickness={atmosphereThickness}
+      dropoff={atmosphereDropoff}
+      intensity={atmosphereIntensity}
+      terminatorWrap={atmosphereTerminatorWrap}
+      palette={AtmospherePalettes[atmospherePalette]}
+    />
+  {/if}
 
   {#if showDebugMeshes}
     <T.Mesh bind:ref={normalDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
