@@ -5,6 +5,7 @@
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
+  import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
   import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import { DefaultTextureSize, type TextureSize } from '../lib/types/textureSize'
@@ -157,15 +158,11 @@
         </p>
         <div class="save-actions" aria-label="Save and export actions">
           <div class="export-actions">
-            <button
-              class="action"
-              type="button"
-              onclick={downloadRender}
+            <ExportSplitButton
+              primaryAction={downloadRender}
+              primaryAriaLabel="Export scene PNG"
               disabled={isSaving}
-              aria-label="Save scene PNG"
-            >
-              PNG
-            </button>
+            />
             <button
               class="action"
               type="button"

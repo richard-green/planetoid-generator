@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, open, writeFile } from 'fs/promises'
 import path from 'path'
 import type { Locator, Page } from 'playwright'
 import { firefox } from 'playwright'
@@ -28,6 +28,7 @@ import {
   type PlanetoidRangeKey,
   type DustCloudStyle,
 } from '../src/lib/components/Threlte/Planetoid/PlanetoidSettings'
+import { DefaultTextureSize, TextureSizes, type TextureSize } from '../src/lib/types/textureSize'
 
 const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as PlanetoidRangeKey[]).filter(
   (key) => key !== 'seed'
@@ -48,7 +49,6 @@ type ScriptOptions = {
   count: number
   startSeed: number
   step: number
-  viewMode?: 'mesh' | 'normal' | 'texture'
   palette?: string
   dustCloudPalette?: DustCloudPaletteName
   dustCloudStyle?: DustCloudStyle
@@ -106,6 +106,8 @@ type ScriptOptions = {
   baseUrl: string
   outputDir: string
   frameSettleMs: number
+  textureSize: TextureSize
+  exportTextures: boolean
 }
 
 type Logger = {
@@ -118,7 +120,6 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   count: 1,
   startSeed: 1,
   step: 1,
-  viewMode: undefined,
   palette: undefined,
   dustCloudPalette: undefined,
   dustCloudStyle: undefined,
@@ -176,6 +177,8 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   baseUrl: 'http://127.0.0.1:5173/planetoids',
   outputDir: path.resolve('public/generated/planetoid'),
   frameSettleMs: 50,
+  textureSize: DefaultTextureSize,
+  exportTextures: false,
 }
 
 const LOCATOR_CONFIG = {
@@ -185,19 +188,36 @@ const LOCATOR_CONFIG = {
       name: 'Planetoids',
       exact: true,
     },
+    surfaceColorMapMenuItem: {
+      role: 'menuitem' as const,
+      name: 'Surface color map',
+      exact: true,
+    },
+    surfaceNormalMapMenuItem: {
+      role: 'menuitem' as const,
+      name: 'Surface normal map',
+      exact: true,
+    },
+    dustCloudColorMapMenuItem: {
+      role: 'menuitem' as const,
+      name: 'Dust-cloud color map',
+      exact: true,
+    },
+    dustCloudNormalMapMenuItem: {
+      role: 'menuitem' as const,
+      name: 'Dust-cloud normal map',
+      exact: true,
+    },
   },
   selectors: {
     controlsPanel: '.controls',
     canvas: '.canvas-shell canvas',
-    sceneViewModeRadio: (mode: NonNullable<ScriptOptions['viewMode']>) =>
-      `input[name="scene-view-mode"][value="${mode}"]`,
     numberInputByLabel: (label: string) => `label:has-text("${label}") input[type="number"]`,
     selectByLabel: (label: string) => `label:has-text("${label}") select`,
     colorInputByLabel: (label: string) => `label:has-text("${label}") input[type="color"]`,
     checkboxByLabel: (label: string) => `label:has-text("${label}") input`,
     sectionToggleBySummaryLabel: (label: string) =>
       `summary:has-text("${label}") input[type="checkbox"]`,
-    sectionSummaryByLabel: (label: string) => `summary:has-text("${label}")`,
   },
 }
 
@@ -209,7 +229,14 @@ type ScriptLocators = {
   dustCloudPaletteSelect: Locator
   dustCloudStyleSelect: Locator
   atmospherePaletteSelect: Locator
-  viewModeRadios: Record<NonNullable<ScriptOptions['viewMode']>, Locator>
+  colorTextureSizeSelect: Locator
+  normalTextureSizeSelect: Locator
+  exportMenu: Locator
+  exportMenuTrigger: Locator
+  surfaceColorMapMenuItem: Locator
+  surfaceNormalMapMenuItem: Locator
+  dustCloudColorMapMenuItem: Locator
+  dustCloudNormalMapMenuItem: Locator
   surfaceTintInput: Locator
   autoRotateToggle: Locator
   debugMeshesToggle: Locator
@@ -221,14 +248,6 @@ type ScriptLocators = {
     volcanoesEnabled: Locator
     dustCloudsEnabled: Locator
     atmosphereEnabled: Locator
-  }
-  sectionSummaries: {
-    craters: Locator
-    ridges: Locator
-    rifts: Locator
-    volcanoes: Locator
-    dustClouds: Locator
-    atmosphere: Locator
   }
   canvas: Locator
 }
@@ -242,7 +261,7 @@ function buildLocators(page: Page): ScriptLocators {
       name: roleTargets.planetoidNavLink.name,
       exact: roleTargets.planetoidNavLink.exact,
     }),
-    seedInput: page.locator(selectors.numberInputByLabel(PlanetoidUiLabels.seed)).first(),
+    seedInput: page.getByLabel(PlanetoidRangeLabels.seed, { exact: true }),
     paletteSelect: page.locator(selectors.selectByLabel(PlanetoidUiLabels.palette)).first(),
     dustCloudPaletteSelect: page
       .locator(selectors.selectByLabel(PlanetoidUiLabels.dustCloudPalette))
@@ -253,11 +272,26 @@ function buildLocators(page: Page): ScriptLocators {
     atmospherePaletteSelect: page
       .locator(selectors.selectByLabel(PlanetoidUiLabels.atmospherePalette))
       .first(),
-    viewModeRadios: {
-      mesh: page.locator(selectors.sceneViewModeRadio('mesh')).first(),
-      normal: page.locator(selectors.sceneViewModeRadio('normal')).first(),
-      texture: page.locator(selectors.sceneViewModeRadio('texture')).first(),
-    },
+    colorTextureSizeSelect: page.locator(selectors.selectByLabel('Color texture size')).first(),
+    normalTextureSizeSelect: page.locator(selectors.selectByLabel('Normal texture size')).first(),
+    exportMenu: page.locator('.export-split-menu'),
+    exportMenuTrigger: page.locator('.export-split-trigger'),
+    surfaceColorMapMenuItem: page.getByRole(roleTargets.surfaceColorMapMenuItem.role, {
+      name: roleTargets.surfaceColorMapMenuItem.name,
+      exact: roleTargets.surfaceColorMapMenuItem.exact,
+    }),
+    surfaceNormalMapMenuItem: page.getByRole(roleTargets.surfaceNormalMapMenuItem.role, {
+      name: roleTargets.surfaceNormalMapMenuItem.name,
+      exact: roleTargets.surfaceNormalMapMenuItem.exact,
+    }),
+    dustCloudColorMapMenuItem: page.getByRole(roleTargets.dustCloudColorMapMenuItem.role, {
+      name: roleTargets.dustCloudColorMapMenuItem.name,
+      exact: roleTargets.dustCloudColorMapMenuItem.exact,
+    }),
+    dustCloudNormalMapMenuItem: page.getByRole(roleTargets.dustCloudNormalMapMenuItem.role, {
+      name: roleTargets.dustCloudNormalMapMenuItem.name,
+      exact: roleTargets.dustCloudNormalMapMenuItem.exact,
+    }),
     surfaceTintInput: page
       .locator(selectors.colorInputByLabel(PlanetoidUiLabels.surfaceTint))
       .first(),
@@ -291,18 +325,6 @@ function buildLocators(page: Page): ScriptLocators {
         .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.atmosphere))
         .first(),
     },
-    sectionSummaries: {
-      craters: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.craters)).first(),
-      ridges: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.ridges)).first(),
-      rifts: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.rifts)).first(),
-      volcanoes: page.locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.volcanoes)).first(),
-      dustClouds: page
-        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.dustClouds))
-        .first(),
-      atmosphere: page
-        .locator(selectors.sectionSummaryByLabel(PlanetoidUiLabels.atmosphere))
-        .first(),
-    },
     canvas: page.locator(selectors.canvas),
   }
 }
@@ -327,6 +349,34 @@ function createLogger(): Logger {
 
 const logger = createLogger()
 
+async function readPngDimensions(filePath: string) {
+  const file = await open(filePath, 'r')
+
+  try {
+    const header = Buffer.alloc(24)
+    const { bytesRead } = await file.read(header, 0, header.length, 0)
+    if (
+      bytesRead < header.length ||
+      !header.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
+      !header.subarray(12, 16).equals(Buffer.from('IHDR'))
+    ) {
+      throw new Error(`Invalid PNG file: ${filePath}`)
+    }
+
+    return {
+      width: header.readUInt32BE(16),
+      height: header.readUInt32BE(20),
+    }
+  } finally {
+    await file.close()
+  }
+}
+
+async function logWrittenPng(filePath: string, fileName: string) {
+  const { width, height } = await readPngDimensions(filePath)
+  logger.info(`Wrote ${fileName} (${width}x${height})`)
+}
+
 function isFinitePositiveInt(value: number) {
   return Number.isFinite(value) && Number.isInteger(value) && value > 0
 }
@@ -338,6 +388,15 @@ function parseNumber(value: string, name: string) {
   }
 
   return parsed
+}
+
+function parseTextureSize(value: string): TextureSize {
+  const parsed = parseNumber(value, 'texture-size')
+  if (!(TextureSizes as readonly number[]).includes(parsed)) {
+    throw new Error(`Invalid texture-size: ${value}. Expected one of: ${TextureSizes.join(', ')}`)
+  }
+
+  return parsed as TextureSize
 }
 
 function parseBoolean(value: string, name: string) {
@@ -418,15 +477,6 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
-    if (arg === '--view-mode' && next) {
-      if (next !== 'mesh' && next !== 'normal' && next !== 'texture') {
-        throw new Error(`Invalid view-mode: ${next}. Expected one of: mesh, normal, texture`)
-      }
-      options.viewMode = next
-      i++
-      continue
-    }
-
     if (arg === '--surface-tint' && next) {
       options.surfaceTint = next
       i++
@@ -448,6 +498,17 @@ function parseArgs(argv: string[]): ScriptOptions {
     if (arg === '--frame-settle-ms' && next) {
       options.frameSettleMs = parseNumber(next, 'frame-settle-ms')
       i++
+      continue
+    }
+
+    if (arg === '--texture-size' && next) {
+      options.textureSize = parseTextureSize(next)
+      i++
+      continue
+    }
+
+    if (arg === '--export-textures') {
+      options.exportTextures = true
       continue
     }
 
@@ -508,7 +569,7 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --count <n>             Number of images to generate (default: 1)',
           '  --seed <n>              Starting seed value (default: 1)',
           '  --step <n>              Seed increment per image (default: 1)',
-          '  --view-mode <name>      mesh | normal | texture',
+          '  Output: scene PNG by default; use --export-textures for texture maps only',
           '  --palette <name>        Palette name (example: oxidizedBasalt)',
           `  ${PlanetoidCliFeatureFlags.dustCloudStyle} <name> Cloud shape: ${DustCloudStyleNames.join(' | ')}`,
           `  ${PlanetoidCliFeatureFlags.dustCloudPalette} <name> Cloud palette: ${DustCloudPaletteNames.join(' | ')}`,
@@ -526,6 +587,8 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --base-url <url>        Planetoid page URL (default: http://127.0.0.1:5173/planetoids)',
           '  --output-dir <path>     Output directory (default: public/generated/planetoid)',
           '  --frame-settle-ms <n>   Delay after updates in ms (default: 50)',
+          `  --texture-size <n>      Texture map height (color and normal; choices: ${TextureSizes.join(', ')}; default: ${DefaultTextureSize})`,
+          '  --export-textures       Export color, normal, dust-cloud color, and dust-cloud normal maps',
           '',
         ].join('\n')
       )
@@ -603,7 +666,6 @@ async function main() {
       `count=${options.count}`,
       `startSeed=${options.startSeed}`,
       `step=${options.step}`,
-      `viewMode=${options.viewMode ?? 'unchanged'}`,
       `palette=${options.palette ?? 'unchanged'}`,
       `dustCloudPalette=${options.dustCloudPalette ?? 'unchanged'}`,
       `dustCloudStyle=${options.dustCloudStyle ?? 'unchanged'}`,
@@ -653,6 +715,8 @@ async function main() {
       `baseUrl=${options.baseUrl}`,
       `outputDir=${options.outputDir}`,
       `frameSettleMs=${options.frameSettleMs}`,
+      `textureSize=${options.textureSize}`,
+      `exportTextures=${options.exportTextures}`,
     ].join(', ')
   )
 
@@ -697,7 +761,9 @@ async function main() {
 
   try {
     logger.info(`Opening ${options.baseUrl}`)
-    await page.goto(options.baseUrl, { waitUntil: 'networkidle' })
+    const pageUrl = new URL(options.baseUrl)
+    pageUrl.searchParams.set('automation', '1')
+    await page.goto(pageUrl.toString(), { waitUntil: 'networkidle' })
     logger.info('Initial navigation complete')
 
     const locators = buildLocators(page)
@@ -709,13 +775,19 @@ async function main() {
       dustCloudPaletteSelect,
       dustCloudStyleSelect,
       atmospherePaletteSelect,
-      viewModeRadios,
+      colorTextureSizeSelect,
+      normalTextureSizeSelect,
+      exportMenu,
+      exportMenuTrigger,
+      surfaceColorMapMenuItem,
+      surfaceNormalMapMenuItem,
+      dustCloudColorMapMenuItem,
+      dustCloudNormalMapMenuItem,
       surfaceTintInput,
       autoRotateToggle,
       debugMeshesToggle,
       numericInputByKey,
       sectionToggles,
-      sectionSummaries,
       canvas,
     } = locators
 
@@ -726,18 +798,6 @@ async function main() {
         logger.info('Clicked Planetoids nav link')
       } else {
         logger.warn('Planetoids nav link was not visible')
-      }
-    }
-
-    async function ensureSectionOpen(summary: Locator) {
-      if (!(await summary.isVisible().catch(() => false))) {
-        return
-      }
-
-      const details = summary.locator('xpath=ancestor::details[1]').first()
-      const isOpen = await details.evaluate((el) => Boolean((el as { open?: unknown }).open))
-      if (!isOpen) {
-        await summary.click()
       }
     }
 
@@ -757,12 +817,73 @@ async function main() {
     await canvas.waitFor({ state: 'visible' })
     logger.info('All required UI elements are visible')
 
-    await ensureSectionOpen(sectionSummaries.craters)
-    await ensureSectionOpen(sectionSummaries.ridges)
-    await ensureSectionOpen(sectionSummaries.rifts)
-    await ensureSectionOpen(sectionSummaries.volcanoes)
-    await ensureSectionOpen(sectionSummaries.dustClouds)
-    await ensureSectionOpen(sectionSummaries.atmosphere)
+    const hasNumericOverride = (...keys: PlanetoidRangeKey[]) =>
+      keys.some((key) => typeof (options as Record<string, unknown>)[key] === 'number')
+    const prepareSectionForOverrides = async (toggle: Locator, hasOverrides: boolean) => {
+      if (hasOverrides) {
+        await toggle.check()
+      }
+    }
+
+    await prepareSectionForOverrides(
+      sectionToggles.cratersEnabled,
+      hasNumericOverride(
+        'craterCount',
+        'craterScale',
+        'craterStrength',
+        'craterSharpness',
+        'craterColorStrength'
+      )
+    )
+    await prepareSectionForOverrides(
+      sectionToggles.ridgesEnabled,
+      hasNumericOverride(
+        'ridgeStrength',
+        'ridgeFrequency',
+        'ridgeSharpness',
+        'ridgeColorWeight',
+        'ridgesRiftsBlend'
+      )
+    )
+    await prepareSectionForOverrides(
+      sectionToggles.riftsEnabled,
+      hasNumericOverride(
+        'riftStrength',
+        'riftFrequency',
+        'riftWidth',
+        'riftSharpness',
+        'riftColorWeight',
+        'ridgesRiftsBlend'
+      )
+    )
+    await prepareSectionForOverrides(
+      sectionToggles.volcanoesEnabled,
+      hasNumericOverride('volcanoCount', 'volcanoScale', 'volcanoStrength', 'volcanoColorStrength')
+    )
+    await prepareSectionForOverrides(
+      sectionToggles.dustCloudsEnabled,
+      options.dustCloudPalette !== undefined ||
+        options.dustCloudStyle !== undefined ||
+        hasNumericOverride(
+          'dustCloudCoverage',
+          'dustCloudOpacity',
+          'dustCloudElevation',
+          'dustCloudFrequency',
+          'dustCloudSwirliness',
+          'dustCloudCoriolis',
+          'dustCloudNormalStrength'
+        )
+    )
+    await prepareSectionForOverrides(
+      sectionToggles.atmosphereEnabled,
+      options.atmospherePalette !== undefined ||
+        hasNumericOverride(
+          'atmosphereIntensity',
+          'atmosphereThickness',
+          'atmosphereDropoff',
+          'atmosphereTerminatorWrap'
+        )
+    )
 
     async function ensureLocatorVisible(locator: Locator) {
       if (await locator.isVisible().catch(() => false)) {
@@ -784,6 +905,31 @@ async function main() {
       }
 
       await locator.waitFor({ state: 'visible' })
+    }
+
+    if (options.exportTextures) {
+      await ensureLocatorVisible(colorTextureSizeSelect)
+      await colorTextureSizeSelect.selectOption(String(options.textureSize))
+      await ensureLocatorVisible(normalTextureSizeSelect)
+      await normalTextureSizeSelect.selectOption(String(options.textureSize))
+      await page.waitForTimeout(options.frameSettleMs)
+    }
+
+    async function saveTextureExport(locator: Locator, fileName: string) {
+      const isMenuOpen = await exportMenu.evaluate((element) =>
+        Boolean((element as { open?: unknown }).open)
+      )
+      if (!isMenuOpen) {
+        await exportMenuTrigger.click()
+      }
+      await locator.waitFor({ state: 'visible' })
+
+      const downloadPromise = page.waitForEvent('download')
+      await locator.click()
+      const download = await downloadPromise
+      const filePath = path.join(options.outputDir, fileName)
+      await download.saveAs(filePath)
+      await logWrittenPng(filePath, fileName)
     }
 
     if (requestedPalette) {
@@ -811,12 +957,6 @@ async function main() {
       await ensureLocatorVisible(atmospherePaletteSelect)
       logger.info(`Applying atmosphere palette: ${options.atmospherePalette}`)
       await atmospherePaletteSelect.selectOption(options.atmospherePalette)
-      await page.waitForTimeout(options.frameSettleMs)
-    }
-
-    if (options.viewMode) {
-      logger.info(`Applying view mode: ${options.viewMode}`)
-      await viewModeRadios[options.viewMode].check()
       await page.waitForTimeout(options.frameSettleMs)
     }
 
@@ -885,7 +1025,6 @@ async function main() {
 
     if (
       normalizedSurfaceTint ||
-      options.viewMode !== undefined ||
       NUMERIC_RANGE_KEYS.some(
         (key) => typeof (options as Record<string, unknown>)[key] === 'number'
       ) ||
@@ -912,25 +1051,35 @@ async function main() {
       await seedInput.press('Enter')
       await page.waitForTimeout(options.frameSettleMs)
 
-      const fileName = `planetoid-${runStamp}-seed-${seed.toString().padStart(6, '0')}.png`
-      const filePath = path.join(options.outputDir, fileName)
+      if (options.exportTextures) {
+        const textureName = `planetoid-${runStamp}-seed-${seed.toString().padStart(6, '0')}`
+        await saveTextureExport(surfaceColorMapMenuItem, `${textureName}-color.png`)
+        await saveTextureExport(surfaceNormalMapMenuItem, `${textureName}-normal.png`)
+        await saveTextureExport(dustCloudColorMapMenuItem, `${textureName}-dust-cloud.png`)
+        await saveTextureExport(dustCloudNormalMapMenuItem, `${textureName}-dust-cloud-normal.png`)
+      } else {
+        const fileName = `planetoid-${runStamp}-seed-${seed.toString().padStart(6, '0')}.png`
+        const filePath = path.join(options.outputDir, fileName)
 
-      const pngDataUrl = await canvas.evaluate((canvasElement) => {
-        const maybeCanvas = canvasElement as { toDataURL?: (type?: string) => string }
-        if (typeof maybeCanvas.toDataURL !== 'function') {
-          throw new Error('Target element does not expose toDataURL().')
-        }
+        const pngDataUrl = await canvas.evaluate((canvasElement) => {
+          const maybeCanvas = canvasElement as { toDataURL?: (type?: string) => string }
+          if (typeof maybeCanvas.toDataURL !== 'function') {
+            throw new Error('Target element does not expose toDataURL().')
+          }
 
-        return maybeCanvas.toDataURL('image/png')
-      })
+          return maybeCanvas.toDataURL('image/png')
+        })
 
-      const base64Payload = pngDataUrl.replace(/^data:image\/png;base64,/, '')
-      await writeFile(filePath, base64Payload, 'base64')
-      logger.info(`[${i + 1}/${options.count}] wrote ${fileName}`)
+        const base64Payload = pngDataUrl.replace(/^data:image\/png;base64,/, '')
+        await writeFile(filePath, base64Payload, 'base64')
+        const { width, height } = await readPngDimensions(filePath)
+        logger.info(`[${i + 1}/${options.count}] wrote ${fileName} (${width}x${height})`)
+      }
     }
 
     const elapsedMs = Date.now() - runStartedAt
-    logger.info(`Done. Generated ${options.count} image(s) in ${options.outputDir}`)
+    const outputKind = options.exportTextures ? 'texture set(s)' : 'scene image(s)'
+    logger.info(`Done. Generated ${options.count} ${outputKind} in ${options.outputDir}`)
     logger.info(`Total elapsed time: ${(elapsedMs / 1000).toFixed(2)}s`)
   } finally {
     logger.info('Closing browser context')

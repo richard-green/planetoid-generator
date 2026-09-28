@@ -10,6 +10,7 @@
     type Texture,
   } from 'three'
   import { onDestroy } from 'svelte'
+  import { convertLinearRgbaToSrgb } from '../../../utils/colorSpace'
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { createRandom } from '../../../utils/math'
   import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
@@ -116,7 +117,11 @@
     return true
   }
 
-  function downloadRenderTexture(texture: Texture | null | undefined, fileName: string) {
+  function downloadRenderTexture(
+    texture: Texture | null | undefined,
+    fileName: string,
+    convertLinearToSrgb = false
+  ) {
     if (!renderer || !texture) return false
 
     const renderTarget = texture.userData.renderTarget as WebGLRenderTarget | undefined
@@ -138,12 +143,13 @@
     }
 
     const flipped = flipRowsRgba(pixels, width, height)
-    return triggerPngDownload(width, height, flipped, fileName)
+    const outputPixels = convertLinearToSrgb ? convertLinearRgbaToSrgb(flipped) : flipped
+    return triggerPngDownload(width, height, outputPixels, fileName)
   }
 
   export async function downloadTextureMapPng(fileName = 'gas-giant-texture-map.png') {
     const colorMap = (material?.map as Texture | null | undefined) ?? colorTexture
-    return downloadRenderTexture(colorMap, fileName)
+    return downloadRenderTexture(colorMap, fileName, true)
   }
 
   export async function downloadNormalMapPng(fileName = 'gas-giant-normal-map.png') {

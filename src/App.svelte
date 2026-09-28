@@ -22,6 +22,7 @@
 
   const fallbackPath = routes[0]?.path ?? '/'
   const WELCOME_SEEN_STORAGE_KEY = 'planetoid-generator-welcome-seen-v1'
+  const isAutomationMode = new URLSearchParams(window.location.search).get('automation') === '1'
   const stackedLayoutQuery = window.matchMedia('(max-width: 900px)')
 
   let welcomeDialogElement: HTMLDialogElement | undefined = $state(undefined)
@@ -90,6 +91,10 @@
   }
 
   function openWelcomeDialog(): void {
+    if (isAutomationMode) {
+      return
+    }
+
     showWelcomeDialog = true
   }
 
@@ -169,6 +174,11 @@
     }
 
     welcomeStateInitialized = true
+
+    if (isAutomationMode) {
+      showWelcomeDialog = false
+      return
+    }
 
     try {
       const seen = localStorage.getItem(WELCOME_SEEN_STORAGE_KEY) === 'true'

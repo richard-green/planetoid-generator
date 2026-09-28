@@ -4,6 +4,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
+  import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import PresetManager, {
@@ -47,6 +48,7 @@
     StepValues,
     PlanetoidUiLabels,
     sanitizePlanetoidSettings,
+    type PlanetoidRangeKey,
     type PlanetoidSettings,
     toPlanetoidPresetSettings,
     type PlanetoidViewMode,
@@ -152,6 +154,8 @@
     downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
+    downloadDustCloudTexturePng: (fileName?: string) => Promise<boolean>
+    downloadDustCloudNormalMapPng: (fileName?: string) => Promise<boolean>
   }
 
   let canvasShell: HTMLDivElement | undefined = $state(undefined)
@@ -341,7 +345,7 @@
 
   function buildCliCommandFromPreset(
     settings: PlanetoidSettings,
-    mode: PlanetoidViewMode,
+    exportTextures: boolean,
     toggles: {
       cratersEnabled: boolean
       ridgesEnabled: boolean
@@ -360,15 +364,15 @@
       settings.dustCloudPalette,
       PlanetoidCliFeatureFlags.atmospherePalette,
       settings.atmospherePalette,
-      '--view-mode',
-      mode,
     ]
 
-    var firstKeys = (Object.keys(PlanetoidCliFlagByRangeKey) as NumericControlKey[]).filter(
-      (k) => !(k in ['seed'])
+    if (exportTextures) args.push('--export-textures')
+
+    const numericKeys = (Object.keys(PlanetoidCliFlagByRangeKey) as PlanetoidRangeKey[]).filter(
+      (key) => key !== 'seed'
     )
 
-    for (const key of firstKeys) {
+    for (const key of numericKeys) {
       const flag = PlanetoidCliFlagByRangeKey[key]
       const value = settings[key]
       args.push(flag, String(value))
@@ -407,12 +411,16 @@
 
   async function exportCurrentPresetToCli() {
     closePresetsMenu()
-    const command = buildCliCommandFromPreset(planetoid, sceneViewMode, {
-      cratersEnabled: effectiveCratersEnabled,
-      ridgesEnabled: effectiveRidgesEnabled,
-      riftsEnabled: effectiveRiftsEnabled,
-      volcanoesEnabled: effectiveVolcanoesEnabled,
-    })
+    const command = buildCliCommandFromPreset(
+      planetoid,
+      sceneViewMode !== 'mesh',
+      {
+        cratersEnabled: effectiveCratersEnabled,
+        ridgesEnabled: effectiveRidgesEnabled,
+        riftsEnabled: effectiveRiftsEnabled,
+        volcanoesEnabled: effectiveVolcanoesEnabled,
+      }
+    )
 
     const copied = await copyTextToClipboard(command)
     if (copied) {
@@ -425,16 +433,20 @@
   async function exportPresetToCli(preset: PlanetoidPreset) {
     const mergedPresetSettings = mergePlanetoidPresetSettings(planetoid, preset.settings)
 
-    const command = buildCliCommandFromPreset(mergedPresetSettings, sceneViewMode, {
-      cratersEnabled:
-        mergedPresetSettings.enableCraters ||
-        mergedPresetSettings.craterCount > 0 ||
-        mergedPresetSettings.craterStrength > 0,
-      ridgesEnabled: mergedPresetSettings.enableRidges || mergedPresetSettings.ridgeStrength > 0,
-      riftsEnabled: mergedPresetSettings.enableRifts || mergedPresetSettings.riftStrength > 0,
-      volcanoesEnabled:
-        mergedPresetSettings.enableVolcanoes || mergedPresetSettings.volcanoCount > 0,
-    })
+    const command = buildCliCommandFromPreset(
+      mergedPresetSettings,
+      sceneViewMode !== 'mesh',
+      {
+        cratersEnabled:
+          mergedPresetSettings.enableCraters ||
+          mergedPresetSettings.craterCount > 0 ||
+          mergedPresetSettings.craterStrength > 0,
+        ridgesEnabled: mergedPresetSettings.enableRidges || mergedPresetSettings.ridgeStrength > 0,
+        riftsEnabled: mergedPresetSettings.enableRifts || mergedPresetSettings.riftStrength > 0,
+        volcanoesEnabled:
+          mergedPresetSettings.enableVolcanoes || mergedPresetSettings.volcanoCount > 0,
+      }
+    )
 
     const copied = await copyTextToClipboard(command)
     if (copied) {
@@ -445,13 +457,12 @@
   }
 
   function onWindowPointerDown(event: PointerEvent) {
-    if (!presetsMenuOpen || !presetsMenuElement) return
-
     const target = event.target
     if (!(target instanceof Node)) return
-    if (presetsMenuElement.contains(target)) return
 
-    closePresetsMenu()
+    if (presetsMenuOpen && presetsMenuElement && !presetsMenuElement.contains(target)) {
+      closePresetsMenu()
+    }
   }
 
   function applyPreset(preset: PlanetoidPreset) {
@@ -660,41 +671,6 @@
     return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
   }
 
-  const ACTION_POPOVER_ID = 'scene-action-popover'
-  let activePopoverText = $state('')
-
-  function showActionPopover(event: MouseEvent | FocusEvent, text: string) {
-    const target = event.currentTarget
-    if (!(target instanceof HTMLElement) || !text) return
-
-    const popover = document.getElementById(ACTION_POPOVER_ID)
-    if (!(popover instanceof HTMLElement)) return
-
-    activePopoverText = text
-    popover.showPopover()
-
-    requestAnimationFrame(() => {
-      const targetRect = target.getBoundingClientRect()
-      const popRect = popover.getBoundingClientRect()
-      const margin = 12
-      const preferredLeft = targetRect.left
-      const maxLeft = Math.max(margin, window.innerWidth - popRect.width - margin)
-      const left = Math.max(margin, Math.min(preferredLeft, maxLeft))
-      const top = Math.min(window.innerHeight - popRect.height - margin, targetRect.bottom + 8)
-
-      popover.style.left = `${left}px`
-      popover.style.top = `${Math.max(margin, top)}px`
-    })
-  }
-
-  function hideActionPopover() {
-    const popover = document.getElementById(ACTION_POPOVER_ID)
-    if (!(popover instanceof HTMLElement)) return
-    if (!popover.matches(':popover-open')) return
-
-    popover.hidePopover()
-  }
-
   async function saveScenePng() {
     if (!planetoidScene || isSaving) return
 
@@ -740,6 +716,34 @@
     try {
       const fileName = `generated-planetoid-normal-${getTimestamp()}.png`
       await planetoidScene.downloadNormalMapPng(fileName)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      isSaving = false
+    }
+  }
+
+  async function downloadDustCloudTexturePng() {
+    if (!planetoidScene || isSaving) return
+
+    isSaving = true
+    try {
+      const fileName = `generated-planetoid-dust-cloud-${getTimestamp()}.png`
+      await planetoidScene.downloadDustCloudTexturePng(fileName)
+    } catch (error) {
+      console.error(error)
+    } finally {
+      isSaving = false
+    }
+  }
+
+  async function downloadDustCloudNormalMapPng() {
+    if (!planetoidScene || isSaving) return
+
+    isSaving = true
+    try {
+      const fileName = `generated-planetoid-dust-cloud-normal-${getTimestamp()}.png`
+      await planetoidScene.downloadDustCloudNormalMapPng(fileName)
     } catch (error) {
       console.error(error)
     } finally {
@@ -841,50 +845,17 @@
       <fieldset>
         <legend>{PlanetoidUiLabels.scene}</legend>
         <div class="save-actions" aria-label="Save and export actions">
-          <div class="export-actions">
-            <button
-              type="button"
-              class="action"
-              onmouseenter={(event) => showActionPopover(event, 'Download the render as PNG.')}
-              onmouseleave={hideActionPopover}
-              onfocus={(event) => showActionPopover(event, 'Download the render as PNG.')}
-              onblur={hideActionPopover}
-              onclick={saveScenePng}
-              disabled={isSaving}
-              aria-label="Save scene PNG without debug meshes"
-            >
-              PNG
-            </button>
-            <button
-              type="button"
-              class="action"
-              onmouseenter={(event) =>
-                showActionPopover(event, 'Download the generated texture color map.')}
-              onmouseleave={hideActionPopover}
-              onfocus={(event) =>
-                showActionPopover(event, 'Download the generated texture color map.')}
-              onblur={hideActionPopover}
-              onclick={downloadTextureMapPng}
-              disabled={isSaving}
-              aria-label="Download texture map"
-            >
-              TEX
-            </button>
-            <button
-              type="button"
-              class="action"
-              onmouseenter={(event) =>
-                showActionPopover(event, 'Download the generated normal map.')}
-              onmouseleave={hideActionPopover}
-              onfocus={(event) => showActionPopover(event, 'Download the generated normal map.')}
-              onblur={hideActionPopover}
-              onclick={downloadNormalMapPng}
-              disabled={isSaving}
-              aria-label="Download normal map"
-            >
-              NRM
-            </button>
-          </div>
+          <ExportSplitButton
+            primaryAction={saveScenePng}
+            primaryAriaLabel="Export scene PNG"
+            disabled={isSaving}
+            menuItems={[
+              { label: 'Surface color map', onSelect: downloadTextureMapPng },
+              { label: 'Surface normal map', onSelect: downloadNormalMapPng },
+              { label: 'Dust-cloud color map', onSelect: downloadDustCloudTexturePng },
+              { label: 'Dust-cloud normal map', onSelect: downloadDustCloudNormalMapPng },
+            ]}
+          />
           <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
             <summary class="action preset-menu-trigger" aria-label="Preset actions">
               PRESETS
@@ -924,9 +895,6 @@
               </button>
             </div>
           </details>
-        </div>
-        <div id={ACTION_POPOVER_ID} class="scene-action-popover" popover="manual" role="tooltip">
-          {activePopoverText}
         </div>
         <ViewModeControl
           title={PlanetoidUiLabels.viewMode}
@@ -1240,25 +1208,4 @@
 {/if}
 
 <style>
-  .scene-action-popover {
-    position: fixed;
-    inset: auto auto auto auto;
-    margin: 0;
-    min-width: 13rem;
-    max-width: 15rem;
-    padding: 0.45rem 0.55rem;
-    border-radius: 8px;
-    border: 1px solid rgba(142, 180, 221, 0.45);
-    background: rgba(7, 14, 28, 0.96);
-    color: #dbe9f7;
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: 0;
-    line-height: 1.35;
-    z-index: 1000;
-  }
-
-  .scene-action-popover::backdrop {
-    background: transparent;
-  }
 </style>

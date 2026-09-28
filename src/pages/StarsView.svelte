@@ -3,6 +3,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
+  import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
@@ -376,26 +377,12 @@
       <fieldset>
         <legend>Scene</legend>
         <div class="save-actions" aria-label="Save and export actions">
-          <div class="export-actions">
-            <button
-              class="action"
-              type="button"
-              onclick={downloadRender}
-              disabled={isSaving}
-              aria-label="Save scene PNG"
-            >
-              PNG
-            </button>
-            <button
-              class="action"
-              type="button"
-              onclick={downloadTexture}
-              disabled={isSaving}
-              aria-label="Download texture map"
-            >
-              TEX
-            </button>
-          </div>
+          <ExportSplitButton
+            primaryAction={downloadRender}
+            primaryAriaLabel="Export scene PNG"
+            disabled={isSaving}
+            menuItems={[{ label: 'Surface color map', onSelect: downloadTexture }]}
+          />
           <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
             <summary class="action preset-menu-trigger" aria-label="Preset actions">PRESETS</summary
             >

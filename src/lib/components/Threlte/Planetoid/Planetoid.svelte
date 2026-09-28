@@ -17,6 +17,7 @@
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
   import { createRandom } from '../../../utils/math'
+  import { convertLinearRgbaToSrgb } from '../../../utils/colorSpace'
   import { createFrameMonitor, traceSpan } from '../../../utils/perfTrace'
   import {
     MaxValues,
@@ -156,22 +157,6 @@
 
   const { camera, size, renderer } = useThrelte()
 
-  function linearToSrgbChannel(channel: number) {
-    const x = MathUtils.clamp(channel / 255, 0, 1)
-    const srgb = x <= 0.0031308 ? x * 12.92 : 1.055 * Math.pow(x, 1 / 2.4) - 0.055
-    return Math.round(MathUtils.clamp(srgb, 0, 1) * 255)
-  }
-
-  function convertPixelsLinearToSrgb(pixels: Uint8Array) {
-    for (let i = 0; i < pixels.length; i += 4) {
-      pixels[i] = linearToSrgbChannel(pixels[i])
-      pixels[i + 1] = linearToSrgbChannel(pixels[i + 1])
-      pixels[i + 2] = linearToSrgbChannel(pixels[i + 2])
-    }
-
-    return pixels
-  }
-
   function flipRowsRgba(source: Uint8Array, width: number, height: number) {
     const rowSize = width * 4
     const flipped = new Uint8Array(source.length)
@@ -235,7 +220,7 @@
     }
 
     const flipped = flipRowsRgba(pixels, width, height)
-    const converted = options.convertLinearToSrgb ? convertPixelsLinearToSrgb(flipped) : flipped
+    const converted = options.convertLinearToSrgb ? convertLinearRgbaToSrgb(flipped) : flipped
     return triggerPngDownload(width, height, converted, fileName)
   }
 
@@ -247,6 +232,61 @@
   export async function downloadNormalMapPng(fileName = 'planetoid-normal-map.png') {
     const normalMap = (material?.normalMap as Texture | null | undefined) ?? normalDebugTexture
     return downloadRenderTexture(normalMap, fileName, { convertLinearToSrgb: true })
+  }
+
+  export async function downloadDustCloudTexturePng(fileName = 'planetoid-dust-cloud-map.png') {
+    if (!renderer) return false
+
+    const texture =
+      dustCloudTexture ??
+      createPlanetoidDustCloudTexture(renderer, shapeParameters.noiseOffset, colorTextureSize, {
+        dustCloudCoverage,
+        dustCloudStyle,
+        dustCloudOpacity,
+        dustCloudFrequency,
+        dustCloudSwirliness,
+        dustCloudCoriolis,
+        dustCloudRelief: dustCloudNormalStrength,
+        swirliness,
+        palette: trackPalette(DustCloudPalettes[dustCloudPalette]),
+      })
+    const isTemporaryTexture = dustCloudTexture === undefined
+
+    try {
+      return downloadRenderTexture(texture, fileName, { convertLinearToSrgb: true })
+    } finally {
+      if (isTemporaryTexture) disposeGeneratedTexture(texture)
+    }
+  }
+
+  export async function downloadDustCloudNormalMapPng(
+    fileName = 'planetoid-dust-cloud-normal-map.png'
+  ) {
+    if (!renderer) return false
+
+    const texture =
+      dustCloudNormalTexture ??
+      createPlanetoidDustCloudNormalTexture(
+        renderer,
+        shapeParameters.noiseOffset,
+        normalTextureSize,
+        {
+          dustCloudCoverage,
+          dustCloudStyle,
+          dustCloudOpacity,
+          dustCloudFrequency,
+          dustCloudSwirliness,
+          dustCloudCoriolis,
+          swirliness,
+        }
+      )
+    const isTemporaryTexture = dustCloudNormalTexture === undefined
+
+    try {
+      return downloadRenderTexture(texture, fileName, { convertLinearToSrgb: true })
+    } finally {
+      if (isTemporaryTexture) disposeGeneratedTexture(texture)
+    }
   }
 
   function clampTriangleDetail(detail: number) {

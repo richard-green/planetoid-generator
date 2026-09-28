@@ -1,6 +1,6 @@
 /// <reference types="node" />
 
-import { mkdir, writeFile } from 'fs/promises'
+import { mkdir, open, writeFile } from 'fs/promises'
 import path from 'path'
 import type { Locator, Page } from 'playwright'
 import { firefox } from 'playwright'
@@ -17,7 +17,6 @@ import {
   MaxValues,
   MinValues,
   type GasGiantRangeKey,
-  type GasGiantViewMode,
 } from '../src/lib/components/Threlte/GasGiant/GasGiantSettings'
 import {
   AtmospherePaletteNames,
@@ -35,6 +34,7 @@ import {
   RingRangeLabels,
   type RingRangeKey,
 } from '../src/lib/components/Threlte/Rings/RingSettings'
+import { DefaultTextureSize, TextureSizes, type TextureSize } from '../src/lib/types/textureSize'
 
 const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
   (key) => key !== 'seed'
@@ -73,10 +73,11 @@ type ScriptOptions = {
   ringPalette?: string
   atmosphereEnabled?: boolean
   atmospherePalette?: string
-  viewMode?: GasGiantViewMode
   baseUrl: string
   outputDir: string
   frameSettleMs: number
+  textureSize: TextureSize
+  exportTextures: boolean
 } & Partial<Record<GasGiantRangeKey | RingRangeKey, number>>
 
 type Logger = {
@@ -97,7 +98,6 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   ringPalette: undefined,
   atmosphereEnabled: undefined,
   atmospherePalette: undefined,
-  viewMode: undefined,
   seed: undefined,
   colorScale: undefined,
   tintShadowFloor: undefined,
@@ -112,12 +112,26 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   normalStrength: undefined,
   roughness: undefined,
   metalness: undefined,
-  baseUrl: 'http://127.0.0.1:5173/giants',
+  baseUrl: 'http://127.0.0.1:5173/#/giants',
   outputDir: path.resolve('public/generated/giants'),
   frameSettleMs: 50,
+  textureSize: DefaultTextureSize,
+  exportTextures: false,
 }
 
 const LOCATOR_CONFIG = {
+  roleTargets: {
+    surfaceColorMapMenuItem: {
+      role: 'menuitem' as const,
+      name: 'Surface color map',
+      exact: true,
+    },
+    surfaceNormalMapMenuItem: {
+      role: 'menuitem' as const,
+      name: 'Surface normal map',
+      exact: true,
+    },
+  },
   selectors: {
     controlsPanel: '.controls',
     canvas: '.canvas-shell canvas',
@@ -127,8 +141,6 @@ const LOCATOR_CONFIG = {
     checkboxByLabel: (label: string) => `label:has-text("${label}") input[type="checkbox"]`,
     sectionToggleBySummaryLabel: (label: string) =>
       `summary:has-text("${label}") input[type="checkbox"]`,
-    viewModeRadio: (mode: GasGiantViewMode) =>
-      `input[type="radio"][name="giant-view-mode"][value="${mode}"]`,
   },
 }
 
@@ -143,6 +155,12 @@ type ScriptLocators = {
   ringPaletteSelect: Locator
   atmosphereEnabledToggle: Locator
   atmospherePaletteSelect: Locator
+  colorTextureSizeSelect: Locator
+  normalTextureSizeSelect: Locator
+  exportMenu: Locator
+  exportMenuTrigger: Locator
+  surfaceColorMapMenuItem: Locator
+  surfaceNormalMapMenuItem: Locator
   numericInputByKey: Record<GasGiantRangeKey, Locator>
   ringNumericInputByKey: Record<RingRangeKey, Locator>
   canvas: Locator
@@ -153,7 +171,7 @@ function buildLocators(page: Page): ScriptLocators {
 
   return {
     controls: page.locator(selectors.controlsPanel),
-    seedInput: page.locator(selectors.numberInputByLabel(GasGiantUiLabels.seed)).first(),
+    seedInput: page.getByLabel(GasGiantRangeLabels.seed, { exact: true }),
     paletteSelect: page.locator(selectors.selectByLabel(GasGiantUiLabels.palette)).first(),
     surfaceTintInput: page
       .locator(selectors.colorInputByLabel(GasGiantUiLabels.surfaceTint))
@@ -170,6 +188,21 @@ function buildLocators(page: Page): ScriptLocators {
     atmospherePaletteSelect: page
       .locator(selectors.selectByLabel(GasGiantUiLabels.atmospherePalette))
       .first(),
+    colorTextureSizeSelect: page.locator(selectors.selectByLabel('Color texture size')).first(),
+    normalTextureSizeSelect: page.locator(selectors.selectByLabel('Normal texture size')).first(),
+    exportMenu: page.locator('.export-split-menu'),
+    exportMenuTrigger: page.locator('.export-split-trigger'),
+    surfaceColorMapMenuItem: page.getByRole(LOCATOR_CONFIG.roleTargets.surfaceColorMapMenuItem.role, {
+      name: LOCATOR_CONFIG.roleTargets.surfaceColorMapMenuItem.name,
+      exact: LOCATOR_CONFIG.roleTargets.surfaceColorMapMenuItem.exact,
+    }),
+    surfaceNormalMapMenuItem: page.getByRole(
+      LOCATOR_CONFIG.roleTargets.surfaceNormalMapMenuItem.role,
+      {
+        name: LOCATOR_CONFIG.roleTargets.surfaceNormalMapMenuItem.name,
+        exact: LOCATOR_CONFIG.roleTargets.surfaceNormalMapMenuItem.exact,
+      }
+    ),
     numericInputByKey: Object.fromEntries(
       (Object.keys(MinValues) as GasGiantRangeKey[]).map((key) => [
         key,
@@ -206,6 +239,34 @@ function createLogger(): Logger {
 
 const logger = createLogger()
 
+async function readPngDimensions(filePath: string) {
+  const file = await open(filePath, 'r')
+
+  try {
+    const header = Buffer.alloc(24)
+    const { bytesRead } = await file.read(header, 0, header.length, 0)
+    if (
+      bytesRead < header.length ||
+      !header.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) ||
+      !header.subarray(12, 16).equals(Buffer.from('IHDR'))
+    ) {
+      throw new Error(`Invalid PNG file: ${filePath}`)
+    }
+
+    return {
+      width: header.readUInt32BE(16),
+      height: header.readUInt32BE(20),
+    }
+  } finally {
+    await file.close()
+  }
+}
+
+async function logWrittenPng(filePath: string, fileName: string) {
+  const { width, height } = await readPngDimensions(filePath)
+  logger.info(`Wrote ${fileName} (${width}x${height})`)
+}
+
 function isFinitePositiveInt(value: number) {
   return Number.isFinite(value) && Number.isInteger(value) && value > 0
 }
@@ -217,6 +278,15 @@ function parseNumber(value: string, name: string) {
   }
 
   return parsed
+}
+
+function parseTextureSize(value: string): TextureSize {
+  const parsed = parseNumber(value, 'texture-size')
+  if (!(TextureSizes as readonly number[]).includes(parsed)) {
+    throw new Error(`Invalid texture-size: ${value}. Expected one of: ${TextureSizes.join(', ')}`)
+  }
+
+  return parsed as TextureSize
 }
 
 function parseBoolean(value: string, name: string) {
@@ -283,15 +353,6 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
-    if (arg === '--view-mode' && next) {
-      if (next !== 'mesh' && next !== 'normal' && next !== 'texture') {
-        throw new Error(`Invalid view-mode: ${next}. Expected mesh, normal, or texture.`)
-      }
-      options.viewMode = next
-      i++
-      continue
-    }
-
     if (arg === RingCliFlags.palette && next) {
       options.ringPalette = next
       i++
@@ -319,6 +380,17 @@ function parseArgs(argv: string[]): ScriptOptions {
     if (arg === '--frame-settle-ms' && next) {
       options.frameSettleMs = parseNumber(next, 'frame-settle-ms')
       i++
+      continue
+    }
+
+    if (arg === '--texture-size' && next) {
+      options.textureSize = parseTextureSize(next)
+      i++
+      continue
+    }
+
+    if (arg === '--export-textures') {
+      options.exportTextures = true
       continue
     }
 
@@ -357,7 +429,7 @@ function parseArgs(argv: string[]): ScriptOptions {
           '  --step <n>              Seed increment per image (default: 1)',
           '  --palette <name>        Palette name',
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
-          '  --view-mode <mode>      Render mesh, normal, or texture view',
+          '  Output: scene PNG by default; use --export-textures for texture maps only',
           ...NUMERIC_HELP_LINES,
           `  ${RingCliFlags.palette} <name> Ring palette name`,
           ...RING_HELP_LINES,
@@ -366,9 +438,11 @@ function parseArgs(argv: string[]): ScriptOptions {
           `  ${RingCliFlags.enabled} <bool> Enable/disable rings`,
           `  ${GasGiantCliFeatureFlags.atmospherePalette} <name> Atmosphere palette name`,
           `  ${GasGiantCliToggleFlags.atmosphereEnabled} <bool> Enable/disable atmosphere`,
-          '  --base-url <url>        Giant page URL (default: http://127.0.0.1:5173/giants)',
+          '  --base-url <url>        Giant page URL (default: http://127.0.0.1:5173/#/giants)',
           '  --output-dir <path>     Output directory (default: public/generated/giants)',
           '  --frame-settle-ms <n>   Delay after updates in ms (default: 50)',
+          `  --texture-size <n>      Texture map height (color and normal; choices: ${TextureSizes.join(', ')}; default: ${DefaultTextureSize})`,
+          '  --export-textures       Export color and normal maps without a scene screenshot',
           '',
         ].join('\n')
       )
@@ -508,7 +582,10 @@ async function main() {
   const page = await context.newPage()
 
   try {
-    await page.goto(options.baseUrl, { waitUntil: 'networkidle' })
+    const pageUrl = new URL(options.baseUrl)
+    if (!pageUrl.hash) pageUrl.hash = '/giants'
+    pageUrl.searchParams.set('automation', '1')
+    await page.goto(pageUrl.toString(), { waitUntil: 'networkidle' })
 
     const locators = buildLocators(page)
     const {
@@ -522,6 +599,12 @@ async function main() {
       ringPaletteSelect,
       atmosphereEnabledToggle,
       atmospherePaletteSelect,
+      colorTextureSizeSelect,
+      normalTextureSizeSelect,
+      exportMenu,
+      exportMenuTrigger,
+      surfaceColorMapMenuItem,
+      surfaceNormalMapMenuItem,
       numericInputByKey,
       ringNumericInputByKey,
       canvas,
@@ -556,6 +639,29 @@ async function main() {
       }
 
       await locator.waitFor({ state: 'visible' })
+    }
+
+    if (options.exportTextures) {
+      await ensureLocatorVisible(colorTextureSizeSelect)
+      await colorTextureSizeSelect.selectOption(String(options.textureSize))
+      await ensureLocatorVisible(normalTextureSizeSelect)
+      await normalTextureSizeSelect.selectOption(String(options.textureSize))
+      await page.waitForTimeout(options.frameSettleMs)
+    }
+
+    async function saveTextureExport(locator: Locator, fileName: string) {
+      const isMenuOpen = await exportMenu.evaluate((element) =>
+        Boolean((element as { open?: unknown }).open)
+      )
+      if (!isMenuOpen) await exportMenuTrigger.click()
+      await locator.waitFor({ state: 'visible' })
+
+      const downloadPromise = page.waitForEvent('download')
+      await locator.click()
+      const download = await downloadPromise
+      const filePath = path.join(options.outputDir, fileName)
+      await download.saveAs(filePath)
+      await logWrittenPng(filePath, fileName)
     }
 
     if (requestedPalette) {
@@ -604,14 +710,6 @@ async function main() {
       options.atmosphereEnabled
     )
 
-    if (options.viewMode) {
-      const viewModeRadio = page
-        .locator(LOCATOR_CONFIG.selectors.viewModeRadio(options.viewMode))
-        .first()
-      await ensureLocatorVisible(viewModeRadio)
-      await viewModeRadio.check()
-    }
-
     if (requestedRingPalette) {
       await ensureLocatorVisible(ringPaletteSelect)
       await ringPaletteSelect.selectOption(requestedRingPalette)
@@ -634,7 +732,6 @@ async function main() {
       options.ringsEnabled !== undefined ||
       options.atmosphereEnabled !== undefined ||
       requestedAtmospherePalette ||
-      options.viewMode !== undefined ||
       requestedRingPalette ||
       RING_RANGE_KEYS.some((key) => typeof options[key] === 'number')
     ) {
@@ -649,25 +746,33 @@ async function main() {
       await seedInput.press('Enter')
       await page.waitForTimeout(options.frameSettleMs)
 
-      const fileName = `gas-giant-${runStamp}-seed-${seed.toString().padStart(6, '0')}.png`
-      const filePath = path.join(options.outputDir, fileName)
+      if (options.exportTextures) {
+        const textureName = `gas-giant-${runStamp}-seed-${seed.toString().padStart(6, '0')}`
+        await saveTextureExport(surfaceColorMapMenuItem, `${textureName}-color.png`)
+        await saveTextureExport(surfaceNormalMapMenuItem, `${textureName}-normal.png`)
+      } else {
+        const fileName = `gas-giant-${runStamp}-seed-${seed.toString().padStart(6, '0')}.png`
+        const filePath = path.join(options.outputDir, fileName)
 
-      const pngDataUrl = await canvas.evaluate((canvasElement) => {
-        const maybeCanvas = canvasElement as { toDataURL?: (type?: string) => string }
-        if (typeof maybeCanvas.toDataURL !== 'function') {
-          throw new Error('Target element does not expose toDataURL().')
-        }
+        const pngDataUrl = await canvas.evaluate((canvasElement) => {
+          const maybeCanvas = canvasElement as { toDataURL?: (type?: string) => string }
+          if (typeof maybeCanvas.toDataURL !== 'function') {
+            throw new Error('Target element does not expose toDataURL().')
+          }
 
-        return maybeCanvas.toDataURL('image/png')
-      })
+          return maybeCanvas.toDataURL('image/png')
+        })
 
-      const base64Payload = pngDataUrl.replace(/^data:image\/png;base64,/, '')
-      await writeFile(filePath, base64Payload, 'base64')
-      logger.info(`[${i + 1}/${options.count}] wrote ${fileName}`)
+        const base64Payload = pngDataUrl.replace(/^data:image\/png;base64,/, '')
+        await writeFile(filePath, base64Payload, 'base64')
+        const { width, height } = await readPngDimensions(filePath)
+        logger.info(`[${i + 1}/${options.count}] wrote ${fileName} (${width}x${height})`)
+      }
     }
 
     const elapsedMs = Date.now() - runStartedAt
-    logger.info(`Done. Generated ${options.count} image(s) in ${options.outputDir}`)
+    const outputKind = options.exportTextures ? 'texture set(s)' : 'scene image(s)'
+    logger.info(`Done. Generated ${options.count} ${outputKind} in ${options.outputDir}`)
     logger.info(`Total elapsed time: ${(elapsedMs / 1000).toFixed(2)}s`)
   } finally {
     await context.close()

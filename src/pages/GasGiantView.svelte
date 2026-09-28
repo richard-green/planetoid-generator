@@ -3,6 +3,7 @@
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
+  import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import PresetManager, {
@@ -292,7 +293,7 @@
 
   function buildCliCommandFromPreset(
     settings: GasGiantSettings,
-    mode: GasGiantViewMode,
+    exportTextures: boolean,
     toggles: { stormsEnabled: boolean; ringsEnabled: boolean }
   ) {
     const args: string[] = [
@@ -300,9 +301,9 @@
       quoteCliValue(settings.palette),
       '--surface-tint',
       quoteCliValue(settings.surfaceTint),
-      '--view-mode',
-      mode,
     ]
+
+    if (exportTextures) args.push('--export-textures')
 
     for (const key of NUMERIC_RANGE_KEYS) {
       const flag = GasGiantCliFlagByRangeKey[key]
@@ -349,7 +350,7 @@
         enableStorms: effectiveStormsEnabled,
         enableRings: effectiveRingsEnabled,
       },
-      sceneViewMode,
+      sceneViewMode !== 'mesh',
       { stormsEnabled: effectiveStormsEnabled, ringsEnabled: effectiveRingsEnabled }
     )
 
@@ -367,10 +368,14 @@
       preset.settings.stormCount > 0 ||
       preset.settings.stormStrength > 0
 
-    const command = buildCliCommandFromPreset(preset.settings, sceneViewMode, {
-      stormsEnabled: stormsEnabledFromPreset,
-      ringsEnabled: preset.settings.enableRings,
-    })
+    const command = buildCliCommandFromPreset(
+      preset.settings,
+      sceneViewMode !== 'mesh',
+      {
+        stormsEnabled: stormsEnabledFromPreset,
+        ringsEnabled: preset.settings.enableRings,
+      }
+    )
 
     const copied = await copyTextToClipboard(command)
     if (copied) {
@@ -696,35 +701,15 @@
       <fieldset>
         <legend>{GasGiantUiLabels.scene}</legend>
         <div class="save-actions" aria-label="Save and export actions">
-          <div class="export-actions">
-            <button
-              type="button"
-              class="action"
-              onclick={saveScenePng}
-              disabled={isSaving}
-              aria-label="Save scene PNG"
-            >
-              PNG
-            </button>
-            <button
-              type="button"
-              class="action"
-              onclick={downloadTextureMapPng}
-              disabled={isSaving}
-              aria-label="Download texture map"
-            >
-              TEX
-            </button>
-            <button
-              type="button"
-              class="action"
-              onclick={downloadNormalMapPng}
-              disabled={isSaving}
-              aria-label="Download normal map"
-            >
-              NRM
-            </button>
-          </div>
+          <ExportSplitButton
+            primaryAction={saveScenePng}
+            primaryAriaLabel="Export scene PNG"
+            disabled={isSaving}
+            menuItems={[
+              { label: 'Surface color map', onSelect: downloadTextureMapPng },
+              { label: 'Surface normal map', onSelect: downloadNormalMapPng },
+            ]}
+          />
           <details class="preset-menu" bind:this={presetsMenuElement} bind:open={presetsMenuOpen}>
             <summary class="action preset-menu-trigger" aria-label="Preset actions">PRESETS</summary
             >

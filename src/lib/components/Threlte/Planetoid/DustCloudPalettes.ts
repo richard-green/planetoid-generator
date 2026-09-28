@@ -55,6 +55,6 @@ export const DustCloudPalettes: Record<DustCloudPaletteName, Palette> = {
     { r: 236, g: 239, b: 244 },
     { r: 250, g: 251, b: 253 },
     { r: 255, g: 255, b: 255, position: 0.78 },
-    { r: 206, g: 212, b: 222 },
+    { r: 63, g: 79, b: 84, position: 0.9 },
   ],
 }

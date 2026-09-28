@@ -202,6 +202,8 @@
   type PlanetoidExports = {
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
+    downloadDustCloudTexturePng: (fileName?: string) => Promise<boolean>
+    downloadDustCloudNormalMapPng: (fileName?: string) => Promise<boolean>
   }
 
   type ViewCameraState = {
@@ -303,6 +305,14 @@
 
   export async function downloadNormalMapPng(fileName?: string) {
     return (await planetoidRef?.downloadNormalMapPng(fileName)) ?? false
+  }
+
+  export async function downloadDustCloudTexturePng(fileName?: string) {
+    return (await planetoidRef?.downloadDustCloudTexturePng(fileName)) ?? false
+  }
+
+  export async function downloadDustCloudNormalMapPng(fileName?: string) {
+    return (await planetoidRef?.downloadDustCloudNormalMapPng(fileName)) ?? false
   }
 
   export function downloadScenePng(fileName = 'planetoid-render.png') {
