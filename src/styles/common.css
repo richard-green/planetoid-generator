@@ -1,3 +1,8 @@
+:root {
+  /* Approximate rendered height of the sticky PageTitle header */
+  --page-title-height: 4.5rem;
+}
+
 .page {
   min-height: 100%;
   display: grid;
@@ -9,7 +14,8 @@
   grid-template-columns: minmax(0, 1fr) 320px;
   gap: 1rem;
   min-height: 0;
-  padding: 1rem;
+  /* No bottom padding so the sticky canvas is never pushed up at scroll end */
+  padding: 1rem 1rem 0;
   background:
     radial-gradient(circle at top, rgba(18, 58, 103, 0.718), transparent 80%),
     linear-gradient(180deg, #020712 0%, #050b18 100%);
@@ -25,7 +31,7 @@
   overflow: hidden;
   background: #01040b;
   position: sticky;
-  top: 10px;
+  top: calc(var(--page-title-height) + 1rem);
   z-index: 0;
 }
 
@@ -48,6 +54,7 @@
   display: grid;
   gap: 1rem;
   align-content: start;
+  padding-bottom: 1rem;
   position: relative;
   z-index: 1;
 }
@@ -385,6 +392,16 @@ input[type='color'] {
 .control-grid {
   display: grid;
   gap: 0.75rem;
+}
+
+@media (min-width: 1200px) {
+  .canvas-shell {
+    width: 100%;
+    height: calc(100dvh - var(--page-title-height) - 2rem);
+    max-height: none;
+    aspect-ratio: auto;
+    justify-self: stretch;
+  }
 }
 
 @media (max-width: 900px) {

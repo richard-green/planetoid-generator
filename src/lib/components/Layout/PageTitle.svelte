@@ -74,7 +74,8 @@
 
 <style>
   .page-title {
-    position: relative;
+    position: sticky;
+    top: 0;
     z-index: 2;
     margin: 0;
     padding: 1.1rem 1.25rem;
