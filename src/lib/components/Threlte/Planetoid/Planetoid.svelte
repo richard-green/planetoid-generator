@@ -16,6 +16,7 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
+  import { createFrameMonitor, traceSpan } from '../../../utils/perfTrace'
   import {
     MaxValues,
     MinValues,
@@ -284,14 +285,20 @@
 
   $effect(() => {
     const detail = clampTriangleDetail(triangleDetail)
-    const nextGeometry = createIcosphere(2, detail)
+    const nextGeometry = traceSpan('cpu:createIcosphere', () => createIcosphere(2, detail), {
+      detail,
+    })
     const nextBasePositions = copyPositionArray(nextGeometry)
     const previousGeometry = disposableGeometry
 
     disposableGeometry = nextGeometry
     geometry = nextGeometry
     basePositions = nextBasePositions
-    normalWeldGroups = buildNormalWeldGroups(nextBasePositions)
+    normalWeldGroups = traceSpan(
+      'cpu:buildNormalWeldGroups',
+      () => buildNormalWeldGroups(nextBasePositions),
+      { vertices: nextBasePositions.length / 3 }
+    )
     previousGeometry.dispose()
   })
 
@@ -509,16 +516,21 @@
     const weldGroups = normalWeldGroups
     const shape = shapeParameters
 
-    deformGeometry(
-      targetGeometry,
-      sourcePositions,
-      weldGroups,
-      shape,
-      largeScale,
-      mediumScale,
-      smallScale,
-      mediumFrequency,
-      smallFrequency
+    traceSpan(
+      'cpu:deformGeometry',
+      () =>
+        deformGeometry(
+          targetGeometry,
+          sourcePositions,
+          weldGroups,
+          shape,
+          largeScale,
+          mediumScale,
+          smallScale,
+          mediumFrequency,
+          smallFrequency
+        ),
+      { vertices: targetGeometry.attributes.position.count }
     )
 
     const centre = centreOfMass(geometry)
@@ -557,39 +569,41 @@
     const currentTintShadowFloor = tintShadowFloor
     const currentSwirliness = swirliness
 
-    const colorTexture = createPlanetoidColorTexture(
-      renderer,
-      shape.noiseOffset,
-      planetoidPalette,
-      textureScale,
-      colorTextureSize,
-      {
-        surfaceTint,
-        tintShadowFloor: currentTintShadowFloor,
-        swirliness: currentSwirliness,
-        craterCount: currentCraterCount,
-        craterScale: currentCraterScale,
-        craterColorStrength: currentCraterColorStrength,
-        craterSharpness: currentCraterSharpness,
-        enableCraters: currentEnableCraters,
-        enableVolcanoes: volcanoesEnabled,
-        volcanoCount: currentVolcanoCount,
-        volcanoScale: currentVolcanoScale,
-        volcanoStrength: currentVolcanoStrength,
-        volcanoColorStrength: currentVolcanoColorStrength,
-        ridgeColorWeight: currentRidgeColorWeight,
-        riftColorWeight: currentRiftColorWeight,
-        enableRidges: ridgesEnabled,
-        enableRifts: riftsEnabled,
-        ridgeStrength: currentRidgeStrength,
-        ridgeFrequency: currentRidgeFrequency,
-        ridgeSharpness: currentRidgeSharpness,
-        riftStrength: currentRiftStrength,
-        riftFrequency: currentRiftFrequency,
-        riftWidth: currentRiftWidth,
-        riftSharpness: currentRiftSharpness,
-        ridgesRiftsBlend: currentRidgesRiftsBlend,
-      }
+    const colorTexture = traceSpan('effect:colorTexture', () =>
+      createPlanetoidColorTexture(
+        renderer,
+        shape.noiseOffset,
+        planetoidPalette,
+        textureScale,
+        colorTextureSize,
+        {
+          surfaceTint,
+          tintShadowFloor: currentTintShadowFloor,
+          swirliness: currentSwirliness,
+          craterCount: currentCraterCount,
+          craterScale: currentCraterScale,
+          craterColorStrength: currentCraterColorStrength,
+          craterSharpness: currentCraterSharpness,
+          enableCraters: currentEnableCraters,
+          enableVolcanoes: volcanoesEnabled,
+          volcanoCount: currentVolcanoCount,
+          volcanoScale: currentVolcanoScale,
+          volcanoStrength: currentVolcanoStrength,
+          volcanoColorStrength: currentVolcanoColorStrength,
+          ridgeColorWeight: currentRidgeColorWeight,
+          riftColorWeight: currentRiftColorWeight,
+          enableRidges: ridgesEnabled,
+          enableRifts: riftsEnabled,
+          ridgeStrength: currentRidgeStrength,
+          ridgeFrequency: currentRidgeFrequency,
+          ridgeSharpness: currentRidgeSharpness,
+          riftStrength: currentRiftStrength,
+          riftFrequency: currentRiftFrequency,
+          riftWidth: currentRiftWidth,
+          riftSharpness: currentRiftSharpness,
+          ridgesRiftsBlend: currentRidgesRiftsBlend,
+        }
+      )
     )
 
     colorDebugTexture = colorTexture
@@ -616,11 +630,8 @@
       return
     }
 
-    const cloudTexture = createPlanetoidDustCloudTexture(
-      renderer,
-      shapeParameters.noiseOffset,
-      colorTextureSize,
-      {
+    const cloudTexture = traceSpan('effect:dustCloudTexture', () =>
+      createPlanetoidDustCloudTexture(renderer, shapeParameters.noiseOffset, colorTextureSize, {
         dustCloudCoverage,
         dustCloudStyle,
         dustCloudOpacity,
@@ -630,7 +641,7 @@
         dustCloudRelief: dustCloudNormalStrength,
         swirliness,
         palette: trackPalette(DustCloudPalettes[dustCloudPalette]),
-      }
+      })
     )
     dustCloudTexture = cloudTexture
 
@@ -648,19 +659,21 @@
       return
     }
 
-    const cloudNormalTexture = createPlanetoidDustCloudNormalTexture(
-      renderer,
-      shapeParameters.noiseOffset,
-      normalTextureSize,
-      {
-        dustCloudCoverage,
-        dustCloudStyle,
-        dustCloudOpacity,
-        dustCloudFrequency,
-        dustCloudSwirliness,
-        dustCloudCoriolis,
-        swirliness,
-      }
+    const cloudNormalTexture = traceSpan('effect:dustCloudNormalTexture', () =>
+      createPlanetoidDustCloudNormalTexture(
+        renderer,
+        shapeParameters.noiseOffset,
+        normalTextureSize,
+        {
+          dustCloudCoverage,
+          dustCloudStyle,
+          dustCloudOpacity,
+          dustCloudFrequency,
+          dustCloudSwirliness,
+          dustCloudCoriolis,
+          swirliness,
+        }
+      )
     )
     dustCloudNormalTexture = cloudNormalTexture
 
@@ -780,11 +793,8 @@
       swirliness: currentSwirliness,
     }
 
-    const normalTexture = createPlanetoidNormalTexture(
-      renderer,
-      shape.noiseOffset,
-      textureSize,
-      detailOptions
+    const normalTexture = traceSpan('effect:normalTexture', () =>
+      createPlanetoidNormalTexture(renderer, shape.noiseOffset, textureSize, detailOptions)
     )
     normalDebugTexture = normalTexture
 
@@ -855,7 +865,17 @@
     dustCloudGeometry.dispose()
   })
 
+  const traceFrame = createFrameMonitor('planetoid')
+
   useTask((delta) => {
+    traceFrame(delta, () => ({
+      drawCalls: renderer.info.render.calls,
+      triangles: renderer.info.render.triangles,
+      programs: renderer.info.programs?.length,
+      textures: renderer.info.memory.textures,
+      geometries: renderer.info.memory.geometries,
+    }))
+
     if (mesh) {
       mesh.position.x = -massCentre.x
       mesh.position.y = -massCentre.y

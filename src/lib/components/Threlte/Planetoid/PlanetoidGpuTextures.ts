@@ -18,6 +18,7 @@ import {
   type WebGLRenderer,
 } from 'three'
 import { getPalettePosition, type PaletteColor } from '../../../types/palette'
+import { traceSpan, tracingEnabled } from '../../../utils/perfTrace'
 import {
   DefaultValues,
   DustCloudStyleNames,
@@ -113,7 +114,9 @@ const fragmentShader = `
 
   varying vec2 vUv;
 
-  uniform int uMode;
+  // Always 1. Loop bounds multiplied by it are opaque to ANGLE's D3D compiler, which
+  // otherwise fully unrolls and inlines every noise loop (tens of seconds to compile).
+  uniform int uOne;
   uniform vec2 uResolution;
   uniform vec3 uSeed;
   uniform vec3 uTint;
@@ -188,7 +191,7 @@ const fragmentShader = `
     float frequency = 1.0;
     float total = 0.0;
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 5 * uOne; i++) {
       value += noise3(p * frequency) * amplitude;
       total += amplitude;
       amplitude *= 0.5;
@@ -214,9 +217,9 @@ const fragmentShader = `
     vec3 local = fract(p);
     float nearest = 1.5;
 
-    for (int x = -1; x <= 1; x++) {
-      for (int y = -1; y <= 1; y++) {
-        for (int z = -1; z <= 1; z++) {
+    for (int x = -uOne; x <= uOne; x++) {
+      for (int y = -uOne; y <= uOne; y++) {
+        for (int z = -uOne; z <= uOne; z++) {
           vec3 offset = vec3(float(x), float(y), float(z));
           vec3 featurePoint = offset + hash33(cell + offset);
           nearest = min(nearest, length(featurePoint - local));
@@ -234,7 +237,7 @@ const fragmentShader = `
     float frequency = 1.0;
     float total = 0.0;
 
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 4 * uOne; i++) {
       value += (1.0 - worley3(p * frequency)) * amplitude;
       total += amplitude;
       frequency *= lacunarity;
@@ -281,7 +284,7 @@ const fragmentShader = `
     float norm = 0.0;
     float weight = 1.0;
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 6 * uOne; i++) {
       float n = 1.0 - abs(perlin3(p) * 1.4);
       n = pow(clamp(n, 0.0, 1.0), exponent) * weight;
       weight = clamp(n * 2.0, 0.0, 1.0);
@@ -336,7 +339,7 @@ const fragmentShader = `
     int safePaletteSize = max(2, min(uPaletteSize, ${MAX_PALETTE}));
     int index = 0;
 
-    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+    for (int i = 0; i < (${MAX_PALETTE} - 1) * uOne; i++) {
       if (i < safePaletteSize - 1 && t >= uPalettePositions[i]) index = i;
     }
     index = min(index, safePaletteSize - 2);
@@ -346,7 +349,7 @@ const fragmentShader = `
     float startPosition = uPalettePositions[0];
     float endPosition = uPalettePositions[1];
 
-    for (int i = 0; i < ${MAX_PALETTE} - 1; i++) {
+    for (int i = 0; i < (${MAX_PALETTE} - 1) * uOne; i++) {
       if (i == index) {
         a = uPalette[i];
         b = uPalette[i + 1];
@@ -522,9 +525,9 @@ const fragmentShader = `
   float accumulateCraterComposite(vec2 uv) {
     float composedHeight = 0.0;
 
-    for (int i = 0; i < MAX_CRATERS; i++) {
-      if (i >= uCraterCount) break;
-
+    // Uniform loop bounds stop ANGLE's D3D compiler unrolling these loops (~40 s compile).
+    int craterCount = min(uCraterCount, MAX_CRATERS);
+    for (int i = 0; i < craterCount; i++) {
       vec2 craterUv;
       float craterRadius;
       float craterAge;
@@ -587,9 +590,8 @@ const fragmentShader = `
   float accumulateVolcanoHeight(vec2 uv) {
     float height = 0.0;
 
-    for (int i = 0; i < MAX_VOLCANOES; i++) {
-      if (i >= uVolcanoCount) break;
-
+    int volcanoCount = min(uVolcanoCount, MAX_VOLCANOES);
+    for (int i = 0; i < volcanoCount; i++) {
       vec2 volcanoUv;
       float volcanoRadius;
       buildVolcano(i, volcanoUv, volcanoRadius);
@@ -671,9 +673,8 @@ const fragmentShader = `
     float lift = 0.0;
     float darken = 0.0;
 
-    for (int i = 0; i < MAX_VOLCANOES; i++) {
-      if (i >= uVolcanoCount) break;
-
+    int volcanoCount = min(uVolcanoCount, MAX_VOLCANOES);
+    for (int i = 0; i < volcanoCount; i++) {
       vec2 volcanoUv;
       float volcanoRadius;
       buildVolcano(i, volcanoUv, volcanoRadius);
@@ -741,6 +742,14 @@ const fragmentShader = `
 
   vec2 wrapSurfaceUv(vec2 uv) {
     return vec2(fract(uv.x), clamp(uv.y, 0.0, 1.0));
+  }
+
+  // Central-difference tap order: left, right, down, up. Summing dir * h gives (hR - hL, hU - hD).
+  vec2 gradientTapDirection(int i) {
+    if (i == 0) return vec2(-1.0, 0.0);
+    if (i == 1) return vec2(1.0, 0.0);
+    if (i == 2) return vec2(0.0, -1.0);
+    return vec2(0.0, 1.0);
   }
 
   float sampleSurfaceDisplacement(vec2 uv, bool includeDebugGuides) {
@@ -925,6 +934,9 @@ const fragmentShader = `
 
   void main() {
     vec2 uv = vUv;
+
+    // Each MODE is compiled as its own program so it only contains the code it needs.
+#if MODE == 0
     float x = uv.x * (uResolution.x - 1.0);
     float y = uv.y * (uResolution.y - 1.0);
 
@@ -973,31 +985,39 @@ const fragmentShader = `
     bool debugMeridian90 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.25);
     bool debugMeridian180 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.5);
     bool debugMeridian270 = (uDebugMidline == 1) && isDebugMeridianPixel(x, 0.75);
+#endif
 
-    if (uMode == 4) {
+#if MODE == 4
+    {
       vec2 texel = 1.0 / max(uResolution, vec2(1.0));
 
-      float hL = sampleSurfaceDisplacement(uv + vec2(-texel.x, 0.0), false);
-      float hR = sampleSurfaceDisplacement(uv + vec2(texel.x, 0.0), false);
-      float hD = sampleSurfaceDisplacement(uv + vec2(0.0, -texel.y), false);
-      float hU = sampleSurfaceDisplacement(uv + vec2(0.0, texel.y), false);
+      // Looping the taps keeps a single copy of the (very large) height function in the program.
+      vec2 gradient = vec2(0.0);
+      for (int i = 0; i < 4 * uOne; i++) {
+        vec2 dir = gradientTapDirection(i);
+        gradient += dir * sampleSurfaceDisplacement(uv + dir * texel, false);
+      }
 
-      float dX = hR - hL;
-      float dY = hU - hD;
+      float dX = gradient.x;
+      float dY = gradient.y;
       vec3 normal = normalize(vec3(-dX * 0.85, -dY * 0.85, 1.0));
       vec3 encodedNormal = normal * 0.5 + 0.5;
 
       gl_FragColor = vec4(clamp(encodedNormal, 0.0, 1.0), 1.0);
       return;
     }
+#endif
 
-    if (uMode == 3) {
+#if MODE == 3
+    {
       vec3 gradientColor = mapToPalette(uv.x * 2.0 - 1.0);
       gl_FragColor = vec4(clamp(gradientColor, 0.0, 1.0), 1.0);
       return;
     }
+#endif
 
-    if (uMode == 5) {
+#if MODE == 5
+    {
       float lumps;
       vec4 cloud = dustCloudSample(uv, lumps);
       vec3 cloudColor = mapToPalette(clamp(cloud.x * 0.72 + cloud.y * 0.35, -1.0, 1.0));
@@ -1012,21 +1032,24 @@ const fragmentShader = `
       gl_FragColor = vec4(clamp(cloudColor, 0.0, 1.0), cloud.z);
       return;
     }
+#endif
 
-    if (uMode == 6) {
+#if MODE == 6
+    {
       vec2 texel = 1.0 / max(uResolution, vec2(1.0));
       // Two-texel taps low-pass the field; the cloud noise runs close to Nyquist
       // and single-texel differences alias into speckle.
       vec2 tap = texel * 2.0;
 
-      float hL = dustCloudHeight(uv + vec2(-tap.x, 0.0));
-      float hR = dustCloudHeight(uv + vec2(tap.x, 0.0));
-      float hD = dustCloudHeight(uv + vec2(0.0, -tap.y));
-      float hU = dustCloudHeight(uv + vec2(0.0, tap.y));
+      vec2 heightDelta = vec2(0.0);
+      for (int i = 0; i < 4 * uOne; i++) {
+        vec2 dir = gradientTapDirection(i);
+        heightDelta += dir * dustCloudHeight(uv + dir * tap);
+      }
 
       // Scale slopes by resolution so the relief looks the same at any texture size.
       float slopeScale = uResolution.y * 0.008;
-      vec2 slope = vec2(hR - hL, hU - hD) * slopeScale;
+      vec2 slope = heightDelta * slopeScale;
       // Cap the tilt at 45 degrees so steep noise never shades the dust to black.
       slope = clamp(slope, -1.0, 1.0);
 
@@ -1034,7 +1057,9 @@ const fragmentShader = `
       gl_FragColor = vec4(clamp(normal * 0.5 + 0.5, 0.0, 1.0), 1.0);
       return;
     }
+#endif
 
+#if MODE == 0
     float colorLarge = fractalNoise(remappedPos * 2.0 + seed);
     float colorMedium = fractalNoise(remappedPos * 6.0 + seed);
     float colorFine = fractalNoise(remappedPos * 40.0 + seed);
@@ -1099,6 +1124,7 @@ const fragmentShader = `
     }
 
     gl_FragColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
+#endif
   }
 `
 
@@ -1107,8 +1133,9 @@ const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1)
 const material = new ShaderMaterial({
   vertexShader,
   fragmentShader,
+  defines: { MODE: 0 },
   uniforms: {
-    uMode: new Uniform(0),
+    uOne: new Uniform(1),
     uResolution: new Uniform(new Vector2(512, 256)),
     uSeed: new Uniform(new Vector3()),
     uTint: new Uniform(new Vector3(1, 1, 1)),
@@ -1154,6 +1181,24 @@ const material = new ShaderMaterial({
 const quad = new Mesh(new PlaneGeometry(2, 2), material)
 quad.frustumCulled = false
 scene.add(quad)
+
+type TextureMode = 0 | 3 | 4 | 5 | 6
+const materialsByMode = new Map<TextureMode, ShaderMaterial>([[0, material]])
+
+// Programs are compiled lazily, so unused modes (e.g. dust clouds) cost nothing.
+function materialForMode(mode: TextureMode) {
+  let modeMaterial = materialsByMode.get(mode)
+  if (!modeMaterial) {
+    modeMaterial = new ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      defines: { MODE: mode },
+      uniforms: material.uniforms,
+    })
+    materialsByMode.set(mode, modeMaterial)
+  }
+  return modeMaterial
+}
 
 function toFiniteNumber(value: number | undefined, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
@@ -1221,9 +1266,18 @@ function setPaletteUniform(palette: PaletteColor[]) {
   material.uniforms.uPaletteSize.value = Math.max(2, Math.min(MAX_PALETTE, palette.length))
 }
 
+const TEXTURE_MODE_NAMES = {
+  0: 'color',
+  3: 'paletteGradient',
+  4: 'normal',
+  5: 'dustCloud',
+  6: 'dustCloudNormal',
+} as const
+const traceSyncPixel = new Uint8Array(4)
+
 function renderTexture(
   renderer: WebGLRenderer,
-  mode: 0 | 3 | 4 | 5 | 6,
+  mode: TextureMode,
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
@@ -1266,7 +1320,7 @@ function renderTexture(
     palette?: PaletteColor[]
   }
 ) {
-  material.uniforms.uMode.value = mode
+  quad.material = materialForMode(mode)
   material.uniforms.uResolution.value.set(width, height)
   material.uniforms.uSeed.value.set(noiseOffset.x, noiseOffset.y, noiseOffset.z)
   const tint = parseHexTint(options.surfaceTint)
@@ -1456,7 +1510,17 @@ function renderTexture(
   renderer.setScissor(0, 0, width, height)
   renderer.setScissorTest(false)
   renderer.clear()
-  renderer.render(scene, camera)
+  // Separates one-off shader compilation from the per-pass render cost.
+  if (tracingEnabled) traceSpan('gpu:compile', () => renderer.compile(scene, camera))
+  traceSpan(
+    `gpu:${TEXTURE_MODE_NAMES[mode]}`,
+    () => {
+      renderer.render(scene, camera)
+      // Reading a pixel blocks until the GPU finishes, so the span includes shader time.
+      if (tracingEnabled) renderer.readRenderTargetPixels(renderTarget, 0, 0, 1, 1, traceSyncPixel)
+    },
+    { width, height }
+  )
   renderer.setRenderTarget(previousTarget)
   renderer.setViewport(previousViewport)
   renderer.setScissor(previousScissor)
