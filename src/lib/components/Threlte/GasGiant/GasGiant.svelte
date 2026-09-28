@@ -11,6 +11,7 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { trackPalette } from '../../../types/paletteState.svelte'
+  import { createRandom } from '../../../utils/math'
   import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
   import BodyAtmosphere from '../Atmosphere/BodyAtmosphere.svelte'
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
@@ -148,17 +149,6 @@
   export async function downloadNormalMapPng(fileName = 'gas-giant-normal-map.png') {
     const normalMap = (material?.normalMap as Texture | null | undefined) ?? normalTexture
     return downloadRenderTexture(normalMap, fileName)
-  }
-
-  function createRandom(initialSeed: number) {
-    let state = initialSeed | 0
-
-    return () => {
-      state = (state + 0x6d2b79f5) | 0
-      let t = Math.imul(state ^ (state >>> 15), 1 | state)
-      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t)
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-    }
   }
 
   const noiseOffset = $derived.by(() => {

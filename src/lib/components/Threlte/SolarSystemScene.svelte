@@ -21,7 +21,11 @@
   } from './Planetoid/PlanetoidSettings'
   import { DefaultValues as StarDefaults, type StarSettings } from './Star/StarSettings'
   import type { RingSettings } from './Rings/RingSettings'
-  import { DefaultSystemBodies, type SystemBody } from './SolarSystem/SolarSystemBodies'
+  import {
+    applySeededOrbits,
+    DefaultSystemBodies,
+    type SystemBody,
+  } from './SolarSystem/SolarSystemBodies'
   import {
     createCinematicFlight,
     smootherstep,
@@ -50,10 +54,11 @@
     showOrbits?: boolean
     cinematic?: boolean
     textureSize?: TextureSize
+    seed?: number
   }
 
   let {
-    bodies = DefaultSystemBodies,
+    bodies: authoredBodies = DefaultSystemBodies,
     rockyPresets = BUILTIN_PRESETS,
     giantPresets = BUILTIN_GAS_GIANT_PRESETS,
     starSettings = StarDefaults,
@@ -63,7 +68,13 @@
     showOrbits = true,
     cinematic = false,
     textureSize = DefaultTextureSize,
+    seed = 1,
   }: Props = $props()
+
+  // Seed 1 keeps the authored layout and each body's own seed.
+  const systemSeed = $derived(seed || 1)
+  const bodies = $derived(applySeededOrbits(authoredBodies, systemSeed))
+  const mixSeed = (bodySeed: number) => (bodySeed + (systemSeed - 1) * 7919) % 1_000_000
 
   type Vec3 = [number, number, number]
 
@@ -280,14 +291,15 @@
 
   function createGiant(body: SystemBody, preset: GasGiantPreset): GiantBody {
     const position = orbitPosition(body)
-    const settings = giantSettings(preset, body.seed)
+    const bodySeed = mixSeed(body.seed)
+    const settings = giantSettings(preset, bodySeed)
 
     return {
       id: body.id,
       position,
       planeRotation: orbitPlaneRotation(body),
       scale: body.scale,
-      seed: body.seed,
+      seed: bodySeed,
       settings,
       ringSettings: toRingSettings(settings),
     }
@@ -295,6 +307,7 @@
 
   const sunSettings: StarSettings = $derived({
     ...starSettings,
+    seed: mixSeed(starSettings.seed),
     autoRotate,
     colorTextureSize: detailTextureSize,
   })
@@ -305,6 +318,7 @@
       .flatMap((body) => {
         const preset = rockyPresetsById.get(body.presetId) ?? rockyPresets[0]
         if (!preset) return []
+        const bodySeed = mixSeed(body.seed)
 
         return [
           {
@@ -312,8 +326,8 @@
             position: orbitPosition(body),
             planeRotation: orbitPlaneRotation(body),
             scale: body.scale,
-            tilt: ((body.seed % 40) - 20) / 60,
-            settings: rockySettings(preset, body.seed),
+            tilt: ((bodySeed % 40) - 20) / 60,
+            settings: rockySettings(preset, bodySeed),
           },
         ]
       })

@@ -6,6 +6,7 @@
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
   import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
+  import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import { DefaultTextureSize, type TextureSize } from '../lib/types/textureSize'
   import SolarSystemScene from '../lib/components/Threlte/SolarSystemScene.svelte'
   import {
@@ -50,6 +51,7 @@
   let bodies = $state<SystemBody[]>(DefaultSystemBodies.map((body) => ({ ...body })))
   let orbitScale = $state(1)
   let textureSize = $state<TextureSize>(DefaultTextureSize)
+  let seed = $state(1)
   let isSaving = $state(false)
 
   const rockyPresets = $derived([...BUILTIN_PRESETS, ...userRockyPresets])
@@ -137,6 +139,7 @@
             {cinematic}
             {orbitScale}
             {textureSize}
+            {seed}
           />
         </Canvas>
         {#snippet failed(error)}
@@ -191,6 +194,7 @@
           label="Texture size"
           bind:value={textureSize}
         />
+        <SeedControl id="solar-system-seed" min={1} max={999999} bind:value={seed} />
       </fieldset>
 
       <fieldset>

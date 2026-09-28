@@ -16,6 +16,7 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
+  import { createRandom } from '../../../utils/math'
   import { createFrameMonitor, traceSpan } from '../../../utils/perfTrace'
   import {
     MaxValues,
@@ -301,20 +302,6 @@
     )
     previousGeometry.dispose()
   })
-
-  function createRandom(initialSeed: number) {
-    let state = initialSeed | 0
-
-    return () => {
-      state = (state + 0x6d2b79f5) | 0
-
-      let t = Math.imul(state ^ (state >>> 15), 1 | state)
-
-      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t)
-
-      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-    }
-  }
 
   function randomUnitVector(random: () => number) {
     const z = random() * 2 - 1

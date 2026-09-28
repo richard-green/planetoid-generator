@@ -1,5 +1,6 @@
 import { BUILTIN_GAS_GIANT_PRESETS } from '../../../../presets/GasGiants'
 import { BUILTIN_PRESETS } from '../../../../presets/Planetoids'
+import { createRandom } from '../../../utils/math'
 
 export type SystemBodyKind = 'rocky' | 'giant'
 
@@ -99,6 +100,35 @@ export const DefaultSystemBodies: SystemBody[] = [
 ]
 
 let nextBodyCounter = 0
+
+// Re-rolls orbit placement and size from the system seed. Orbits are rebuilt from scaled
+// gaps between neighbours so the bodies keep their order and never cross.
+export function applySeededOrbits(bodies: SystemBody[], systemSeed: number): SystemBody[] {
+  if (systemSeed === 1) return bodies
+
+  const seeded = new Map<string, SystemBody>()
+  let previousBaseRadius = 0
+  let previousRadius = 0
+
+  for (const body of [...bodies].sort((a, b) => a.orbitRadius - b.orbitRadius)) {
+    const random = createRandom(Math.imul(systemSeed, 7919) ^ body.seed)
+    const gap = body.orbitRadius - previousBaseRadius
+    const orbitRadius = previousRadius + gap * (0.7 + random() * 0.6)
+
+    previousBaseRadius = body.orbitRadius
+    previousRadius = orbitRadius
+
+    seeded.set(body.id, {
+      ...body,
+      orbitRadius,
+      orbitAngle: random() * 360,
+      orbitInclination: (random() * 2 - 1) * 3,
+      orbitNode: random() * 360,
+    })
+  }
+
+  return bodies.map((body) => seeded.get(body.id) ?? body)
+}
 
 export function createSystemBody(
   existing: SystemBody[],
