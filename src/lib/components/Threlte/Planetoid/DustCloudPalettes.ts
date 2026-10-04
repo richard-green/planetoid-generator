@@ -7,6 +7,8 @@ export const DustCloudPaletteNames = [
   'carbon',
   'verdigris',
   'frost',
+  'venus',
+  'io',
 ] as const
 
 export type DustCloudPaletteName = (typeof DustCloudPaletteNames)[number]
@@ -18,6 +20,8 @@ export const DustCloudPaletteLabels: Record<DustCloudPaletteName, string> = {
   carbon: 'Carbon ash',
   verdigris: 'Verdigris mist',
   frost: 'Frost white',
+  venus: 'Venusian haze',
+  io: 'Io volcanic plume',
 }
 
 export const DustCloudPalettes: Record<DustCloudPaletteName, Palette> = {
@@ -56,5 +60,18 @@ export const DustCloudPalettes: Record<DustCloudPaletteName, Palette> = {
     { r: 250, g: 251, b: 253 },
     { r: 255, g: 255, b: 255, position: 0.78 },
     { r: 63, g: 79, b: 84, position: 0.9 },
+  ],
+  venus: [
+    { r: 83, g: 49, b: 62 },
+    { r: 171, g: 91, b: 73 },
+    { r: 225, g: 163, b: 111 },
+    { r: 255, g: 235, b: 190 },
+  ],
+  io: [
+    { r: 34, g: 32, b: 39 },
+    { r: 124, g: 48, b: 27 },
+    { r: 225, g: 91, b: 18 },
+    { r: 255, g: 205, b: 52, position: 0.78 },
+    { r: 255, g: 244, b: 175 },
   ],
 }

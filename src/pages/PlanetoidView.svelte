@@ -16,6 +16,11 @@
   import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import ViewModeControl from '../lib/components/Controls/ViewModeControl.svelte'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
+  import {
+    IceCapPaletteLabels,
+    IceCapPaletteNames,
+    IceCapPalettes,
+  } from '../lib/components/Threlte/Planetoid/IceCapPalettes'
   import PlanetoidScene from '../lib/components/Threlte/PlanetoidScene.svelte'
   import {
     PlanetoidPalettes,
@@ -61,6 +66,9 @@
     keyof PlanetoidSettings,
     | 'palette'
     | 'surfaceTint'
+    | 'iceCapColor'
+    | 'iceCapPalette'
+    | 'enableIceCaps'
     | 'autoRotate'
     | 'showDebugMeshes'
     | 'enableCraters'
@@ -73,6 +81,7 @@
     | 'colorTextureSize'
     | 'dustCloudPalette'
     | 'dustCloudStyle'
+    | 'dustCloudWeights'
     | 'atmospherePalette'
   >
 
@@ -100,6 +109,10 @@
   const DEFAULT_VALUES: PlanetoidSettings = { ...DefaultValues }
 
   const textureControls: NumericControlKey[] = [
+    'iceCapCoverage',
+    'iceCapEdgeNoise',
+    'snowExtent',
+    'snowCoverage',
     'colorScale',
     'tintShadowFloor',
     'swirliness',
@@ -173,6 +186,13 @@
   let ridgeSectionOpen = $state(true)
   let riftSectionOpen = $state(true)
   let dustCloudSectionOpen = $state(true)
+  let iceCapSectionOpen = $state(false)
+  const iceCapControls: NumericControlKey[] = [
+    'iceCapCoverage',
+    'iceCapEdgeNoise',
+    'snowExtent',
+    'snowCoverage',
+  ]
   let atmosphereSectionOpen = $state(true)
   let textureResolutionSectionOpen = $state(false)
   let materialPropertiesSectionOpen = $state(true)
@@ -358,6 +378,10 @@
       quoteCliValue(settings.palette),
       '--surface-tint',
       quoteCliValue(settings.surfaceTint),
+      PlanetoidCliFeatureFlags.iceCapColor,
+      quoteCliValue(settings.iceCapColor),
+      PlanetoidCliFeatureFlags.iceCapPalette,
+      settings.iceCapPalette,
       PlanetoidCliFeatureFlags.dustCloudStyle,
       settings.dustCloudStyle,
       PlanetoidCliFeatureFlags.dustCloudPalette,
@@ -379,6 +403,7 @@
     }
 
     args.push(PlanetoidCliToggleFlags.autoRotate, toBooleanCliValue(settings.autoRotate))
+    args.push(PlanetoidCliToggleFlags.iceCapsEnabled, toBooleanCliValue(settings.enableIceCaps))
     args.push(PlanetoidCliToggleFlags.showDebugMeshes, toBooleanCliValue(settings.showDebugMeshes))
     args.push(PlanetoidCliToggleFlags.cratersEnabled, toBooleanCliValue(toggles.cratersEnabled))
     args.push(PlanetoidCliToggleFlags.ridgesEnabled, toBooleanCliValue(toggles.ridgesEnabled))
@@ -773,6 +798,13 @@
         >
           <PlanetoidScene
             bind:this={planetoidScene}
+            enableIceCaps={planetoid.enableIceCaps}
+            iceCapCoverage={planetoid.iceCapCoverage}
+            iceCapEdgeNoise={planetoid.iceCapEdgeNoise}
+            snowExtent={planetoid.snowExtent}
+            snowCoverage={planetoid.snowCoverage}
+            iceCapColor={planetoid.iceCapColor}
+            iceCapPalette={planetoid.iceCapPalette}
             palette={planetoid.palette}
             surfaceTint={planetoid.surfaceTint}
             colorScale={planetoid.colorScale}
@@ -780,7 +812,7 @@
             swirliness={planetoid.swirliness}
             enableDustClouds={planetoid.enableDustClouds}
             dustCloudCoverage={planetoid.dustCloudCoverage}
-            dustCloudStyle={planetoid.dustCloudStyle}
+            dustCloudWeights={planetoid.dustCloudWeights}
             dustCloudPalette={planetoid.dustCloudPalette}
             dustCloudOpacity={planetoid.dustCloudOpacity}
             dustCloudElevation={planetoid.dustCloudElevation}
@@ -1006,6 +1038,41 @@
       <fieldset>
         <legend>{PlanetoidUiLabels.features}</legend>
         <CollapsibleControl
+          title={PlanetoidUiLabels.iceCaps}
+          bind:open={iceCapSectionOpen}
+          bind:enabled={planetoid.enableIceCaps}
+        >
+          <div inert={!planetoid.enableIceCaps}>
+            <PalettePicker
+              id="planetoid-ice-cap-palette"
+              title={PlanetoidUiLabels.iceCapPalette}
+              options={IceCapPaletteNames}
+              palettes={IceCapPalettes}
+              labels={IceCapPaletteLabels}
+              bind:value={planetoid.iceCapPalette}
+            />
+            <ColorPicker
+              id="planetoid-ice-cap-color"
+              label={PlanetoidUiLabels.iceCapColor}
+              bind:value={planetoid.iceCapColor}
+            />
+            <div class="control-grid">
+              {#each iceCapControls as control (control)}
+                <label class="compact-number-row">
+                  <span>{PlanetoidRangeLabels[control]}</span>
+                  <input
+                    type="number"
+                    min={MinValues[control]}
+                    max={MaxValues[control]}
+                    step={StepValues[control]}
+                    bind:value={planetoid[control]}
+                  />
+                </label>
+              {/each}
+            </div>
+          </div>
+        </CollapsibleControl>
+        <CollapsibleControl
           title={PlanetoidUiLabels.dustClouds}
           bind:open={dustCloudSectionOpen}
           bind:enabled={planetoid.enableDustClouds}
@@ -1020,14 +1087,22 @@
               bind:value={planetoid.dustCloudPalette}
             />
             <div class="control-grid">
-              <label>
-                <span>{PlanetoidUiLabels.dustCloudStyle}</span>
-                <select bind:value={planetoid.dustCloudStyle}>
-                  {#each DustCloudStyleNames as style (style)}
-                    <option value={style}>{DustCloudStyleLabels[style]}</option>
-                  {/each}
-                </select>
-              </label>
+              <div class="cloud-mix-grid" role="group" aria-label="Cloud formation weights">
+                {#each DustCloudStyleNames as style (style)}
+                  <label>
+                    <span>{DustCloudStyleLabels[style]}</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      aria-label={`${DustCloudStyleLabels[style]} weight`}
+                      bind:value={planetoid.dustCloudWeights[style]}
+                    />
+                    <output>{Math.round(planetoid.dustCloudWeights[style] * 100)}%</output>
+                  </label>
+                {/each}
+              </div>
               {#each dustCloudControls as control (control)}
                 <label class="compact-number-row">
                   <span>{PlanetoidRangeLabels[control]}</span>

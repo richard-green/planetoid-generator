@@ -7,13 +7,21 @@
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
   import Planetoid from './Planetoid/Planetoid.svelte'
   import { DefaultValues, type PlanetoidViewMode } from './Planetoid/PlanetoidSettings'
-  import type { DustCloudStyle } from './Planetoid/PlanetoidSettings'
+  import type { DustCloudWeights } from './Planetoid/PlanetoidSettings'
   import type { PlanetoidPaletteName } from './Planetoid/PlanetoidPalettes'
   import type { DustCloudPaletteName } from './Planetoid/DustCloudPalettes'
   import type { AtmospherePaletteName } from './Atmosphere/AtmospherePalettes'
   import type { TextureSize } from '../../types/textureSize'
+  import type { IceCapPaletteName } from './Planetoid/IceCapPalettes'
 
   type Props = {
+    enableIceCaps?: boolean
+    iceCapCoverage?: number
+    iceCapEdgeNoise?: number
+    snowExtent?: number
+    snowCoverage?: number
+    iceCapColor?: string
+    iceCapPalette?: IceCapPaletteName
     viewMode?: PlanetoidViewMode
     palette?: PlanetoidPaletteName
     surfaceTint?: string
@@ -22,7 +30,7 @@
     swirliness?: number
     enableDustClouds?: boolean
     dustCloudCoverage?: number
-    dustCloudStyle?: DustCloudStyle
+    dustCloudWeights?: DustCloudWeights
     dustCloudPalette?: DustCloudPaletteName
     dustCloudOpacity?: number
     dustCloudElevation?: number
@@ -76,6 +84,13 @@
   }
 
   let {
+    enableIceCaps = DefaultValues.enableIceCaps,
+    iceCapCoverage = DefaultValues.iceCapCoverage,
+    iceCapEdgeNoise = DefaultValues.iceCapEdgeNoise,
+    snowExtent = DefaultValues.snowExtent,
+    snowCoverage = DefaultValues.snowCoverage,
+    iceCapColor = DefaultValues.iceCapColor,
+    iceCapPalette = DefaultValues.iceCapPalette,
     viewMode = 'mesh',
     palette = DefaultValues.palette,
     surfaceTint = DefaultValues.surfaceTint,
@@ -84,7 +99,7 @@
     swirliness = DefaultValues.swirliness,
     enableDustClouds = DefaultValues.enableDustClouds,
     dustCloudCoverage = DefaultValues.dustCloudCoverage,
-    dustCloudStyle = DefaultValues.dustCloudStyle,
+    dustCloudWeights = DefaultValues.dustCloudWeights,
     dustCloudPalette = DefaultValues.dustCloudPalette,
     dustCloudOpacity = DefaultValues.dustCloudOpacity,
     dustCloudElevation = DefaultValues.dustCloudElevation,
@@ -138,6 +153,13 @@
   }: Props = $props()
 
   const settings = $derived({
+    enableIceCaps,
+    iceCapCoverage,
+    iceCapEdgeNoise,
+    snowExtent,
+    snowCoverage,
+    iceCapColor,
+    iceCapPalette,
     viewMode,
     palette,
     surfaceTint,
@@ -146,7 +168,7 @@
     swirliness,
     enableDustClouds,
     dustCloudCoverage,
-    dustCloudStyle,
+    dustCloudWeights,
     dustCloudPalette,
     dustCloudOpacity,
     dustCloudElevation,

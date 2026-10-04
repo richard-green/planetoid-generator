@@ -14,6 +14,8 @@ https://rdgreen.dev/planetoids/
 
 - Interactive browser UI for procedural planetoid generation
 - Tunable controls for color, geometry, craters, ridges, rifts, volcanoes, and material properties
+- Optional polar ice caps with coverage, seeded edge breakup, editable palette stops, and tint controls
+- Patchy snow fringes beyond the ice boundary, with snow extent and coverage controls
 - Multiple view modes for output workflows (including texture and normal views)
 - Presets and seed-based generation for repeatable results
 - Scriptable batch generation using Playwright
@@ -66,6 +68,8 @@ Common options:
 - `--view-mode mesh|normal|texture|ray`
 - `--palette <name>`
 - `--surface-tint <hex>`
+- Planetoid ice caps: `--ice-caps-enabled true --ice-cap-coverage 0.18 --ice-cap-edge-noise 0.5 --ice-cap-palette glacial --ice-cap-color "#ffffff"`
+- Snow fringe: add `--snow-extent 0.08 --snow-coverage 0.55` to an ice-cap batch; extent `0` disables snow
 - `--output-dir <path>`
 - `--base-url <url>` (defaults to `http://127.0.0.1:5173/planetoids`)
 

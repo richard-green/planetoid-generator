@@ -5,6 +5,10 @@ import path from 'path'
 import type { Locator, Page } from 'playwright'
 import { firefox } from 'playwright'
 import {
+  IceCapPaletteNames,
+  type IceCapPaletteName,
+} from '../src/lib/components/Threlte/Planetoid/IceCapPalettes'
+import {
   PlanetoidPaletteNames,
   type PlanetoidPaletteName as PaletteName,
 } from '../src/lib/components/Threlte/Planetoid/PlanetoidPalettes'
@@ -54,6 +58,13 @@ type ScriptOptions = {
   dustCloudStyle?: DustCloudStyle
   atmospherePalette?: AtmospherePaletteName
   surfaceTint?: string
+  iceCapColor?: string
+  iceCapPalette?: IceCapPaletteName
+  iceCapsEnabled?: boolean
+  iceCapCoverage?: number
+  iceCapEdgeNoise?: number
+  snowExtent?: number
+  snowCoverage?: number
   colorScale?: number
   tintShadowFloor?: number
   swirliness?: number
@@ -125,6 +136,13 @@ const DEFAULT_OPTIONS: ScriptOptions = {
   dustCloudStyle: undefined,
   atmospherePalette: undefined,
   surfaceTint: undefined,
+  iceCapColor: undefined,
+  iceCapPalette: undefined,
+  iceCapsEnabled: undefined,
+  iceCapCoverage: undefined,
+  iceCapEdgeNoise: undefined,
+  snowExtent: undefined,
+  snowCoverage: undefined,
   colorScale: undefined,
   tintShadowFloor: undefined,
   swirliness: undefined,
@@ -238,10 +256,13 @@ type ScriptLocators = {
   dustCloudColorMapMenuItem: Locator
   dustCloudNormalMapMenuItem: Locator
   surfaceTintInput: Locator
+  iceCapColorInput: Locator
+  iceCapPaletteSelect: Locator
   autoRotateToggle: Locator
   debugMeshesToggle: Locator
   numericInputByKey: Record<PlanetoidRangeKey, Locator>
   sectionToggles: {
+    iceCapsEnabled: Locator
     cratersEnabled: Locator
     ridgesEnabled: Locator
     riftsEnabled: Locator
@@ -295,6 +316,12 @@ function buildLocators(page: Page): ScriptLocators {
     surfaceTintInput: page
       .locator(selectors.colorInputByLabel(PlanetoidUiLabels.surfaceTint))
       .first(),
+    iceCapColorInput: page
+      .locator(selectors.colorInputByLabel(PlanetoidUiLabels.iceCapColor))
+      .first(),
+    iceCapPaletteSelect: page
+      .locator(selectors.selectByLabel(PlanetoidUiLabels.iceCapPalette))
+      .first(),
     autoRotateToggle: page.locator(selectors.checkboxByLabel(PlanetoidUiLabels.autoRotate)).first(),
     debugMeshesToggle: page
       .locator(selectors.checkboxByLabel(PlanetoidUiLabels.showDebugMeshes))
@@ -306,6 +333,9 @@ function buildLocators(page: Page): ScriptLocators {
       ])
     ) as Record<PlanetoidRangeKey, Locator>,
     sectionToggles: {
+      iceCapsEnabled: page
+        .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.iceCaps))
+        .first(),
       cratersEnabled: page
         .locator(selectors.sectionToggleBySummaryLabel(PlanetoidUiLabels.craters))
         .first(),
@@ -477,6 +507,27 @@ function parseArgs(argv: string[]): ScriptOptions {
       continue
     }
 
+    if (arg === PlanetoidCliFeatureFlags.iceCapColor && next) {
+      options.iceCapColor = next
+      i++
+      continue
+    }
+
+    if (arg === PlanetoidCliFeatureFlags.iceCapPalette && next) {
+      if (!IceCapPaletteNames.includes(next as IceCapPaletteName)) {
+        throw new Error(`Invalid ice-cap-palette: ${next}`)
+      }
+      options.iceCapPalette = next as IceCapPaletteName
+      i++
+      continue
+    }
+
+    if (arg === PlanetoidCliToggleFlags.iceCapsEnabled && next) {
+      options.iceCapsEnabled = parseBoolean(next, 'ice-caps-enabled')
+      i++
+      continue
+    }
+
     if (arg === '--surface-tint' && next) {
       options.surfaceTint = next
       i++
@@ -575,6 +626,9 @@ function parseArgs(argv: string[]): ScriptOptions {
           `  ${PlanetoidCliFeatureFlags.dustCloudPalette} <name> Cloud palette: ${DustCloudPaletteNames.join(' | ')}`,
           `  ${PlanetoidCliFeatureFlags.atmospherePalette} <name> Atmosphere palette: ${AtmospherePaletteNames.join(' | ')}`,
           '  --surface-tint <hex>    Surface tint color (example: #88aacc)',
+          `  ${PlanetoidCliFeatureFlags.iceCapColor} <hex> Ice tint (example: #ffffff)`,
+          `  ${PlanetoidCliFeatureFlags.iceCapPalette} <name> Ice palette: ${IceCapPaletteNames.join(' | ')}`,
+          `  ${PlanetoidCliToggleFlags.iceCapsEnabled} <bool> Enable/disable polar ice caps`,
           ...NUMERIC_HELP_LINES,
           `  ${PlanetoidCliToggleFlags.autoRotate} <bool>    Enable/disable auto-rotate`,
           `  ${PlanetoidCliToggleFlags.showDebugMeshes} <bool> Enable/disable debug meshes (mesh mode only)`,
@@ -739,6 +793,7 @@ async function main() {
   }
 
   const normalizedSurfaceTint = normalizeHexColor(options.surfaceTint)
+  const normalizedIceCapColor = normalizeHexColor(options.iceCapColor)
 
   const requestedPalette = normalizePalette(options.palette)
   if (options.palette && !requestedPalette) {
@@ -784,6 +839,8 @@ async function main() {
       dustCloudColorMapMenuItem,
       dustCloudNormalMapMenuItem,
       surfaceTintInput,
+      iceCapColorInput,
+      iceCapPaletteSelect,
       autoRotateToggle,
       debugMeshesToggle,
       numericInputByKey,
@@ -825,6 +882,12 @@ async function main() {
       }
     }
 
+    await prepareSectionForOverrides(
+      sectionToggles.iceCapsEnabled,
+      options.iceCapColor !== undefined ||
+        options.iceCapPalette !== undefined ||
+        hasNumericOverride('iceCapCoverage', 'iceCapEdgeNoise', 'snowExtent', 'snowCoverage')
+    )
     await prepareSectionForOverrides(
       sectionToggles.cratersEnabled,
       hasNumericOverride(
@@ -953,6 +1016,13 @@ async function main() {
       await page.waitForTimeout(options.frameSettleMs)
     }
 
+    if (options.iceCapPalette) {
+      await ensureLocatorVisible(iceCapPaletteSelect)
+      logger.info(`Applying ice palette: ${options.iceCapPalette}`)
+      await iceCapPaletteSelect.selectOption(options.iceCapPalette)
+      await page.waitForTimeout(options.frameSettleMs)
+    }
+
     if (options.atmospherePalette) {
       await ensureLocatorVisible(atmospherePaletteSelect)
       logger.info(`Applying atmosphere palette: ${options.atmospherePalette}`)
@@ -972,6 +1042,12 @@ async function main() {
     if (normalizedSurfaceTint) {
       logger.info(`Applying surface tint: ${normalizedSurfaceTint}`)
       await surfaceTintInput.fill(normalizedSurfaceTint)
+    }
+
+    if (normalizedIceCapColor) {
+      await ensureLocatorVisible(iceCapColorInput)
+      logger.info(`Applying ice-cap color: ${normalizedIceCapColor}`)
+      await iceCapColorInput.fill(normalizedIceCapColor)
     }
 
     for (const key of NUMERIC_RANGE_KEYS) {
@@ -999,6 +1075,7 @@ async function main() {
     }
 
     await applyToggleOverride('auto rotate', autoRotateToggle, options.autoRotate)
+    await applyToggleOverride('ice caps enabled', sectionToggles.iceCapsEnabled, options.iceCapsEnabled)
     await applyToggleOverride('show debug meshes', debugMeshesToggle, options.showDebugMeshes)
     await applyToggleOverride(
       'craters enabled',
@@ -1025,6 +1102,9 @@ async function main() {
 
     if (
       normalizedSurfaceTint ||
+      normalizedIceCapColor ||
+      options.iceCapPalette !== undefined ||
+      options.iceCapsEnabled !== undefined ||
       NUMERIC_RANGE_KEYS.some(
         (key) => typeof (options as Record<string, unknown>)[key] === 'number'
       ) ||

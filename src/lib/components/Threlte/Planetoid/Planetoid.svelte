@@ -37,6 +37,7 @@
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { PlanetoidPalettes } from './PlanetoidPalettes'
   import { DustCloudPalettes } from './DustCloudPalettes'
+  import { IceCapPalettes } from './IceCapPalettes'
   import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
   import PlanetoidAtmosphere from '../Atmosphere/BodyAtmosphere.svelte'
 
@@ -47,6 +48,13 @@
   let { settings }: Props = $props()
 
   let {
+    enableIceCaps,
+    iceCapCoverage,
+    iceCapEdgeNoise,
+    snowExtent,
+    snowCoverage,
+    iceCapColor,
+    iceCapPalette,
     viewMode,
     palette,
     surfaceTint,
@@ -55,7 +63,7 @@
     swirliness,
     enableDustClouds,
     dustCloudCoverage,
-    dustCloudStyle,
+    dustCloudWeights,
     dustCloudPalette,
     dustCloudOpacity,
     dustCloudElevation,
@@ -241,7 +249,7 @@
       dustCloudTexture ??
       createPlanetoidDustCloudTexture(renderer, shapeParameters.noiseOffset, colorTextureSize, {
         dustCloudCoverage,
-        dustCloudStyle,
+        dustCloudWeights: { ...dustCloudWeights },
         dustCloudOpacity,
         dustCloudFrequency,
         dustCloudSwirliness,
@@ -272,7 +280,7 @@
         normalTextureSize,
         {
           dustCloudCoverage,
-          dustCloudStyle,
+          dustCloudWeights: { ...dustCloudWeights },
           dustCloudOpacity,
           dustCloudFrequency,
           dustCloudSwirliness,
@@ -604,6 +612,13 @@
         textureScale,
         colorTextureSize,
         {
+          enableIceCaps,
+          iceCapCoverage,
+          iceCapEdgeNoise,
+          snowExtent,
+          snowCoverage,
+          iceCapColor,
+          iceCapPalette: trackPalette(IceCapPalettes[iceCapPalette]),
           surfaceTint,
           tintShadowFloor: currentTintShadowFloor,
           swirliness: currentSwirliness,
@@ -660,7 +675,7 @@
     const cloudTexture = traceSpan('effect:dustCloudTexture', () =>
       createPlanetoidDustCloudTexture(renderer, shapeParameters.noiseOffset, colorTextureSize, {
         dustCloudCoverage,
-        dustCloudStyle,
+        dustCloudWeights: { ...dustCloudWeights },
         dustCloudOpacity,
         dustCloudFrequency,
         dustCloudSwirliness,
@@ -693,7 +708,7 @@
         normalTextureSize,
         {
           dustCloudCoverage,
-          dustCloudStyle,
+          dustCloudWeights: { ...dustCloudWeights },
           dustCloudOpacity,
           dustCloudFrequency,
           dustCloudSwirliness,

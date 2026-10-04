@@ -16,6 +16,7 @@ export const marsPreset: PlanetoidPreset = {
     swirliness: 0.5,
     dustCloudCoverage: 0.7,
     dustCloudStyle: 'worley',
+    dustCloudWeights: { ...DefaultValues.dustCloudWeights, wisps: 0, worley: 1 },
     dustCloudPalette: 'silicate',
     dustCloudOpacity: 0.3,
     dustCloudElevation: 0.01,

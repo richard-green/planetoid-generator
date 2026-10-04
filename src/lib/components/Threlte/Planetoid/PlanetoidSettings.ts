@@ -1,5 +1,6 @@
 import { PlanetoidPaletteNames, type PlanetoidPaletteName } from './PlanetoidPalettes'
 import { DustCloudPaletteNames, type DustCloudPaletteName } from './DustCloudPalettes'
+import { IceCapPaletteNames, type IceCapPaletteName } from './IceCapPalettes'
 import {
   AtmospherePaletteNames,
   type AtmospherePaletteName,
@@ -30,14 +31,21 @@ export const PlanetoidViewModeLabels: Record<PlanetoidViewMode, string> = {
   cloudNormal: 'Cloud normal map',
 }
 
-export const DustCloudStyleNames = ['wisps', 'ribs', 'curls', 'mixed', 'worley'] as const
+export const DustCloudStyleNames = [
+  'wisps',
+  'worley',
+  'cumulonimbus',
+  'storm',
+  'stormWorley',
+] as const
 export type DustCloudStyle = (typeof DustCloudStyleNames)[number]
+export type DustCloudWeights = Record<DustCloudStyle, number>
 export const DustCloudStyleLabels: Record<DustCloudStyle, string> = {
   wisps: 'Wisps',
-  ribs: 'Ribs',
-  curls: 'Curls',
-  mixed: 'Mixed',
   worley: 'Worley cells',
+  cumulonimbus: 'Cumulonimbus',
+  storm: 'Storm system',
+  stormWorley: 'Storm + Worley',
 }
 
 export type PlanetoidPresetExcludedKey =
@@ -52,6 +60,13 @@ export type PlanetoidSettings = {
   enableVolcanoes: boolean
   enableDustClouds: boolean
   enableAtmosphere: boolean
+  enableIceCaps: boolean
+  iceCapCoverage: number
+  iceCapEdgeNoise: number
+  snowExtent: number
+  snowCoverage: number
+  iceCapColor: string
+  iceCapPalette: IceCapPaletteName
   seed: number
   palette: PlanetoidPaletteName
   surfaceTint: string
@@ -60,6 +75,7 @@ export type PlanetoidSettings = {
   swirliness: number
   dustCloudCoverage: number
   dustCloudStyle: DustCloudStyle
+  dustCloudWeights: DustCloudWeights
   dustCloudPalette: DustCloudPaletteName
   dustCloudOpacity: number
   dustCloudElevation: number
@@ -116,6 +132,10 @@ export type PlanetoidViewSettings = Pick<
 export type PlanetoidRangeValues = Pick<
   PlanetoidSettings,
   | 'seed'
+  | 'iceCapCoverage'
+  | 'iceCapEdgeNoise'
+  | 'snowExtent'
+  | 'snowCoverage'
   | 'colorScale'
   | 'tintShadowFloor'
   | 'swirliness'
@@ -171,6 +191,13 @@ export const DefaultValues: PlanetoidSettings = {
   enableVolcanoes: false,
   enableAtmosphere: false,
   enableDustClouds: false,
+  enableIceCaps: false,
+  iceCapCoverage: 0.18,
+  iceCapEdgeNoise: 0.5,
+  snowExtent: 0,
+  snowCoverage: 0.55,
+  iceCapColor: '#ffffff',
+  iceCapPalette: 'glacial',
   seed: 1,
   palette: 'rocky',
   surfaceTint: '#ffffff',
@@ -178,7 +205,14 @@ export const DefaultValues: PlanetoidSettings = {
   tintShadowFloor: 0.18,
   swirliness: 1,
   dustCloudCoverage: 0.4,
-  dustCloudStyle: 'mixed',
+  dustCloudStyle: 'wisps',
+  dustCloudWeights: {
+    wisps: 1,
+    worley: 0,
+    cumulonimbus: 0,
+    storm: 0,
+    stormWorley: 0,
+  },
   dustCloudPalette: 'silicate',
   dustCloudOpacity: 0.68,
   dustCloudElevation: 0.15,
@@ -224,6 +258,10 @@ export const DefaultValues: PlanetoidSettings = {
 }
 
 export const MinValues: PlanetoidRangeValues = {
+  iceCapCoverage: 0,
+  iceCapEdgeNoise: 0,
+  snowExtent: 0,
+  snowCoverage: 0,
   seed: 1,
   colorScale: 0.0,
   tintShadowFloor: 0,
@@ -270,6 +308,10 @@ export const MinValues: PlanetoidRangeValues = {
 }
 
 export const MaxValues: PlanetoidRangeValues = {
+  iceCapCoverage: 1,
+  iceCapEdgeNoise: 1,
+  snowExtent: 0.5,
+  snowCoverage: 1,
   seed: 999999,
   colorScale: 2,
   tintShadowFloor: 0.8,
@@ -316,6 +358,10 @@ export const MaxValues: PlanetoidRangeValues = {
 }
 
 export const StepValues: PlanetoidRangeValues = {
+  iceCapCoverage: 0.01,
+  iceCapEdgeNoise: 0.05,
+  snowExtent: 0.01,
+  snowCoverage: 0.05,
   seed: 1,
   colorScale: 0.1,
   tintShadowFloor: 0.01,
@@ -362,6 +408,26 @@ export const StepValues: PlanetoidRangeValues = {
 }
 
 const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
+  snowExtent: {
+    defaultValue: DefaultValues.snowExtent,
+    min: MinValues.snowExtent,
+    max: MaxValues.snowExtent,
+  },
+  snowCoverage: {
+    defaultValue: DefaultValues.snowCoverage,
+    min: MinValues.snowCoverage,
+    max: MaxValues.snowCoverage,
+  },
+  iceCapCoverage: {
+    defaultValue: DefaultValues.iceCapCoverage,
+    min: MinValues.iceCapCoverage,
+    max: MaxValues.iceCapCoverage,
+  },
+  iceCapEdgeNoise: {
+    defaultValue: DefaultValues.iceCapEdgeNoise,
+    min: MinValues.iceCapEdgeNoise,
+    max: MaxValues.iceCapEdgeNoise,
+  },
   seed: {
     defaultValue: DefaultValues.seed,
     min: MinValues.seed,
@@ -609,6 +675,21 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
     DustCloudStyleNames,
     DefaultValues.dustCloudStyle
   )
+  const rawDustCloudWeights = toRecord(raw.dustCloudWeights)
+  const hasDustCloudWeights = DustCloudStyleNames.some((style) => style in rawDustCloudWeights)
+  const dustCloudWeights = Object.fromEntries(
+    DustCloudStyleNames.map((style) => {
+      const rawWeight = rawDustCloudWeights[style]
+      const fallbackWeight = hasDustCloudWeights
+        ? 0
+        : style === dustCloudStyle
+          ? 1
+          : 0
+      const weight =
+        typeof rawWeight === 'number' && Number.isFinite(rawWeight) ? rawWeight : fallbackWeight
+      return [style, Math.max(0, Math.min(1, weight))]
+    })
+  ) as DustCloudWeights
   const atmospherePalette = sanitizeEnum(
     raw,
     'atmospherePalette',
@@ -618,12 +699,20 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
   const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
   return {
     palette,
+    enableIceCaps: sanitizeBoolean(raw, 'enableIceCaps', DefaultValues.enableIceCaps),
+    iceCapColor: sanitizeHexColor(raw, 'iceCapColor', DefaultValues.iceCapColor),
+    iceCapPalette: sanitizeEnum(raw, 'iceCapPalette', IceCapPaletteNames, DefaultValues.iceCapPalette),
+    iceCapCoverage: numeric.iceCapCoverage,
+    iceCapEdgeNoise: numeric.iceCapEdgeNoise,
+    snowExtent: numeric.snowExtent,
+    snowCoverage: numeric.snowCoverage,
     surfaceTint,
     colorScale: numeric.colorScale,
     tintShadowFloor: numeric.tintShadowFloor,
     swirliness: numeric.swirliness,
     dustCloudCoverage: numeric.dustCloudCoverage,
     dustCloudStyle,
+    dustCloudWeights,
     dustCloudPalette,
     dustCloudOpacity: numeric.dustCloudOpacity,
     dustCloudElevation: numeric.dustCloudElevation,
@@ -707,6 +796,10 @@ export function mergePlanetoidPresetSettings(
 }
 
 export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
+  snowExtent: 'Snow extent',
+  snowCoverage: 'Snow coverage',
+  iceCapCoverage: 'Ice-cap coverage',
+  iceCapEdgeNoise: 'Ice-cap edge breakup',
   seed: 'Seed',
   colorScale: 'Color scale',
   tintShadowFloor: 'Tint shadow floor',
@@ -766,6 +859,9 @@ export const PlanetoidUiLabels = {
   material: 'Material',
   properties: 'Properties',
   features: 'Features',
+  iceCaps: 'Ice caps',
+  iceCapColor: 'Ice tint',
+  iceCapPalette: 'Ice palette',
   dustClouds: 'Dust clouds',
   dustCloudStyle: 'Cloud formation',
   dustCloudPalette: 'Cloud palette',
@@ -780,6 +876,10 @@ export const PlanetoidUiLabels = {
 } as const
 
 export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
+  snowExtent: '--snow-extent',
+  snowCoverage: '--snow-coverage',
+  iceCapCoverage: '--ice-cap-coverage',
+  iceCapEdgeNoise: '--ice-cap-edge-noise',
   seed: '--seed',
   colorScale: '--color-scale',
   tintShadowFloor: '--tint-shadow-floor',
@@ -826,6 +926,7 @@ export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
 }
 
 export const PlanetoidCliToggleFlags = {
+  iceCapsEnabled: '--ice-caps-enabled',
   autoRotate: '--auto-rotate',
   showDebugMeshes: '--show-debug-meshes',
   cratersEnabled: '--craters-enabled',
@@ -837,6 +938,8 @@ export const PlanetoidCliToggleFlags = {
 } as const
 
 export const PlanetoidCliFeatureFlags = {
+  iceCapPalette: '--ice-cap-palette',
+  iceCapColor: '--ice-cap-color',
   dustCloudStyle: '--dust-cloud-style',
   dustCloudPalette: '--dust-cloud-palette',
   atmospherePalette: '--atmosphere-palette',

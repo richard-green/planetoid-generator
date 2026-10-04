@@ -24,7 +24,7 @@ import {
   DustCloudStyleNames,
   MaxValues,
   MinValues,
-  type DustCloudStyle,
+  type DustCloudWeights,
 } from './PlanetoidSettings'
 
 type NoiseOffset = { x: number; y: number; z: number }
@@ -54,6 +54,13 @@ type SurfaceDetailTextureOptions = {
 }
 
 type ColorTextureOptions = {
+  iceCapPalette?: PaletteColor[]
+  enableIceCaps?: boolean
+  iceCapCoverage?: number
+  iceCapEdgeNoise?: number
+  snowExtent?: number
+  snowCoverage?: number
+  iceCapColor?: string
   surfaceTint?: string
   tintShadowFloor?: number
   swirliness?: number
@@ -84,7 +91,7 @@ type ColorTextureOptions = {
 
 type DustCloudTextureOptions = {
   dustCloudCoverage: number
-  dustCloudStyle: DustCloudStyle
+  dustCloudWeights: DustCloudWeights
   dustCloudOpacity: number
   dustCloudFrequency: number
   dustCloudSwirliness: number
@@ -120,10 +127,19 @@ const fragmentShader = `
   uniform vec2 uResolution;
   uniform vec3 uSeed;
   uniform vec3 uTint;
+  uniform int uEnableIceCaps;
+  uniform float uIceCapCoverage;
+  uniform float uIceCapEdgeNoise;
+  uniform float uSnowExtent;
+  uniform float uSnowCoverage;
+  uniform vec3 uIceCapColor;
+  uniform int uIcePaletteSize;
+  uniform vec3 uIcePalette[${MAX_PALETTE}];
+  uniform float uIcePalettePositions[${MAX_PALETTE}];
   uniform float uTintShadowFloor;
   uniform float uSwirliness;
   uniform float uDustCloudCoverage;
-  uniform int uDustCloudStyle;
+  uniform float uDustCloudWeights[5];
   uniform float uDustCloudOpacity;
   uniform float uDustCloudFrequency;
   uniform float uDustCloudSwirliness;
@@ -247,6 +263,27 @@ const fragmentShader = `
     return value / max(1e-6, total);
   }
 
+  vec3 applySeededVortex(vec3 position, vec3 seed, float salt, float strength) {
+    vec3 center = normalize(vec3(
+      hash11(seed.x + salt * 13.1),
+      hash11(seed.y + salt * 29.7),
+      hash11(seed.z + salt * 47.3)
+    ) * 2.0 - 1.0);
+    float radius = acos(clamp(dot(position, center), -1.0, 1.0));
+    vec3 tangent = cross(center, position);
+    float tangentLength = length(tangent);
+
+    if (tangentLength > 1e-4) {
+      float direction = (hash11(seed.y + salt * 61.1) < 0.5) ? -1.0 : 1.0;
+      float width = mix(4.0, 12.0, hash11(seed.z + salt * 83.9));
+      float variation = mix(0.6, 1.35, hash11(seed.x + salt * 97.3));
+      float offset = direction * strength * variation * exp(-radius * radius * width);
+      position = normalize(position + tangent / tangentLength * offset);
+    }
+
+    return position;
+  }
+
   // Sine-free hash (Dave Hoskins) so large seed offsets keep full precision.
   vec3 gradientHash3(vec3 p) {
     p = fract(p * vec3(0.1031, 0.1030, 0.0973));
@@ -334,32 +371,36 @@ const fragmentShader = `
     return ridgeTerm + riftTerm;
   }
 
-  vec3 mapToPalette(float value) {
+  vec3 samplePalette(float value, int paletteSize, vec3 palette[${MAX_PALETTE}], float positions[${MAX_PALETTE}]) {
     float t = clamp((value + 1.0) * 0.5, 0.0, 1.0);
-    int safePaletteSize = max(2, min(uPaletteSize, ${MAX_PALETTE}));
+    int safePaletteSize = max(2, min(paletteSize, ${MAX_PALETTE}));
     int index = 0;
 
     for (int i = 0; i < (${MAX_PALETTE} - 1) * uOne; i++) {
-      if (i < safePaletteSize - 1 && t >= uPalettePositions[i]) index = i;
+      if (i < safePaletteSize - 1 && t >= positions[i]) index = i;
     }
     index = min(index, safePaletteSize - 2);
 
-    vec3 a = uPalette[0];
-    vec3 b = uPalette[1];
-    float startPosition = uPalettePositions[0];
-    float endPosition = uPalettePositions[1];
+    vec3 a = palette[0];
+    vec3 b = palette[1];
+    float startPosition = positions[0];
+    float endPosition = positions[1];
 
     for (int i = 0; i < (${MAX_PALETTE} - 1) * uOne; i++) {
       if (i == index) {
-        a = uPalette[i];
-        b = uPalette[i + 1];
-        startPosition = uPalettePositions[i];
-        endPosition = uPalettePositions[i + 1];
+        a = palette[i];
+        b = palette[i + 1];
+        startPosition = positions[i];
+        endPosition = positions[i + 1];
       }
     }
 
     float localT = clamp((t - startPosition) / max(0.0001, endPosition - startPosition), 0.0, 1.0);
     return mix(a, b, localT);
+  }
+
+  vec3 mapToPalette(float value) {
+    return samplePalette(value, uPaletteSize, uPalette, uPalettePositions);
   }
 
   vec3 rgbToHsv(vec3 c) {
@@ -831,6 +872,17 @@ const fragmentShader = `
   vec4 dustCloudSample(vec2 uv, out float lumps) {
     uv = wrapSurfaceUv(uv);
 
+    float weightWisps = max(0.0, uDustCloudWeights[0]);
+    float weightWorley = max(0.0, uDustCloudWeights[1]);
+    float weightCumulonimbus = max(0.0, uDustCloudWeights[2]);
+    float weightStorm = max(0.0, uDustCloudWeights[3]);
+    float weightStormWorley = max(0.0, uDustCloudWeights[4]);
+    float totalWeight = weightWisps + weightWorley + weightCumulonimbus + weightStorm + weightStormWorley;
+    if (totalWeight < 0.0001) {
+      weightWisps = 1.0;
+      totalWeight = 1.0;
+    }
+
     float theta = uv.x * TAU;
     float phi = uv.y * PI;
 
@@ -867,34 +919,25 @@ const fragmentShader = `
     vec3 cloudPosition = normalize(
       spherePos + cloudWarp * (0.16 * cloudSwirliness) + eastward * (0.12 * coriolis * cloudSwirliness)
     );
-    float cloudShape = fractalNoise(cloudPosition * (7.0 * frequency) + seed * 1.37 + vec3(37.1, 11.9, 53.7));
+    if (weightStorm + weightStormWorley > 0.0) {
+      float vortexStrength = 0.26 * cloudSwirliness;
+      cloudPosition = applySeededVortex(cloudPosition, seed, 1.0, vortexStrength);
+      cloudPosition = applySeededVortex(cloudPosition, seed, 2.0, vortexStrength);
+      cloudPosition = applySeededVortex(cloudPosition, seed, 3.0, vortexStrength);
+    }
+    float cloudMacro = fractalNoise(cloudPosition * (1.5 * frequency) + seed * 1.23 + vec3(31.7, 19.3, 47.1));
+    float cloudShape = fractalNoise(cloudPosition * (5.2 * frequency) + seed * 1.37 + vec3(37.1, 11.9, 53.7));
     float cloudDetail = fractalNoise(cloudPosition * (19.0 * frequency) + seed * 1.91 + vec3(7.3, 61.1, 29.5));
     float cloudWisps = fractalNoise(cloudPosition * (43.0 * frequency) + seed * 2.13 + vec3(23.7, 41.3, 5.9));
-    float wispField = cloudShape + cloudDetail * 0.2 + cloudWisps * 0.06;
+    float cloudMass = cloudMacro * 0.58 + cloudShape * 0.42;
+    float cloudDetailGate = smoothstep(-0.36, 0.32, cloudMass);
+    float cloudFine = cloudDetail * 0.72 + cloudWisps * 0.28;
+    float wispField = cloudMass + cloudFine * mix(0.06, 0.24, cloudDetailGate);
 
-    float ribPhase = (cloudPosition.y * (6.0 + frequency * 5.0) + cloudDetail * 1.8) * PI;
-    float ribField = (1.0 - abs(sin(ribPhase))) * 2.0 - 1.0;
-
-    float curlAngle = cloudDetail * cloudSwirliness * (1.5 + frequency) + coriolis * (2.0 + frequency * 0.25);
-    float curlCos = cos(curlAngle);
-    float curlSin = sin(curlAngle);
-    vec3 curledPosition = normalize(vec3(
-      cloudPosition.x * curlCos - cloudPosition.z * curlSin,
-      cloudPosition.y,
-      cloudPosition.x * curlSin + cloudPosition.z * curlCos
-    ));
-    float curlNoise = fractalNoise(curledPosition * (12.0 * frequency) + seed * 2.31 + vec3(43.7, 17.3, 31.1));
-    float curlSpiral = sin((atan(curledPosition.z, curledPosition.x) * 3.0 + curledPosition.y * 7.0) * frequency + cloudShape * 3.0 + coriolis * 2.0);
-    float curlField = curlNoise * 0.72 + curlSpiral * 0.28;
-
-    float cloudField = wispField;
-    if (uDustCloudStyle == 1) cloudField = mix(wispField, ribField, 0.78);
-    if (uDustCloudStyle == 2) cloudField = mix(wispField, curlField, 0.82);
-    if (uDustCloudStyle == 3) cloudField = wispField * 0.42 + ribField * 0.28 + curlField * 0.3;
-
-    if (uDustCloudStyle == 4) {
-      // Multi-octave 3D Worley evaluated directly on the sphere surface, so the
-      // clumps stay seamless across the UV seam and the poles.
+    float worleyField = 0.0;
+    float worleyErosion = 0.0;
+    float worleyBillow = 0.481;
+    if (weightWorley + weightCumulonimbus + weightStorm + weightStormWorley > 0.0) {
       float worleyBase = worleyFbm(
         cloudPosition * (2.6 * frequency) + seed * 1.53 + vec3(51.3, 9.7, 77.1),
         2.15,
@@ -905,16 +948,70 @@ const fragmentShader = `
         2.3,
         0.5
       );
-      float worleyBillow = clamp(worleyBase * 0.76 + worleyFine * 0.24, 0.0, 1.0);
-      // Averaging octaves clusters the billow tightly around 0.48. Recentre and scale it
-      // to the same spread as the other styles so coverage responds at the same rate.
-      float worleyField = (worleyBillow - 0.481) * 2.65;
-      cloudDetail = (worleyFine - 0.481) * 2.0;
-      cloudField = mix(worleyField, wispField, 0.18);
+      worleyBillow = clamp(worleyBase * 0.76 + worleyFine * 0.24, 0.0, 1.0);
+      worleyField = (worleyBillow - 0.481) * 2.65;
+      worleyErosion = (worleyFine - 0.481) * 2.0;
     }
 
+    float stormField = 0.0;
+    if (weightStorm + weightStormWorley > 0.0) {
+      float stormCoverage = clamp(0.36 + cloudMass * 0.16 + cloudFine * 0.04, 0.0, 0.48);
+      for (int stormIndex = 0; stormIndex < 6 * uOne; stormIndex++) {
+        float stormId = float(stormIndex);
+        vec3 stormCenter = normalize(vec3(
+          hash11(seed.x + 19.1 + stormId * 17.1),
+          hash11(seed.y + 43.7 + stormId * 29.7),
+          hash11(seed.z + 71.3 + stormId * 41.3)
+        ) * 2.0 - 1.0);
+        vec3 stormReference = (abs(stormCenter.y) < 0.95) ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+        vec3 stormEast = normalize(cross(stormReference, stormCenter));
+        vec3 stormNorth = cross(stormCenter, stormEast);
+        float angularDistance = acos(clamp(dot(cloudPosition, stormCenter), -1.0, 1.0));
+        float stormAngle = atan(dot(cloudPosition, stormNorth), dot(cloudPosition, stormEast));
+        float largeStormRadius = mix(0.22, 0.36, hash11(seed.x + stormId * 47.9));
+        float smallStormRadius = mix(0.07, 0.18, hash11(seed.y + stormId * 53.1));
+        float stormRadius = (stormIndex < 2) ? largeStormRadius : smallStormRadius;
+        float boundaryNoise = cloudMacro * 0.24 + cloudShape * 0.24 + cloudFine * 0.12 + worleyField * 0.18;
+        float warpedDistance = angularDistance + boundaryNoise * stormRadius;
+        float stormEnvelope = 1.0 - smoothstep(stormRadius * 0.3, stormRadius, warpedDistance);
+        float swirlChance = step(0.58, hash11(seed.z + stormId * 61.7));
+        float swirlBand = 0.5 + 0.5 * sin(
+          stormAngle * mix(2.0, 5.0, hash11(seed.x + stormId * 67.3)) +
+          angularDistance * mix(14.0, 38.0, hash11(seed.y + stormId * 73.9)) +
+          cloudDetail * 2.2
+        );
+        float billowShape = clamp(0.53 + cloudMass * 0.22 + cloudFine * 0.16 + worleyField * 0.14, 0.0, 1.0);
+        float stormShape = mix(billowShape, swirlBand, swirlChance);
+        float stormStrength = mix(0.82, 1.0, hash11(seed.x + stormId * 79.1));
+        stormCoverage = max(stormCoverage, stormEnvelope * stormShape * stormStrength);
+      }
+      float stormInterior = smoothstep(0.4, 0.66, stormCoverage);
+      float stormMidDetail = cloudShape * 0.24 + worleyField * 0.24;
+      float stormFineDetail = cloudFine * 0.2 + worleyErosion * 0.12;
+      float stormDetail = stormInterior * (stormMidDetail + stormFineDetail);
+      stormField = stormCoverage * 2.2 - 0.82 + stormDetail;
+    }
+
+    float worleyCloudField = mix(worleyField, wispField, 0.18);
+    float cumulonimbusField = wispField * 0.18 + worleyField * 0.62 + cloudMacro * 0.2 - abs(worleyErosion) * 0.12;
+    float stormCloudField = stormField - abs(worleyErosion) * 0.08;
+    float stormCellMask = smoothstep(-0.35, 0.35, worleyField);
+    float stormWorleyField = stormField * mix(0.2, 1.8, stormCellMask);
+    float cloudField = (
+      weightWisps * wispField +
+      weightWorley * worleyCloudField +
+      weightCumulonimbus * cumulonimbusField +
+      weightStorm * stormCloudField +
+      weightStormWorley * stormWorleyField
+    ) / totalWeight;
+
     float threshold = mix(0.76, -0.3, coverage);
+    threshold -= 0.06 * (weightStorm + weightStormWorley) / totalWeight;
     float coverageMask = smoothstep(threshold, threshold + 0.2, cloudField);
+    float stormWorleyShare = weightStormWorley / totalWeight;
+    float cellThreshold = mix(0.2, -0.45, coverage);
+    float cellEdge = mix(0.55, -0.15, coverage);
+    coverageMask *= mix(1.0, smoothstep(cellThreshold, cellEdge, worleyField), stormWorleyShare);
     float cloudAlpha = coverageMask * clamp(uDustCloudOpacity, 0.0, 1.0);
 
     lumps = fractalNoise(cloudPosition * (13.0 * frequency) + seed * 2.71 + vec3(67.3, 5.1, 89.7));
@@ -1109,6 +1206,59 @@ const fragmentShader = `
       finalColor = (finalColor - 0.5) * contrastBoost + 0.5;
     }
 
+    if (uEnableIceCaps == 1 && uIceCapCoverage > 0.0) {
+      float latitude = abs(spherePos.y);
+      vec3 capWarp = vec3(
+        perlin3(spherePos * 3.0 + seed * 0.31),
+        perlin3(spherePos * 3.0 + seed * 0.53 + vec3(17.3, 5.1, 29.7)),
+        perlin3(spherePos * 3.0 + seed * 0.71 + vec3(7.9, 31.5, 11.3))
+      );
+      vec3 capDomain = spherePos * 5.0 + capWarp * 2.5 + seed * 0.43;
+      float broadNoise = perlin3(capDomain) * 0.5
+        + perlin3(capDomain * 2.3 + vec3(19.1, 7.3, 41.7)) * 0.32
+        + perlin3(capDomain * 4.7 + vec3(3.7, 23.9, 13.1)) * 0.18;
+      broadNoise = clamp(broadNoise * 3.0, -1.0, 1.0);
+      float gapRidges = pow(clamp(1.0 - abs(perlin3(capDomain * 1.7)) * 3.0, 0.0, 1.0), 4.0);
+      float gapRegions = smoothstep(-0.15, 0.2, perlin3(capDomain * 0.8 + seed * 0.59));
+      float broadExtent = min(0.6, uIceCapCoverage * 2.4) * uIceCapEdgeNoise;
+      float poleTaper = clamp((1.0 - latitude) / (uIceCapCoverage * 0.35), 0.0, 1.0);
+      float capShapeOffset = (broadNoise - gapRidges * gapRegions * 0.8) * broadExtent * poleTaper;
+      float coastNoise = perlin3(spherePos * 9.0 + seed);
+      float fineNoise = perlin3(spherePos * 35.0 + seed * 1.37);
+      float microNoise = perlin3(spherePos * 80.0 + seed * 2.19);
+      vec3 flowDomain = spherePos * vec3(24.0, 4.0, 24.0) + seed;
+      flowDomain += vec3(coastNoise, fineNoise, coastNoise) * 1.5;
+      float flowRidges = pow(clamp(1.0 - abs(perlin3(flowDomain)) * 3.0, 0.0, 1.0), 6.0);
+      float flowRegions = smoothstep(-0.15, 0.25, perlin3(spherePos * 6.0 + seed * 0.71));
+      float edgeNoise = coastNoise * 0.7 + fineNoise * 0.2 + microNoise * 0.1;
+      float glacierFlows = flowRidges * flowRegions;
+      float edgeExtent = min(0.18, uIceCapCoverage * 0.8) * uIceCapEdgeNoise;
+      float iceLatitude = latitude + capShapeOffset
+        + (edgeNoise + glacierFlows) * edgeExtent * (1.0 - latitude * latitude);
+      float boundary = 1.0 - uIceCapCoverage;
+      float iceMask = uIceCapCoverage >= 1.0
+        ? 1.0
+        : step(boundary, iceLatitude);
+      float iceValue = clamp(broadNoise * 0.55 + coastNoise * 0.6 + fineNoise * 0.3
+        + microNoise * 0.15 + glacierFlows * 0.25, -1.0, 1.0);
+      vec3 iceColor = samplePalette(iceValue, uIcePaletteSize, uIcePalette, uIcePalettePositions);
+      if (uSnowExtent > 0.0 && uSnowCoverage > 0.0 && iceMask < 1.0) {
+        float snowDistance = max(0.0, boundary - iceLatitude);
+        float snowFalloff = 1.0 - smoothstep(0.0, uSnowExtent, snowDistance);
+        vec3 snowDomain = spherePos * 18.0 + capWarp * 3.0 + seed * 1.91;
+        float snowNoise = perlin3(snowDomain) * 0.65
+          + perlin3(snowDomain * 3.1 + vec3(31.7, 9.3, 47.1)) * 0.35;
+        float snowField = clamp(0.5 + snowNoise * 1.8, 0.0, 1.0);
+        float snowThreshold = mix(1.15, -0.15, uSnowCoverage);
+        float snowPatches = smoothstep(snowThreshold - 0.15, snowThreshold + 0.15, snowField);
+        float snowMask = snowPatches * snowFalloff * 0.9;
+        float snowValue = clamp(0.45 + snowNoise * 0.7, -1.0, 1.0);
+        vec3 snowColor = samplePalette(snowValue, uIcePaletteSize, uIcePalette, uIcePalettePositions);
+        finalColor = mix(finalColor, snowColor * uIceCapColor, snowMask);
+      }
+      finalColor = mix(finalColor, iceColor * uIceCapColor, iceMask);
+    }
+
     if (uDebugMidline == 1) {
       if (debugEquator) {
         finalColor = vec3(1.0, 0.0, 0.0);
@@ -1139,10 +1289,21 @@ const material = new ShaderMaterial({
     uResolution: new Uniform(new Vector2(512, 256)),
     uSeed: new Uniform(new Vector3()),
     uTint: new Uniform(new Vector3(1, 1, 1)),
+    uEnableIceCaps: new Uniform(0),
+    uIceCapCoverage: new Uniform(DefaultValues.iceCapCoverage),
+    uIceCapEdgeNoise: new Uniform(DefaultValues.iceCapEdgeNoise),
+    uSnowExtent: new Uniform(DefaultValues.snowExtent),
+    uSnowCoverage: new Uniform(DefaultValues.snowCoverage),
+    uIceCapColor: new Uniform(new Vector3(1, 1, 1)),
+    uIcePaletteSize: new Uniform(2),
+    uIcePalette: new Uniform(Array.from({ length: MAX_PALETTE }, () => new Vector3(1, 1, 1))),
+    uIcePalettePositions: new Uniform(Array.from({ length: MAX_PALETTE }, () => 1)),
     uTintShadowFloor: new Uniform(0.18),
     uSwirliness: new Uniform(1),
     uDustCloudCoverage: new Uniform(DefaultValues.dustCloudCoverage),
-    uDustCloudStyle: new Uniform(DustCloudStyleNames.indexOf(DefaultValues.dustCloudStyle)),
+    uDustCloudWeights: new Uniform(
+      DustCloudStyleNames.map((style) => DefaultValues.dustCloudWeights[style])
+    ),
     uDustCloudOpacity: new Uniform(DefaultValues.dustCloudOpacity),
     uDustCloudFrequency: new Uniform(DefaultValues.dustCloudFrequency),
     uDustCloudSwirliness: new Uniform(DefaultValues.dustCloudSwirliness),
@@ -1246,9 +1407,9 @@ function parseHexTint(value: string | undefined) {
   return srgbToLinearVector(r, g, b)
 }
 
-function setPaletteUniform(palette: PaletteColor[]) {
-  const paletteVectors = material.uniforms.uPalette.value as Vector3[]
-  const palettePositions = material.uniforms.uPalettePositions.value as number[]
+function setPaletteUniform(palette: PaletteColor[], uniformName: 'uPalette' | 'uIcePalette' = 'uPalette') {
+  const paletteVectors = material.uniforms[uniformName].value as Vector3[]
+  const palettePositions = material.uniforms[`${uniformName}Positions`].value as number[]
 
   for (let i = 0; i < MAX_PALETTE; i++) {
     const sourceIndex = Math.min(i, Math.max(0, palette.length - 1))
@@ -1263,7 +1424,7 @@ function setPaletteUniform(palette: PaletteColor[]) {
     palettePositions[i] = getPalettePosition(palette, sourceIndex)
   }
 
-  material.uniforms.uPaletteSize.value = Math.max(2, Math.min(MAX_PALETTE, palette.length))
+  material.uniforms[`${uniformName}Size`].value = Math.max(2, Math.min(MAX_PALETTE, palette.length))
 }
 
 const TEXTURE_MODE_NAMES = {
@@ -1282,11 +1443,18 @@ function renderTexture(
   height: number,
   noiseOffset: NoiseOffset,
   options: {
+    iceCapPalette?: PaletteColor[]
+    enableIceCaps?: boolean
+    iceCapCoverage?: number
+    iceCapEdgeNoise?: number
+    snowExtent?: number
+    snowCoverage?: number
+    iceCapColor?: string
     surfaceTint?: string
     tintShadowFloor?: number
     swirliness?: number
     dustCloudCoverage?: number
-    dustCloudStyle?: number
+    dustCloudWeights?: DustCloudWeights
     dustCloudOpacity?: number
     dustCloudFrequency?: number
     dustCloudSwirliness?: number
@@ -1325,6 +1493,33 @@ function renderTexture(
   material.uniforms.uSeed.value.set(noiseOffset.x, noiseOffset.y, noiseOffset.z)
   const tint = parseHexTint(options.surfaceTint)
   material.uniforms.uTint.value.copy(tint)
+  material.uniforms.uEnableIceCaps.value = options.enableIceCaps ? 1 : 0
+  material.uniforms.uIceCapCoverage.value = toClampedNumber(
+    options.iceCapCoverage,
+    DefaultValues.iceCapCoverage,
+    MinValues.iceCapCoverage,
+    MaxValues.iceCapCoverage
+  )
+  material.uniforms.uIceCapEdgeNoise.value = toClampedNumber(
+    options.iceCapEdgeNoise,
+    DefaultValues.iceCapEdgeNoise,
+    MinValues.iceCapEdgeNoise,
+    MaxValues.iceCapEdgeNoise
+  )
+  material.uniforms.uIceCapColor.value.copy(parseHexTint(options.iceCapColor ?? DefaultValues.iceCapColor))
+  material.uniforms.uSnowExtent.value = toClampedNumber(
+    options.snowExtent,
+    DefaultValues.snowExtent,
+    MinValues.snowExtent,
+    MaxValues.snowExtent
+  )
+  material.uniforms.uSnowCoverage.value = toClampedNumber(
+    options.snowCoverage,
+    DefaultValues.snowCoverage,
+    MinValues.snowCoverage,
+    MaxValues.snowCoverage
+  )
+  setPaletteUniform(options.iceCapPalette ?? [{ r: 255, g: 255, b: 255 }], 'uIcePalette')
   material.uniforms.uTintShadowFloor.value = toClampedNumber(
     options.tintShadowFloor,
     DefaultValues.tintShadowFloor,
@@ -1343,7 +1538,14 @@ function renderTexture(
     MinValues.dustCloudCoverage,
     MaxValues.dustCloudCoverage
   )
-  material.uniforms.uDustCloudStyle.value = options.dustCloudStyle ?? 0
+  material.uniforms.uDustCloudWeights.value = DustCloudStyleNames.map((style) =>
+    toClampedNumber(
+      options.dustCloudWeights?.[style],
+      DefaultValues.dustCloudWeights[style],
+      0,
+      1
+    )
+  )
   material.uniforms.uDustCloudOpacity.value = toClampedNumber(
     options.dustCloudOpacity,
     DefaultValues.dustCloudOpacity,
@@ -1555,6 +1757,13 @@ export function createPlanetoidColorTexture(
   const width = height * 2
 
   const texture = renderTexture(renderer, 0, width, height, noiseOffset, {
+    iceCapPalette: options.iceCapPalette,
+    enableIceCaps: options.enableIceCaps,
+    iceCapCoverage: options.iceCapCoverage,
+    iceCapEdgeNoise: options.iceCapEdgeNoise,
+    snowExtent: options.snowExtent,
+    snowCoverage: options.snowCoverage,
+    iceCapColor: options.iceCapColor,
     surfaceTint: options.surfaceTint,
     tintShadowFloor: options.tintShadowFloor,
     swirliness: options.swirliness,
@@ -1601,11 +1810,11 @@ export function createPlanetoidDustCloudTexture(
   const width = height * 2
   const texture = renderTexture(renderer, 5, width, height, noiseOffset, {
     dustCloudCoverage: options.dustCloudCoverage,
+    dustCloudWeights: options.dustCloudWeights,
     dustCloudOpacity: options.dustCloudOpacity,
     dustCloudFrequency: options.dustCloudFrequency,
     dustCloudSwirliness: options.dustCloudSwirliness,
     dustCloudCoriolis: options.dustCloudCoriolis,
-    dustCloudStyle: DustCloudStyleNames.indexOf(options.dustCloudStyle),
     dustCloudRelief: options.dustCloudRelief,
     swirliness: options.swirliness,
     palette: options.palette,
@@ -1627,11 +1836,11 @@ export function createPlanetoidDustCloudNormalTexture(
   const width = height * 2
   const texture = renderTexture(renderer, 6, width, height, noiseOffset, {
     dustCloudCoverage: options.dustCloudCoverage,
+    dustCloudWeights: options.dustCloudWeights,
     dustCloudOpacity: options.dustCloudOpacity,
     dustCloudFrequency: options.dustCloudFrequency,
     dustCloudSwirliness: options.dustCloudSwirliness,
     dustCloudCoriolis: options.dustCloudCoriolis,
-    dustCloudStyle: DustCloudStyleNames.indexOf(options.dustCloudStyle),
     swirliness: options.swirliness,
   })
 
