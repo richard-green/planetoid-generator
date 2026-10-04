@@ -91,7 +91,7 @@ This helper runs curated gas giant profiles and advances start seeds between eac
 
 ## Example outputs
 
-Generated examples from `public/generated`:
+Generated examples from `public/examples`:
 
 ![Asteroid example](public/examples/generated-planetoid-20261004-132451.jpg)
 
@@ -101,7 +101,7 @@ Generated examples from `public/generated`:
 
 ![White dwarf star example](public/examples/generated-star-20261004-122750.jpg)
 
-![Gas giant example](public/examples/generated-gas-giant-20261004-132734)
+![Gas giant example](public/examples/generated-gas-giant-20261004-132734.jpg)
 
 ![Toxic planet example](public/examples/generated-planetoid-20261004-132429.jpg)
 
