@@ -15,6 +15,7 @@ export const GasGiantPaletteNames = [
   'citrineCreamFlare',
   'tealIndigoLime',
   'amberIvoryCopper',
+  'causticEmber',
 ] as const
 
 export type GasGiantPaletteName = (typeof GasGiantPaletteNames)[number]
@@ -173,5 +174,14 @@ export const GasGiantPalettes: Record<GasGiantPaletteName, Palette> = {
     { r: 246, g: 222, b: 174 },
     { r: 208, g: 144, b: 86 },
     { r: 150, g: 86, b: 52 },
+  ],
+  causticEmber: [
+    { r: 10, g: 30, b: 6 },
+    { r: 29, g: 72, b: 8 },
+    { r: 65, g: 122, b: 10 },
+    { r: 139, g: 191, b: 8 },
+    { r: 210, g: 246, b: 22 },
+    { r: 151, g: 209, b: 12 },
+    { r: 239, g: 112, b: 14 },
   ],
 }

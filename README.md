@@ -18,7 +18,8 @@ https://rdgreen.dev/planetoids/
 - Patchy snow fringes beyond the ice boundary, with snow extent and coverage controls
 - Multiple view modes for output workflows (including texture and normal views)
 - Presets and seed-based generation for repeatable results
-- Scriptable batch generation using Playwright
+- Gas giant (with rings) and star generators alongside planetoids
+- Scriptable batch generation using Playwright, with CLI commands exportable from the UI
 
 ## Requirements
 
@@ -37,9 +38,9 @@ npm install
 npm run dev
 ```
 
-Open the planetoid page at:
+Open the app at:
 
-- `http://127.0.0.1:5173/planetoids`
+- `http://127.0.0.1:5173/` (pages: `#/planetoids`, `#/giants`, `#/stars`, `#/system`)
 
 ## Production build
 
@@ -49,45 +50,15 @@ npm run build
 
 ## Scripted auto-generation (Playwright)
 
-This repo includes a Playwright-driven generator script that controls the SPA in a browser and captures output images.
-
-### Run one batch directly
+Batch-generate planetoids, gas giants, and stars from the command line:
 
 ```bash
-npm run auto-generate-planetoids -- --count 10 --seed 1 --step 1 --view-mode texture
+npm run auto-generate-planetoids -- --count 10 --seed 1
 ```
 
-Gas giant equivalent:
-
-```bash
-npm run auto-generate-gas-giants -- --count 10 --seed 1 --step 1 --palette jovianBands
-```
-
-Common options:
-
-- `--view-mode mesh|normal|texture|ray`
-- `--palette <name>`
-- `--surface-tint <hex>`
-- Planetoid ice caps: `--ice-caps-enabled true --ice-cap-coverage 0.18 --ice-cap-edge-noise 0.5 --ice-cap-palette glacial --ice-cap-color "#ffffff"`
-- Snow fringe: add `--snow-extent 0.08 --snow-coverage 0.55` to an ice-cap batch; extent `0` disables snow
-- `--output-dir <path>`
-- `--base-url <url>` (defaults to `http://127.0.0.1:5173/planetoids`)
-
-### Use the PowerShell batch helper
-
-```powershell
-./regenerate-planetoids.ps1
-```
-
-This helper runs multiple generation batches with different palette/settings profiles.
-
-For gas giants:
-
-```powershell
-./regenerate-giants.ps1
-```
-
-This helper runs curated gas giant profiles and advances start seeds between each batch.
+Any configuration you build in the UI can be exported as a ready-to-run command via
+**Presets → Copy current as CLI command**. See [scripts/README.md](scripts/README.md) for all
+options, camera controls, and examples.
 
 ## Example outputs
 
@@ -104,8 +75,3 @@ Generated examples from `public/examples`:
 ![Gas giant example](public/examples/generated-gas-giant-20261004-132734.jpg)
 
 ![Toxic planet example](public/examples/generated-planetoid-20261004-132429.jpg)
-
-## Notes
-
-- Auto-generation expects the app to be reachable at the configured `--base-url`.
-- Default output directory for the script is `public/generated/planetoid`.

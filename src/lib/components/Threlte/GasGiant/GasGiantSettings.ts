@@ -35,6 +35,7 @@ export type GasGiantSettings = RingSettings & {
   cloudBandCount: number
   cloudBandSharpness: number
   cloudChaos: number
+  cloudTurbulence: number
   enableStorms: boolean
   stormCount: number
   stormScale: number
@@ -80,6 +81,7 @@ export const DefaultValues: GasGiantSettings = {
   cloudBandCount: 6,
   cloudBandSharpness: 0.2,
   cloudChaos: 0.6,
+  cloudTurbulence: 0,
   enableStorms: true,
   stormCount: 2,
   stormScale: 0.1,
@@ -207,6 +209,15 @@ export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> =
     section: 'cloudBands',
     min: 0,
     max: 2,
+    step: 0.01,
+  },
+  cloudTurbulence: {
+    kind: 'number',
+    label: 'Cloud turbulence',
+    cliFlag: '--cloud-turbulence',
+    section: 'cloudBands',
+    min: 0,
+    max: 1,
     step: 0.01,
   },
   enableStorms: {

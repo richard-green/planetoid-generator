@@ -552,6 +552,7 @@
             cloudBandCount={gasGiant.cloudBandCount}
             cloudBandSharpness={gasGiant.cloudBandSharpness}
             cloudChaos={gasGiant.cloudChaos}
+            cloudTurbulence={gasGiant.cloudTurbulence}
             enableStorms={effectiveStormsEnabled}
             stormCount={gasGiant.stormCount}
             stormScale={gasGiant.stormScale}

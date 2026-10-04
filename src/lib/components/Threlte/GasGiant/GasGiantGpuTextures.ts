@@ -31,6 +31,7 @@ export type GasGiantTextureOptions = {
   cloudBandCount?: number
   cloudBandSharpness?: number
   cloudChaos?: number
+  cloudTurbulence?: number
   stormCount?: number
   stormScale?: number
   stormPower?: number
@@ -62,6 +63,7 @@ const fragmentShader = `
   uniform float uBandCount;
   uniform float uBandSharpness;
   uniform float uCloudChaos;
+  uniform float uCloudTurbulence;
   uniform float uStormCount;
   uniform float uStormScale;
   uniform float uStormPower;
@@ -302,6 +304,11 @@ const fragmentShader = `
       dot(warpedSpherePos, vec3(0.56, 0.00, 0.83)),
       dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
     );
+    float turbulence = clamp(uCloudTurbulence, 0.0, 1.0);
+    distortedUv = vec2(
+      fract(distortedUv.x + (warpY - warpZ) * turbulence * 0.38),
+      clamp(distortedUv.y + (warpZ - warpX) * turbulence * 0.22, 0.0, 1.0)
+    );
     vec2 cloudSignals = cloudBandSignals(distortedUv, remappedPos, seed);
     float chaosNorm = clamp(uCloudChaos, 0.0, 2.0) * 0.5;
     float latWarpLow = fractalNoise(
@@ -382,6 +389,11 @@ const fragmentShader = `
       dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
     );
 
+    float turbulence = clamp(uCloudTurbulence, 0.0, 1.0);
+    distortedUv = vec2(
+      fract(distortedUv.x + (warpY - warpZ) * turbulence * 0.38),
+      clamp(distortedUv.y + (warpZ - warpX) * turbulence * 0.22, 0.0, 1.0)
+    );
     vec2 cloudSignals = cloudBandSignals(distortedUv, remappedPos, seed);
     float broadBands = cloudSignals.x;
     float filigree = cloudSignals.y;
@@ -522,6 +534,7 @@ const material = new ShaderMaterial({
     uBandCount: new Uniform(10),
     uBandSharpness: new Uniform(0.5),
     uCloudChaos: new Uniform(0.65),
+    uCloudTurbulence: new Uniform(0),
     uStormCount: new Uniform(8),
     uStormScale: new Uniform(0.18),
     uStormPower: new Uniform(2.2),
@@ -664,6 +677,12 @@ function renderTexture(
     DefaultValues.cloudChaos,
     MinValues.cloudChaos,
     MaxValues.cloudChaos
+  )
+  material.uniforms.uCloudTurbulence.value = toClampedNumber(
+    options.cloudTurbulence,
+    DefaultValues.cloudTurbulence,
+    MinValues.cloudTurbulence,
+    MaxValues.cloudTurbulence
   )
   material.uniforms.uStormCount.value = toClampedNumber(
     options.stormCount,
