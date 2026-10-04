@@ -5,6 +5,7 @@
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
+  import { applyCameraView, readCameraView, type CameraView } from '../../utils/cameraView'
   import Planetoid from './Planetoid/Planetoid.svelte'
   import { DefaultValues, type PlanetoidViewMode } from './Planetoid/PlanetoidSettings'
   import type { DustCloudWeights } from './Planetoid/PlanetoidSettings'
@@ -249,7 +250,7 @@
     },
   }
 
-  const { camera, renderer, scene } = useThrelte()
+  const { camera, renderer, scene, invalidate } = useThrelte()
 
   interactivity()
 
@@ -339,6 +340,16 @@
 
   export function downloadScenePng(fileName = 'planetoid-render.png') {
     return downloadScenePngFile(renderer, scene, $camera, fileName)
+  }
+
+  export function setCameraView(view: CameraView) {
+    if (!controlsRef) return
+    applyCameraView($camera, controlsRef, view)
+    invalidate()
+  }
+
+  export function getCameraView(): CameraView | undefined {
+    return controlsRef ? readCameraView($camera, controlsRef) : undefined
   }
 </script>
 

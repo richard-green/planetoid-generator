@@ -10,6 +10,10 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
+  import { registerSettingsAutomation } from '../lib/automation'
+  import type { CameraView } from '../lib/utils/cameraView'
+  import { downloadPresetJson } from '../lib/utils/downloadJson'
+  import { fileTimestamp as getTimestamp } from '../lib/utils/fileTimestamp'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import ColorPicker from '../lib/components/Controls/ColorPicker.svelte'
@@ -37,16 +41,16 @@
     AtmospherePalettes,
   } from '../lib/components/Threlte/Atmosphere/AtmospherePalettes'
   import {
+    buildPlanetoidCliCommand,
     DefaultValues,
     DustCloudStyleLabels,
     DustCloudStyleNames,
     MaxValues,
     MinValues,
     mergePlanetoidPresetSettings,
-    PlanetoidCliFlagByRangeKey,
-    PlanetoidCliFeatureFlags,
-    PlanetoidCliToggleFlags,
+    PlanetoidNumericControls as controls,
     PlanetoidRangeLabels,
+    PlanetoidSchema as schema,
     PlanetoidViewModeLabels,
     PlanetoidViewModeNames,
     sanitizePlanetoidPresetSettings,
@@ -58,32 +62,13 @@
     toPlanetoidPresetSettings,
     type PlanetoidViewMode,
   } from '../lib/components/Threlte/Planetoid/PlanetoidSettings'
+  import {
+    reportMissingSettingControls,
+    settingControlId as controlId,
+  } from '../lib/types/settingsSchema'
   import { BUILTIN_PRESETS, type PlanetoidPreset } from '../presets/Planetoids'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
-
-  type NumericControlKey = Exclude<
-    keyof PlanetoidSettings,
-    | 'palette'
-    | 'surfaceTint'
-    | 'iceCapColor'
-    | 'iceCapPalette'
-    | 'enableIceCaps'
-    | 'autoRotate'
-    | 'showDebugMeshes'
-    | 'enableCraters'
-    | 'enableRidges'
-    | 'enableRifts'
-    | 'enableVolcanoes'
-    | 'enableDustClouds'
-    | 'enableAtmosphere'
-    | 'normalTextureSize'
-    | 'colorTextureSize'
-    | 'dustCloudPalette'
-    | 'dustCloudStyle'
-    | 'dustCloudWeights'
-    | 'atmospherePalette'
-  >
 
   const PLANETOID_SETTINGS_STORAGE_KEY = 'planetoid-view-settings-v1'
   const PLANETOID_UI_STORAGE_KEY = 'planetoid-view-ui-v1'
@@ -108,62 +93,12 @@
 
   const DEFAULT_VALUES: PlanetoidSettings = { ...DefaultValues }
 
-  const textureControls: NumericControlKey[] = [
-    'iceCapCoverage',
-    'iceCapEdgeNoise',
-    'snowExtent',
-    'snowCoverage',
-    'colorScale',
-    'tintShadowFloor',
-    'swirliness',
-    'dustCloudCoverage',
-    'dustCloudOpacity',
-    'dustCloudElevation',
-    'dustCloudFrequency',
-    'dustCloudSwirliness',
-    'dustCloudCoriolis',
-    'dustCloudNormalStrength',
-    'atmosphereIntensity',
-    'atmosphereThickness',
-    'atmosphereDropoff',
-    'atmosphereTerminatorWrap',
-    'normalStrength',
-    'craterCount',
-    'craterScale',
-    'craterStrength',
-    'craterSharpness',
-    'craterColorStrength',
-    'volcanoCount',
-    'volcanoScale',
-    'volcanoStrength',
-    'volcanoColorStrength',
-    'ridgeStrength',
-    'ridgeFrequency',
-    'ridgeSharpness',
-    'ridgeColorWeight',
-    'riftStrength',
-    'riftFrequency',
-    'riftWidth',
-    'riftSharpness',
-    'riftColorWeight',
-    'ridgesRiftsBlend',
-    'roughness',
-    'metalness',
-  ]
-
-  const geometryControls: NumericControlKey[] = [
-    'largeScale',
-    'mediumScale',
-    'smallScale',
-    'mediumFrequency',
-    'smallFrequency',
-    'triangleDetail',
-  ]
-
   let planetoid = $state<PlanetoidSettings>({ ...DEFAULT_VALUES })
   let settingsHydrated = $state(false)
 
   type PlanetoidSceneExports = {
+    setCameraView: (view: CameraView) => void
+    getCameraView: () => CameraView | undefined
     downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
@@ -187,12 +122,6 @@
   let riftSectionOpen = $state(true)
   let dustCloudSectionOpen = $state(true)
   let iceCapSectionOpen = $state(false)
-  const iceCapControls: NumericControlKey[] = [
-    'iceCapCoverage',
-    'iceCapEdgeNoise',
-    'snowExtent',
-    'snowCoverage',
-  ]
   let atmosphereSectionOpen = $state(true)
   let textureResolutionSectionOpen = $state(false)
   let materialPropertiesSectionOpen = $state(true)
@@ -203,66 +132,6 @@
   let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
   let presetsManagerOpen = $state(false)
   let userPresets = $state<PlanetoidPreset[]>([])
-
-  const colorControlKeys: NumericControlKey[] = ['colorScale', 'tintShadowFloor', 'swirliness']
-  const materialControlKeys: NumericControlKey[] = ['normalStrength', 'roughness', 'metalness']
-  const craterControlKeys: NumericControlKey[] = [
-    'craterCount',
-    'craterScale',
-    'craterStrength',
-    'craterSharpness',
-    'craterColorStrength',
-  ]
-  const volcanoControlKeys: NumericControlKey[] = [
-    'volcanoCount',
-    'volcanoScale',
-    'volcanoStrength',
-    'volcanoColorStrength',
-  ]
-  const ridgeControlKeys: NumericControlKey[] = [
-    'ridgeStrength',
-    'ridgeFrequency',
-    'ridgeSharpness',
-    'ridgeColorWeight',
-    'ridgesRiftsBlend',
-  ]
-  const riftControlKeys: NumericControlKey[] = [
-    'riftStrength',
-    'riftFrequency',
-    'riftWidth',
-    'riftSharpness',
-    'riftColorWeight',
-  ]
-  const dustCloudControlKeys: NumericControlKey[] = [
-    'dustCloudCoverage',
-    'dustCloudOpacity',
-    'dustCloudElevation',
-    'dustCloudFrequency',
-    'dustCloudSwirliness',
-    'dustCloudCoriolis',
-    'dustCloudNormalStrength',
-  ]
-  const atmosphereControlKeys: NumericControlKey[] = [
-    'atmosphereIntensity',
-    'atmosphereThickness',
-    'atmosphereDropoff',
-    'atmosphereTerminatorWrap',
-  ]
-
-  const colorControls = textureControls.filter((control) => colorControlKeys.includes(control))
-  const materialControls = textureControls.filter((control) =>
-    materialControlKeys.includes(control)
-  )
-  const craterControls = textureControls.filter((control) => craterControlKeys.includes(control))
-  const volcanoControls = textureControls.filter((control) => volcanoControlKeys.includes(control))
-  const ridgeControls = textureControls.filter((control) => ridgeControlKeys.includes(control))
-  const riftControls = textureControls.filter((control) => riftControlKeys.includes(control))
-  const dustCloudControls = textureControls.filter((control) =>
-    dustCloudControlKeys.includes(control)
-  )
-  const atmosphereControls = textureControls.filter((control) =>
-    atmosphereControlKeys.includes(control)
-  )
 
   const effectiveCratersEnabled = $derived(cratersEnabled)
   const volcanoSectionEnabled = $derived(volcanoesEnabled)
@@ -300,7 +169,7 @@
     }
   }
 
-  function applyPlanetoidSettings(settings: PlanetoidSettings) {
+  function applyPlanetoidSettings(settings: unknown) {
     planetoid = sanitizePlanetoidSettings(settings)
     cratersEnabled = planetoid.enableCraters
     volcanoesEnabled = planetoid.enableVolcanoes
@@ -355,14 +224,6 @@
     presetsManagerOpen = true
   }
 
-  function quoteCliValue(value: string) {
-    return JSON.stringify(value)
-  }
-
-  function toBooleanCliValue(value: boolean) {
-    return value ? 'true' : 'false'
-  }
-
   function buildCliCommandFromPreset(
     settings: PlanetoidSettings,
     exportTextures: boolean,
@@ -373,56 +234,17 @@
       volcanoesEnabled: boolean
     }
   ) {
-    const args: string[] = [
-      '--palette',
-      quoteCliValue(settings.palette),
-      '--surface-tint',
-      quoteCliValue(settings.surfaceTint),
-      PlanetoidCliFeatureFlags.iceCapColor,
-      quoteCliValue(settings.iceCapColor),
-      PlanetoidCliFeatureFlags.iceCapPalette,
-      settings.iceCapPalette,
-      PlanetoidCliFeatureFlags.dustCloudStyle,
-      settings.dustCloudStyle,
-      PlanetoidCliFeatureFlags.dustCloudPalette,
-      settings.dustCloudPalette,
-      PlanetoidCliFeatureFlags.atmospherePalette,
-      settings.atmospherePalette,
-    ]
-
-    if (exportTextures) args.push('--export-textures')
-
-    const numericKeys = (Object.keys(PlanetoidCliFlagByRangeKey) as PlanetoidRangeKey[]).filter(
-      (key) => key !== 'seed'
+    return buildPlanetoidCliCommand(
+      {
+        ...settings,
+        enableCraters: toggles.cratersEnabled,
+        enableRidges: toggles.ridgesEnabled,
+        enableRifts: toggles.riftsEnabled,
+        enableVolcanoes: toggles.volcanoesEnabled,
+      },
+      exportTextures,
+      planetoidScene?.getCameraView()
     )
-
-    for (const key of numericKeys) {
-      const flag = PlanetoidCliFlagByRangeKey[key]
-      const value = settings[key]
-      args.push(flag, String(value))
-    }
-
-    args.push(PlanetoidCliToggleFlags.autoRotate, toBooleanCliValue(settings.autoRotate))
-    args.push(PlanetoidCliToggleFlags.iceCapsEnabled, toBooleanCliValue(settings.enableIceCaps))
-    args.push(PlanetoidCliToggleFlags.showDebugMeshes, toBooleanCliValue(settings.showDebugMeshes))
-    args.push(PlanetoidCliToggleFlags.cratersEnabled, toBooleanCliValue(toggles.cratersEnabled))
-    args.push(PlanetoidCliToggleFlags.ridgesEnabled, toBooleanCliValue(toggles.ridgesEnabled))
-    args.push(PlanetoidCliToggleFlags.riftsEnabled, toBooleanCliValue(toggles.riftsEnabled))
-    args.push(PlanetoidCliToggleFlags.volcanoesEnabled, toBooleanCliValue(toggles.volcanoesEnabled))
-    args.push(
-      PlanetoidCliToggleFlags.dustCloudsEnabled,
-      toBooleanCliValue(settings.enableDustClouds)
-    )
-    args.push(
-      PlanetoidCliToggleFlags.atmosphereEnabled,
-      toBooleanCliValue(settings.enableAtmosphere)
-    )
-
-    args.push(PlanetoidCliFlagByRangeKey.seed, '1')
-    args.push('--step', '1')
-    args.push('--count', '1')
-
-    return `npm run auto-generate-planetoids -- ${args.join(' ')}`
   }
 
   async function copyTextToClipboard(text: string) {
@@ -436,16 +258,12 @@
 
   async function exportCurrentPresetToCli() {
     closePresetsMenu()
-    const command = buildCliCommandFromPreset(
-      planetoid,
-      sceneViewMode !== 'mesh',
-      {
-        cratersEnabled: effectiveCratersEnabled,
-        ridgesEnabled: effectiveRidgesEnabled,
-        riftsEnabled: effectiveRiftsEnabled,
-        volcanoesEnabled: effectiveVolcanoesEnabled,
-      }
-    )
+    const command = buildCliCommandFromPreset(planetoid, sceneViewMode !== 'mesh', {
+      cratersEnabled: effectiveCratersEnabled,
+      ridgesEnabled: effectiveRidgesEnabled,
+      riftsEnabled: effectiveRiftsEnabled,
+      volcanoesEnabled: effectiveVolcanoesEnabled,
+    })
 
     const copied = await copyTextToClipboard(command)
     if (copied) {
@@ -458,20 +276,16 @@
   async function exportPresetToCli(preset: PlanetoidPreset) {
     const mergedPresetSettings = mergePlanetoidPresetSettings(planetoid, preset.settings)
 
-    const command = buildCliCommandFromPreset(
-      mergedPresetSettings,
-      sceneViewMode !== 'mesh',
-      {
-        cratersEnabled:
-          mergedPresetSettings.enableCraters ||
-          mergedPresetSettings.craterCount > 0 ||
-          mergedPresetSettings.craterStrength > 0,
-        ridgesEnabled: mergedPresetSettings.enableRidges || mergedPresetSettings.ridgeStrength > 0,
-        riftsEnabled: mergedPresetSettings.enableRifts || mergedPresetSettings.riftStrength > 0,
-        volcanoesEnabled:
-          mergedPresetSettings.enableVolcanoes || mergedPresetSettings.volcanoCount > 0,
-      }
-    )
+    const command = buildCliCommandFromPreset(mergedPresetSettings, sceneViewMode !== 'mesh', {
+      cratersEnabled:
+        mergedPresetSettings.enableCraters ||
+        mergedPresetSettings.craterCount > 0 ||
+        mergedPresetSettings.craterStrength > 0,
+      ridgesEnabled: mergedPresetSettings.enableRidges || mergedPresetSettings.ridgeStrength > 0,
+      riftsEnabled: mergedPresetSettings.enableRifts || mergedPresetSettings.riftStrength > 0,
+      volcanoesEnabled:
+        mergedPresetSettings.enableVolcanoes || mergedPresetSettings.volcanoCount > 0,
+    })
 
     const copied = await copyTextToClipboard(command)
     if (copied) {
@@ -557,6 +371,25 @@
       riftSectionOpen: raw.riftSectionOpen as boolean,
     }
   }
+
+  $effect(() => {
+    if (import.meta.env.DEV) reportMissingSettingControls(schema, 'Planetoid', document)
+  })
+
+  $effect(() =>
+    registerSettingsAutomation(
+      (overrides) =>
+        applyPlanetoidSettings({
+          ...$state.snapshot(planetoid),
+          enableCraters: cratersEnabled,
+          enableVolcanoes: volcanoesEnabled,
+          enableRidges: ridgesEnabled,
+          enableRifts: riftsEnabled,
+          ...overrides,
+        }),
+      (view) => planetoidScene?.setCameraView(view)
+    )
+  )
 
   $effect(() => {
     if (settingsHydrated) return
@@ -683,18 +516,6 @@
       console.warn('Failed to persist planetoid presets to localStorage', error)
     }
   })
-
-  function getTimestamp() {
-    const now = new Date()
-    const yyyy = String(now.getFullYear())
-    const mm = String(now.getMonth() + 1).padStart(2, '0')
-    const dd = String(now.getDate()).padStart(2, '0')
-    const hh = String(now.getHours()).padStart(2, '0')
-    const min = String(now.getMinutes()).padStart(2, '0')
-    const ss = String(now.getSeconds()).padStart(2, '0')
-
-    return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
-  }
 
   async function saveScenePng() {
     if (!planetoidScene || isSaving) return
@@ -939,19 +760,20 @@
           }))}
         />
         <label class="toggle-row">
-          <span>{PlanetoidUiLabels.autoRotate}</span>
-          <input type="checkbox" bind:checked={planetoid.autoRotate} />
+          <span>{schema.autoRotate.label}</span>
+          <input id={controlId('autoRotate')} type="checkbox" bind:checked={planetoid.autoRotate} />
         </label>
         <label class="toggle-row">
-          <span>{PlanetoidUiLabels.showDebugMeshes}</span>
+          <span>{schema.showDebugMeshes.label}</span>
           <input
+            id={controlId('showDebugMeshes')}
             type="checkbox"
             bind:checked={planetoid.showDebugMeshes}
             disabled={sceneViewMode !== 'mesh'}
           />
         </label>
         <SeedControl
-          id="planetoid-seed"
+          id={controlId('seed')}
           label={PlanetoidRangeLabels.seed}
           min={MinValues.seed}
           max={MaxValues.seed}
@@ -967,29 +789,20 @@
           bind:open={colorSettingsSectionOpen}
         >
           <PalettePicker
-            id="planetoid-palette"
-            title={PlanetoidUiLabels.palette}
+            id={controlId('palette')}
+            title={schema.palette.label}
             options={PlanetoidPaletteNames}
             palettes={PlanetoidPalettes}
             bind:value={planetoid.palette}
           />
           <ColorPicker
-            id="planetoid-surface-tint"
-            label={PlanetoidUiLabels.surfaceTint}
+            id={controlId('surfaceTint')}
+            label={schema.surfaceTint.label}
             bind:value={planetoid.surfaceTint}
           />
           <div class="control-grid">
-            {#each colorControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                />
-              </label>
+            {#each controls.color as control (control)}
+              {@render numberInput(control)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -999,13 +812,13 @@
         >
           <div class="control-grid">
             <TextureSizeControl
-              id="planetoid-normal-texture-size"
-              label="Normal texture size"
+              id={controlId('normalTextureSize')}
+              label={schema.normalTextureSize.label}
               bind:value={planetoid.normalTextureSize}
             />
             <TextureSizeControl
-              id="planetoid-color-texture-size"
-              label="Color texture size"
+              id={controlId('colorTextureSize')}
+              label={schema.colorTextureSize.label}
               bind:value={planetoid.colorTextureSize}
             />
           </div>
@@ -1019,17 +832,8 @@
           bind:open={materialPropertiesSectionOpen}
         >
           <div class="control-grid">
-            {#each materialControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                />
-              </label>
+            {#each controls.material as control (control)}
+              {@render numberInput(control)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -1038,56 +842,54 @@
       <fieldset>
         <legend>{PlanetoidUiLabels.features}</legend>
         <CollapsibleControl
-          title={PlanetoidUiLabels.iceCaps}
+          title={schema.enableIceCaps.label}
           bind:open={iceCapSectionOpen}
           bind:enabled={planetoid.enableIceCaps}
+          toggleId={controlId('enableIceCaps')}
         >
           <div inert={!planetoid.enableIceCaps}>
             <PalettePicker
-              id="planetoid-ice-cap-palette"
-              title={PlanetoidUiLabels.iceCapPalette}
+              id={controlId('iceCapPalette')}
+              title={schema.iceCapPalette.label}
               options={IceCapPaletteNames}
               palettes={IceCapPalettes}
               labels={IceCapPaletteLabels}
               bind:value={planetoid.iceCapPalette}
             />
             <ColorPicker
-              id="planetoid-ice-cap-color"
-              label={PlanetoidUiLabels.iceCapColor}
+              id={controlId('iceCapColor')}
+              label={schema.iceCapColor.label}
               bind:value={planetoid.iceCapColor}
             />
             <div class="control-grid">
-              {#each iceCapControls as control (control)}
-                <label class="compact-number-row">
-                  <span>{PlanetoidRangeLabels[control]}</span>
-                  <input
-                    type="number"
-                    min={MinValues[control]}
-                    max={MaxValues[control]}
-                    step={StepValues[control]}
-                    bind:value={planetoid[control]}
-                  />
-                </label>
+              {#each controls.iceCaps as control (control)}
+                {@render numberInput(control)}
               {/each}
             </div>
           </div>
         </CollapsibleControl>
         <CollapsibleControl
-          title={PlanetoidUiLabels.dustClouds}
+          title={schema.enableDustClouds.label}
           bind:open={dustCloudSectionOpen}
           bind:enabled={planetoid.enableDustClouds}
+          toggleId={controlId('enableDustClouds')}
         >
           <div inert={!planetoid.enableDustClouds}>
             <PalettePicker
-              id="planetoid-dust-cloud-palette"
-              title={PlanetoidUiLabels.dustCloudPalette}
+              id={controlId('dustCloudPalette')}
+              title={schema.dustCloudPalette.label}
               options={DustCloudPaletteNames}
               palettes={DustCloudPalettes}
               labels={DustCloudPaletteLabels}
               bind:value={planetoid.dustCloudPalette}
             />
             <div class="control-grid">
-              <div class="cloud-mix-grid" role="group" aria-label="Cloud formation weights">
+              <div
+                id={controlId('dustCloudWeights')}
+                class="cloud-mix-grid"
+                role="group"
+                aria-label={`${schema.dustCloudWeights.label} weights`}
+              >
                 {#each DustCloudStyleNames as style (style)}
                   <label>
                     <span>{DustCloudStyleLabels[style]}</span>
@@ -1103,137 +905,84 @@
                   </label>
                 {/each}
               </div>
-              {#each dustCloudControls as control (control)}
-                <label class="compact-number-row">
-                  <span>{PlanetoidRangeLabels[control]}</span>
-                  <input
-                    type="number"
-                    min={MinValues[control]}
-                    max={MaxValues[control]}
-                    step={StepValues[control]}
-                    bind:value={planetoid[control]}
-                  />
-                </label>
+              {#each controls.dustClouds as control (control)}
+                {@render numberInput(control)}
               {/each}
             </div>
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={PlanetoidUiLabels.atmosphere}
+          title={schema.enableAtmosphere.label}
           bind:open={atmosphereSectionOpen}
           bind:enabled={planetoid.enableAtmosphere}
+          toggleId={controlId('enableAtmosphere')}
         >
           <div inert={!planetoid.enableAtmosphere}>
             <PalettePicker
-              id="planetoid-atmosphere-palette"
-              title={PlanetoidUiLabels.atmospherePalette}
+              id={controlId('atmospherePalette')}
+              title={schema.atmospherePalette.label}
               options={AtmospherePaletteNames}
               palettes={AtmospherePalettes}
               labels={AtmospherePaletteLabels}
               bind:value={planetoid.atmospherePalette}
             />
             <div class="control-grid">
-              {#each atmosphereControls as control (control)}
-                <label class="compact-number-row">
-                  <span>{PlanetoidRangeLabels[control]}</span>
-                  <input
-                    type="number"
-                    min={MinValues[control]}
-                    max={MaxValues[control]}
-                    step={StepValues[control]}
-                    bind:value={planetoid[control]}
-                  />
-                </label>
+              {#each controls.atmosphere as control (control)}
+                {@render numberInput(control)}
               {/each}
             </div>
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={PlanetoidUiLabels.craters}
+          title={schema.enableCraters.label}
           bind:open={craterSectionOpen}
           bind:enabled={cratersEnabled}
+          toggleId={controlId('enableCraters')}
         >
           <div class="control-grid">
-            {#each craterControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                  disabled={!effectiveCratersEnabled}
-                />
-              </label>
+            {#each controls.craters as control (control)}
+              {@render numberInput(control, !effectiveCratersEnabled)}
             {/each}
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={PlanetoidUiLabels.volcanoes}
+          title={schema.enableVolcanoes.label}
           bind:open={volcanoSectionOpen}
           bind:enabled={volcanoesEnabled}
+          toggleId={controlId('enableVolcanoes')}
         >
           <div class="control-grid">
-            {#each volcanoControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                  disabled={!volcanoSectionEnabled}
-                />
-              </label>
+            {#each controls.volcanoes as control (control)}
+              {@render numberInput(control, !volcanoSectionEnabled)}
             {/each}
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={PlanetoidUiLabels.ridges}
+          title={schema.enableRidges.label}
           bind:open={ridgeSectionOpen}
           bind:enabled={ridgesEnabled}
+          toggleId={controlId('enableRidges')}
         >
           <div class="control-grid">
-            {#each ridgeControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                  disabled={!ridgeSectionEnabled}
-                />
-              </label>
+            {#each controls.ridges as control (control)}
+              {@render numberInput(control, !ridgeSectionEnabled)}
             {/each}
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={PlanetoidUiLabels.rifts}
+          title={schema.enableRifts.label}
           bind:open={riftSectionOpen}
           bind:enabled={riftsEnabled}
+          toggleId={controlId('enableRifts')}
         >
           <div class="control-grid">
-            {#each riftControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                  disabled={!riftSectionEnabled}
-                />
-              </label>
+            {#each controls.rifts as control (control)}
+              {@render numberInput(control, !riftSectionEnabled)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -1246,17 +995,8 @@
           bind:open={geometryPropertiesSectionOpen}
         >
           <div class="control-grid">
-            {#each geometryControls as control (control)}
-              <label class="compact-number-row">
-                <span>{PlanetoidRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={planetoid[control]}
-                />
-              </label>
+            {#each controls.geometry as control (control)}
+              {@render numberInput(control)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -1264,6 +1004,21 @@
     </div>
   </section>
 </div>
+
+{#snippet numberInput(control: PlanetoidRangeKey, disabled = false)}
+  <label class="compact-number-row">
+    <span>{PlanetoidRangeLabels[control]}</span>
+    <input
+      id={controlId(control)}
+      type="number"
+      min={MinValues[control]}
+      max={MaxValues[control]}
+      step={StepValues[control]}
+      bind:value={planetoid[control]}
+      {disabled}
+    />
+  </label>
+{/snippet}
 
 {#if presetsManagerOpen}
   <PresetManager
@@ -1277,6 +1032,15 @@
     onExportPreset={(entry: PresetListItem) => {
       const preset = findPresetById(entry.id)
       if (preset) exportPresetToCli(preset)
+    }}
+    onExportUserPresetJson={(entry: PresetListItem) => {
+      const preset = userPresets.find((candidate) => candidate.id === entry.id)
+      if (preset) {
+        downloadPresetJson('planetoid', {
+          ...preset,
+          settings: sanitizePlanetoidPresetSettings(preset.settings),
+        })
+      }
     }}
     onDeleteUserPreset={(entry: PresetListItem) => deleteUserPreset(entry.id)}
   />

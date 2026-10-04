@@ -3,16 +3,25 @@ import {
   AtmospherePaletteNames,
   type AtmospherePaletteName,
 } from '../Atmosphere/AtmospherePalettes'
-import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
-import { DefaultRingValues, sanitizeRingSettings, type RingSettings } from '../Rings/RingSettings'
+import { type TextureSize } from '../../../types/textureSize'
 import {
-  sanitizeBoolean,
-  sanitizeEnum,
-  sanitizeHexColor,
-  sanitizeNumericMap,
-  toRecord,
-  type NumericSanitizeSpec,
-} from '../../../utils/sanitize'
+  constrainRingRadii,
+  DefaultRingValues,
+  RingSchema,
+  type RingSettings,
+} from '../Rings/RingSettings'
+import {
+  assertValidSchema,
+  numericKeysBySection,
+  numericLabels,
+  numericTable,
+  sanitizeWithSchema,
+  toCliArgs,
+  type NumericKeys,
+  type SettingsSchema,
+} from '../../../types/settingsSchema'
+import { toRecord } from '../../../utils/sanitize'
+import { cameraViewCliArgs, type CameraView } from '../../../utils/cameraView'
 
 export type GasGiantViewMode = 'mesh' | 'normal' | 'texture'
 
@@ -45,29 +54,20 @@ export type GasGiantSettings = RingSettings & {
   colorTextureSize: TextureSize
 }
 
-export type GasGiantRangeValues = Pick<
-  GasGiantSettings,
-  | 'seed'
-  | 'colorScale'
-  | 'tintShadowFloor'
-  | 'cloudBandCount'
-  | 'cloudBandSharpness'
-  | 'cloudChaos'
-  | 'stormCount'
-  | 'stormScale'
-  | 'stormPower'
-  | 'stormStrength'
-  | 'stormColorStrength'
-  | 'normalStrength'
-  | 'roughness'
-  | 'metalness'
-  | 'atmosphereIntensity'
-  | 'atmosphereThickness'
-  | 'atmosphereDropoff'
-  | 'atmosphereTerminatorWrap'
->
+export const GasGiantSections = [
+  'scene',
+  'color',
+  'textureResolution',
+  'material',
+  'cloudBands',
+  'storms',
+  'rings',
+  'atmosphere',
+] as const
+export type GasGiantSection = (typeof GasGiantSections)[number]
 
-export type GasGiantRangeKey = keyof GasGiantRangeValues
+export type GasGiantRangeKey = NumericKeys<GasGiantSettings>
+export type GasGiantRangeValues = Pick<GasGiantSettings, GasGiantRangeKey>
 
 export const DefaultValues: GasGiantSettings = {
   ...DefaultRingValues,
@@ -99,164 +99,229 @@ export const DefaultValues: GasGiantSettings = {
   colorTextureSize: 1024,
 }
 
-export const MinValues: GasGiantRangeValues = {
-  seed: 1,
-  colorScale: 0,
-  tintShadowFloor: 0,
-  cloudBandCount: 1,
-  cloudBandSharpness: 0,
-  cloudChaos: 0,
-  stormCount: 0,
-  stormScale: 0,
-  stormPower: 0.5,
-  stormStrength: 0,
-  stormColorStrength: 0,
-  normalStrength: 0,
-  roughness: 0,
-  metalness: 0,
-  atmosphereIntensity: 0,
-  atmosphereThickness: 0.01,
-  atmosphereDropoff: 0.25,
-  atmosphereTerminatorWrap: 0,
-}
-
-export const MaxValues: GasGiantRangeValues = {
-  seed: 999999,
-  colorScale: 2,
-  tintShadowFloor: 0.9,
-  cloudBandCount: 28,
-  cloudBandSharpness: 1,
-  cloudChaos: 2,
-  stormCount: 32,
-  stormScale: 0.45,
-  stormPower: 6,
-  stormStrength: 1.5,
-  stormColorStrength: 1.5,
-  normalStrength: 1,
-  roughness: 1,
-  metalness: 1,
-  atmosphereIntensity: 5,
-  atmosphereThickness: 0.5,
-  atmosphereDropoff: 16,
-  atmosphereTerminatorWrap: 1,
-}
-
-export const StepValues: GasGiantRangeValues = {
-  seed: 1,
-  colorScale: 0.05,
-  tintShadowFloor: 0.01,
-  cloudBandCount: 1,
-  cloudBandSharpness: 0.01,
-  cloudChaos: 0.01,
-  stormCount: 1,
-  stormScale: 0.01,
-  stormPower: 0.1,
-  stormStrength: 0.01,
-  stormColorStrength: 0.01,
-  normalStrength: 0.05,
-  roughness: 0.01,
-  metalness: 0.01,
-  atmosphereIntensity: 0.05,
-  atmosphereThickness: 0.01,
-  atmosphereDropoff: 0.25,
-  atmosphereTerminatorWrap: 0.05,
-}
-
-const NUMERIC_SANITIZE_SPECS: Record<GasGiantRangeKey, NumericSanitizeSpec> = {
+export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> = {
   seed: {
-    defaultValue: DefaultValues.seed,
-    min: MinValues.seed,
-    max: MaxValues.seed,
-    round: true,
+    kind: 'number',
+    label: 'Seed',
+    cliFlag: '--seed',
+    section: 'scene',
+    min: 1,
+    max: 999999,
+    step: 1,
+    integer: true,
+  },
+  autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
+  palette: {
+    kind: 'enum',
+    label: 'Palette',
+    cliFlag: '--palette',
+    section: 'color',
+    options: GasGiantPaletteNames,
+  },
+  surfaceTint: {
+    kind: 'color',
+    label: 'Surface tint',
+    cliFlag: '--surface-tint',
+    section: 'color',
   },
   colorScale: {
-    defaultValue: DefaultValues.colorScale,
-    min: MinValues.colorScale,
-    max: MaxValues.colorScale,
+    kind: 'number',
+    label: 'Palette influence',
+    cliFlag: '--color-scale',
+    section: 'color',
+    min: 0,
+    max: 2,
+    step: 0.05,
   },
   tintShadowFloor: {
-    defaultValue: DefaultValues.tintShadowFloor,
-    min: MinValues.tintShadowFloor,
-    max: MaxValues.tintShadowFloor,
+    kind: 'number',
+    label: 'Tint shadow floor',
+    cliFlag: '--tint-shadow-floor',
+    section: 'color',
+    min: 0,
+    max: 0.9,
+    step: 0.01,
   },
-  cloudBandCount: {
-    defaultValue: DefaultValues.cloudBandCount,
-    min: MinValues.cloudBandCount,
-    max: MaxValues.cloudBandCount,
-    round: true,
+  normalTextureSize: {
+    kind: 'textureSize',
+    label: 'Normal texture size',
+    cliFlag: '--normal-texture-size',
+    section: 'textureResolution',
   },
-  cloudBandSharpness: {
-    defaultValue: DefaultValues.cloudBandSharpness,
-    min: MinValues.cloudBandSharpness,
-    max: MaxValues.cloudBandSharpness,
-  },
-  cloudChaos: {
-    defaultValue: DefaultValues.cloudChaos,
-    min: MinValues.cloudChaos,
-    max: MaxValues.cloudChaos,
-  },
-  stormCount: {
-    defaultValue: DefaultValues.stormCount,
-    min: MinValues.stormCount,
-    max: MaxValues.stormCount,
-    round: true,
-  },
-  stormScale: {
-    defaultValue: DefaultValues.stormScale,
-    min: MinValues.stormScale,
-    max: MaxValues.stormScale,
-  },
-  stormPower: {
-    defaultValue: DefaultValues.stormPower,
-    min: MinValues.stormPower,
-    max: MaxValues.stormPower,
-  },
-  stormStrength: {
-    defaultValue: DefaultValues.stormStrength,
-    min: MinValues.stormStrength,
-    max: MaxValues.stormStrength,
-  },
-  stormColorStrength: {
-    defaultValue: DefaultValues.stormColorStrength,
-    min: MinValues.stormColorStrength,
-    max: MaxValues.stormColorStrength,
+  colorTextureSize: {
+    kind: 'textureSize',
+    label: 'Color texture size',
+    cliFlag: '--color-texture-size',
+    section: 'textureResolution',
   },
   normalStrength: {
-    defaultValue: DefaultValues.normalStrength,
-    min: MinValues.normalStrength,
-    max: MaxValues.normalStrength,
+    kind: 'number',
+    label: 'Normal strength',
+    cliFlag: '--normal-strength',
+    section: 'material',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   roughness: {
-    defaultValue: DefaultValues.roughness,
-    min: MinValues.roughness,
-    max: MaxValues.roughness,
+    kind: 'number',
+    label: 'Roughness',
+    cliFlag: '--roughness',
+    section: 'material',
+    min: 0,
+    max: 1,
+    step: 0.01,
   },
   metalness: {
-    defaultValue: DefaultValues.metalness,
-    min: MinValues.metalness,
-    max: MaxValues.metalness,
+    kind: 'number',
+    label: 'Metalness',
+    cliFlag: '--metalness',
+    section: 'material',
+    min: 0,
+    max: 1,
+    step: 0.01,
+  },
+  cloudBandCount: {
+    kind: 'number',
+    label: 'Cloud band count',
+    cliFlag: '--cloud-band-count',
+    section: 'cloudBands',
+    min: 1,
+    max: 28,
+    step: 1,
+    integer: true,
+  },
+  cloudBandSharpness: {
+    kind: 'number',
+    label: 'Band sharpness',
+    cliFlag: '--cloud-band-sharpness',
+    section: 'cloudBands',
+    min: 0,
+    max: 1,
+    step: 0.01,
+  },
+  cloudChaos: {
+    kind: 'number',
+    label: 'Cloud chaos',
+    cliFlag: '--cloud-chaos',
+    section: 'cloudBands',
+    min: 0,
+    max: 2,
+    step: 0.01,
+  },
+  enableStorms: {
+    kind: 'boolean',
+    label: 'Storm systems',
+    cliFlag: '--storms-enabled',
+    section: 'storms',
+    togglesSection: true,
+  },
+  stormCount: {
+    kind: 'number',
+    label: 'Storm count',
+    cliFlag: '--storm-count',
+    section: 'storms',
+    min: 0,
+    max: 32,
+    step: 1,
+    integer: true,
+  },
+  stormScale: {
+    kind: 'number',
+    label: 'Storm scale',
+    cliFlag: '--storm-scale',
+    section: 'storms',
+    min: 0,
+    max: 0.45,
+    step: 0.01,
+  },
+  stormPower: {
+    kind: 'number',
+    label: 'Storm falloff power',
+    cliFlag: '--storm-power',
+    section: 'storms',
+    min: 0.5,
+    max: 6,
+    step: 0.1,
+  },
+  stormStrength: {
+    kind: 'number',
+    label: 'Storm strength',
+    cliFlag: '--storm-strength',
+    section: 'storms',
+    min: 0,
+    max: 1.5,
+    step: 0.01,
+  },
+  stormColorStrength: {
+    kind: 'number',
+    label: 'Storm color strength',
+    cliFlag: '--storm-color-strength',
+    section: 'storms',
+    min: 0,
+    max: 1.5,
+    step: 0.01,
+  },
+  ...RingSchema,
+  enableAtmosphere: {
+    kind: 'boolean',
+    label: 'Atmosphere',
+    cliFlag: '--atmosphere-enabled',
+    section: 'atmosphere',
+    togglesSection: true,
+  },
+  atmospherePalette: {
+    kind: 'enum',
+    label: 'Atmosphere palette',
+    cliFlag: '--atmosphere-palette',
+    section: 'atmosphere',
+    options: AtmospherePaletteNames,
   },
   atmosphereIntensity: {
-    defaultValue: DefaultValues.atmosphereIntensity,
-    min: MinValues.atmosphereIntensity,
-    max: MaxValues.atmosphereIntensity,
+    kind: 'number',
+    label: 'Atmosphere intensity',
+    cliFlag: '--atmosphere-intensity',
+    section: 'atmosphere',
+    min: 0,
+    max: 5,
+    step: 0.05,
   },
   atmosphereThickness: {
-    defaultValue: DefaultValues.atmosphereThickness,
-    min: MinValues.atmosphereThickness,
-    max: MaxValues.atmosphereThickness,
+    kind: 'number',
+    label: 'Atmosphere thickness',
+    cliFlag: '--atmosphere-thickness',
+    section: 'atmosphere',
+    min: 0.01,
+    max: 0.5,
+    step: 0.01,
   },
   atmosphereDropoff: {
-    defaultValue: DefaultValues.atmosphereDropoff,
-    min: MinValues.atmosphereDropoff,
-    max: MaxValues.atmosphereDropoff,
+    kind: 'number',
+    label: 'Atmosphere dropoff',
+    cliFlag: '--atmosphere-dropoff',
+    section: 'atmosphere',
+    min: 0.25,
+    max: 16,
+    step: 0.25,
   },
   atmosphereTerminatorWrap: {
-    defaultValue: DefaultValues.atmosphereTerminatorWrap,
-    min: MinValues.atmosphereTerminatorWrap,
-    max: MaxValues.atmosphereTerminatorWrap,
+    kind: 'number',
+    label: 'Terminator wrap',
+    cliFlag: '--atmosphere-terminator-wrap',
+    section: 'atmosphere',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
 }
+
+assertValidSchema(GasGiantSchema, DefaultValues, 'Gas giant')
+
+export const MinValues = numericTable(GasGiantSchema, 'min')
+export const MaxValues = numericTable(GasGiantSchema, 'max')
+export const StepValues = numericTable(GasGiantSchema, 'step')
+export const GasGiantRangeLabels = numericLabels(GasGiantSchema)
+export const GasGiantNumericControls = numericKeysBySection(GasGiantSchema, GasGiantSections)
 
 export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
   const raw = toRecord(input)
@@ -265,118 +330,31 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
     normalStrength: raw.normalStrength ?? raw.bumpScale,
     normalTextureSize: raw.normalTextureSize ?? raw.bumpTextureSize,
   }
-  const numeric = sanitizeNumericMap(migratedRaw, NUMERIC_SANITIZE_SPECS)
 
-  const palette = sanitizeEnum(raw, 'palette', GasGiantPaletteNames, DefaultValues.palette)
-  const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
-
-  return {
-    ...sanitizeRingSettings(raw),
-    seed: numeric.seed,
-    autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate),
-    palette,
-    surfaceTint,
-    colorScale: numeric.colorScale,
-    tintShadowFloor: numeric.tintShadowFloor,
-    cloudBandCount: numeric.cloudBandCount,
-    cloudBandSharpness: numeric.cloudBandSharpness,
-    cloudChaos: numeric.cloudChaos,
-    enableStorms: sanitizeBoolean(raw, 'enableStorms', DefaultValues.enableStorms),
-    stormCount: numeric.stormCount,
-    stormScale: numeric.stormScale,
-    stormPower: numeric.stormPower,
-    stormStrength: numeric.stormStrength,
-    stormColorStrength: numeric.stormColorStrength,
-    normalStrength: numeric.normalStrength,
-    roughness: numeric.roughness,
-    metalness: numeric.metalness,
-    enableAtmosphere: sanitizeBoolean(raw, 'enableAtmosphere', DefaultValues.enableAtmosphere),
-    atmospherePalette: sanitizeEnum(
-      raw,
-      'atmospherePalette',
-      AtmospherePaletteNames,
-      DefaultValues.atmospherePalette
-    ),
-    atmosphereIntensity: numeric.atmosphereIntensity,
-    atmosphereThickness: numeric.atmosphereThickness,
-    atmosphereDropoff: numeric.atmosphereDropoff,
-    atmosphereTerminatorWrap: numeric.atmosphereTerminatorWrap,
-    normalTextureSize: sanitizeTextureSize(
-      migratedRaw.normalTextureSize,
-      DefaultValues.normalTextureSize
-    ),
-    colorTextureSize: sanitizeTextureSize(raw.colorTextureSize, DefaultValues.colorTextureSize),
-  }
+  return constrainRingRadii(sanitizeWithSchema(GasGiantSchema, DefaultValues, migratedRaw))
 }
 
-export const GasGiantRangeLabels: Record<GasGiantRangeKey, string> = {
-  seed: 'Seed',
-  colorScale: 'Palette influence',
-  tintShadowFloor: 'Tint shadow floor',
-  cloudBandCount: 'Cloud band count',
-  cloudBandSharpness: 'Band sharpness',
-  cloudChaos: 'Cloud chaos',
-  stormCount: 'Storm count',
-  stormScale: 'Storm scale',
-  stormPower: 'Storm falloff power',
-  stormStrength: 'Storm strength',
-  stormColorStrength: 'Storm color strength',
-  normalStrength: 'Normal strength',
-  roughness: 'Roughness',
-  metalness: 'Metalness',
-  atmosphereIntensity: 'Atmosphere intensity',
-  atmosphereThickness: 'Atmosphere thickness',
-  atmosphereDropoff: 'Atmosphere dropoff',
-  atmosphereTerminatorWrap: 'Terminator wrap',
+export function buildGasGiantCliCommand(
+  settings: GasGiantSettings,
+  exportTextures: boolean,
+  camera?: CameraView
+) {
+  const args = toCliArgs(GasGiantSchema, sanitizeGasGiantSettings(settings), ['seed'])
+  if (exportTextures) args.push('--export-textures')
+  else if (camera) args.push(...cameraViewCliArgs(camera))
+  args.push(GasGiantSchema.seed.cliFlag, '1', '--step', '1', '--count', '1')
+
+  return `npm run auto-generate-gas-giants -- ${args.join(' ')}`
 }
 
 export const GasGiantUiLabels = {
   scene: 'Scene',
   viewMode: 'View mode',
-  autoRotate: 'Auto-rotate',
-  seed: 'Seed',
   texture: 'Texture',
   features: 'Features',
   material: 'Material',
   colorSettings: 'Color settings',
   textureResolution: 'Texture resolution',
   cloudBands: 'Cloud bands',
-  stormSystems: 'Storm systems',
-  atmosphere: 'Atmosphere',
-  atmospherePalette: 'Atmosphere palette',
   properties: 'Properties',
-  palette: 'Palette',
-  surfaceTint: 'Surface tint',
-  enableStorms: 'Enable storm systems',
-} as const
-
-export const GasGiantCliFlagByRangeKey: Record<GasGiantRangeKey, string> = {
-  seed: '--seed',
-  colorScale: '--color-scale',
-  tintShadowFloor: '--tint-shadow-floor',
-  cloudBandCount: '--cloud-band-count',
-  cloudBandSharpness: '--cloud-band-sharpness',
-  cloudChaos: '--cloud-chaos',
-  stormCount: '--storm-count',
-  stormScale: '--storm-scale',
-  stormPower: '--storm-power',
-  stormStrength: '--storm-strength',
-  stormColorStrength: '--storm-color-strength',
-  normalStrength: '--normal-strength',
-  roughness: '--roughness',
-  metalness: '--metalness',
-  atmosphereIntensity: '--atmosphere-intensity',
-  atmosphereThickness: '--atmosphere-thickness',
-  atmosphereDropoff: '--atmosphere-dropoff',
-  atmosphereTerminatorWrap: '--atmosphere-terminator-wrap',
-}
-
-export const GasGiantCliToggleFlags = {
-  autoRotate: '--auto-rotate',
-  stormsEnabled: '--storms-enabled',
-  atmosphereEnabled: '--atmosphere-enabled',
-} as const
-
-export const GasGiantCliFeatureFlags = {
-  atmospherePalette: '--atmosphere-palette',
 } as const

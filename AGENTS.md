@@ -44,7 +44,8 @@ if a task isn't covered by an existing script, prefer extending
 
 ## Other scripts
 
-- `npm run auto-generate-planetoids` / `npm run auto-generate-gas-giants` —
+- `npm run auto-generate-planetoids` / `npm run auto-generate-gas-giants` /
+  `npm run auto-generate-stars` —
   Playwright-driven batch generation scripts (see [README.md](/README.md) for
   usage and options).
 - `npm run updates` / `npm run upgrade` — check/apply dependency updates via

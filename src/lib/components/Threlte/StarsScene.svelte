@@ -4,6 +4,7 @@
   import { MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
+  import { applyCameraView, readCameraView, type CameraView } from '../../utils/cameraView'
   import Star from './Star/Star.svelte'
   import { DefaultValues, type StarPaletteName, type StarSettings } from './Star/StarSettings'
   import type { TextureSize } from '../../types/textureSize'
@@ -120,7 +121,7 @@
 
   let starRef: StarExports | undefined = $state(undefined)
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
-  const { camera, renderer, scene } = useThrelte()
+  const { camera, renderer, scene, invalidate } = useThrelte()
   scene.background = null
 
   $effect(() => {
@@ -138,6 +139,16 @@
 
   export function downloadScenePng(fileName = 'star-render.png') {
     return downloadScenePngFile(renderer, scene, $camera, fileName)
+  }
+
+  export function setCameraView(view: CameraView) {
+    if (!controlsRef) return
+    applyCameraView($camera, controlsRef, view)
+    invalidate()
+  }
+
+  export function getCameraView(): CameraView | undefined {
+    return controlsRef ? readCameraView($camera, controlsRef) : undefined
   }
 </script>
 

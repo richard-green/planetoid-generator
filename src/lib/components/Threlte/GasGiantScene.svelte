@@ -5,6 +5,7 @@
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
+  import { applyCameraView, readCameraView, type CameraView } from '../../utils/cameraView'
   import GasGiant from './GasGiant/GasGiant.svelte'
   import {
     DefaultValues,
@@ -75,7 +76,7 @@
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
   }
   let gasGiantRef: GasGiantExports | undefined = $state(undefined)
-  const { camera, renderer, scene } = useThrelte()
+  const { camera, renderer, scene, invalidate } = useThrelte()
 
   interactivity()
 
@@ -131,6 +132,16 @@
 
   export function downloadScenePng(fileName = 'gas-giant-render.png') {
     return downloadScenePngFile(renderer, scene, $camera, fileName)
+  }
+
+  export function setCameraView(view: CameraView) {
+    if (!controlsRef) return
+    applyCameraView($camera, controlsRef, view)
+    invalidate()
+  }
+
+  export function getCameraView(): CameraView | undefined {
+    return controlsRef ? readCameraView($camera, controlsRef) : undefined
   }
 
   const settings: GasGiantSettings = $derived({

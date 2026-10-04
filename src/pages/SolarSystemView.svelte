@@ -33,6 +33,7 @@
     loadUserPlanetoidPresets,
     loadUserStarPresets,
   } from '../presets/userPresets'
+  import { fileTimestamp } from '../lib/utils/fileTimestamp'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
 
@@ -96,16 +97,12 @@
     bodies = bodies.filter((body) => body.id !== id)
   }
 
-  function timestamp(): string {
-    return new Date().toISOString().replace(/[:.]/g, '-')
-  }
-
   function downloadRender(): void {
     if (!solarSystemScene) return
 
     isSaving = true
     try {
-      solarSystemScene.downloadScenePng(`solar-system-${timestamp()}.png`)
+      solarSystemScene.downloadScenePng(`generated-solar-system-${fileTimestamp()}.png`)
     } finally {
       isSaving = false
     }

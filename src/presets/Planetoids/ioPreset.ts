@@ -15,7 +15,6 @@ export const ioPreset: PlanetoidPreset = {
     tintShadowFloor: 0,
     swirliness: 0.2,
     dustCloudCoverage: 0.65,
-    dustCloudStyle: 'worley',
     dustCloudWeights: { ...DefaultValues.dustCloudWeights, wisps: 0, worley: 1 },
     dustCloudPalette: 'sulfur',
     dustCloudOpacity: 0.5,

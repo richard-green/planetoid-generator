@@ -93,13 +93,17 @@ This helper runs curated gas giant profiles and advances start seeds between eac
 
 Generated examples from `public/generated`:
 
-![Generated planetoid example 1](public/generated/generated-planetoid-20260829-191358.png)
+![Asteroid example](public/examples/generated-planetoid-20261004-132451.jpg)
 
-![Generated planetoid example 2](public/generated/generated-planetoid-20260829-194942.png)
+![Mars example](public/examples/generated-planetoid-20261004-132412.jpg)
 
-![Generated planetoid example 3](public/generated/generated-planetoid-20260829-195128.png)
+![Ice giant example](public/examples/generated-gas-giant-20261004-132929.jpg)
 
-![Generated planetoid example 4](public/generated/generated-planetoid-20260829-195222.png)
+![White dwarf star example](public/examples/generated-star-20261004-122750.jpg)
+
+![Gas giant example](public/examples/generated-gas-giant-20261004-132734)
+
+![Toxic planet example](public/examples/generated-planetoid-20261004-132429.jpg)
 
 ## Notes
 

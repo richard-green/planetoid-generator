@@ -1,10 +1,11 @@
 import {
-  sanitizeBoolean,
-  sanitizeEnum,
-  sanitizeNumericMap,
-  toRecord,
-  type NumericSanitizeSpec,
-} from '../../../utils/sanitize'
+  assertValidSchema,
+  numericLabels,
+  numericTable,
+  sanitizeWithSchema,
+  type NumericKeys,
+  type SettingsSchema,
+} from '../../../types/settingsSchema'
 import { RingPaletteNames, type RingPaletteName } from './RingPalettes'
 
 export type RingSettings = {
@@ -26,25 +27,8 @@ export type RingSettings = {
   ringGlitter: number
 }
 
-export type RingRangeValues = Pick<
-  RingSettings,
-  | 'ringInnerRadius'
-  | 'ringOuterRadius'
-  | 'ringTilt'
-  | 'ringBandCount'
-  | 'ringBandSharpness'
-  | 'ringBandRegularity'
-  | 'ringDensity'
-  | 'ringTextureScale'
-  | 'ringGranularity'
-  | 'ringPaletteInfluence'
-  | 'ringSolarization'
-  | 'ringOpacity'
-  | 'ringNoise'
-  | 'ringGlitter'
->
-
-export type RingRangeKey = keyof RingRangeValues
+export type RingRangeKey = NumericKeys<RingSettings>
+export type RingRangeValues = Pick<RingSettings, RingRangeKey>
 
 export const DefaultRingValues: RingSettings = {
   enableRings: true,
@@ -65,181 +49,166 @@ export const DefaultRingValues: RingSettings = {
   ringGlitter: 0,
 }
 
-export const RingMinValues: RingRangeValues = {
-  ringInnerRadius: 1.05,
-  ringOuterRadius: 1.15,
-  ringTilt: -45,
-  ringBandCount: 1,
-  ringBandSharpness: 0,
-  ringBandRegularity: 0,
-  ringDensity: 0.05,
-  ringTextureScale: 0,
-  ringGranularity: 0,
-  ringPaletteInfluence: 0,
-  ringSolarization: 0,
-  ringOpacity: 0.05,
-  ringNoise: 0,
-  ringGlitter: 0,
-}
-
-export const RingMaxValues: RingRangeValues = {
-  ringInnerRadius: 2.5,
-  ringOuterRadius: 3.5,
-  ringTilt: 45,
-  ringBandCount: 64,
-  ringBandSharpness: 1,
-  ringBandRegularity: 1,
-  ringDensity: 1,
-  ringTextureScale: 24,
-  ringGranularity: 1,
-  ringPaletteInfluence: 1,
-  ringSolarization: 1,
-  ringOpacity: 1,
-  ringNoise: 1,
-  ringGlitter: 1,
-}
-
-export const RingStepValues: RingRangeValues = {
-  ringInnerRadius: 0.05,
-  ringOuterRadius: 0.05,
-  ringTilt: 1,
-  ringBandCount: 1,
-  ringBandSharpness: 0.05,
-  ringBandRegularity: 0.05,
-  ringDensity: 0.05,
-  ringTextureScale: 0.5,
-  ringGranularity: 0.05,
-  ringPaletteInfluence: 0.05,
-  ringSolarization: 0.05,
-  ringOpacity: 0.05,
-  ringNoise: 0.05,
-  ringGlitter: 0.05,
-}
-
-export const RingRangeLabels: Record<RingRangeKey, string> = {
-  ringInnerRadius: 'Inner radius',
-  ringOuterRadius: 'Outer radius',
-  ringTilt: 'Tilt',
-  ringBandCount: 'Band count',
-  ringBandSharpness: 'Band sharpness',
-  ringBandRegularity: 'Band regularity',
-  ringDensity: 'Density',
-  ringTextureScale: 'Texture scale',
-  ringGranularity: 'Granularity',
-  ringPaletteInfluence: 'Palette influence',
-  ringSolarization: 'Solarization',
-  ringOpacity: 'Opacity',
-  ringNoise: 'Noise',
-  ringGlitter: 'Glitter',
-}
-
-export const RingCliFlagByRangeKey: Record<RingRangeKey, string> = {
-  ringInnerRadius: '--ring-inner-radius',
-  ringOuterRadius: '--ring-outer-radius',
-  ringTilt: '--ring-tilt',
-  ringBandCount: '--ring-band-count',
-  ringBandSharpness: '--ring-band-sharpness',
-  ringBandRegularity: '--ring-band-regularity',
-  ringDensity: '--ring-density',
-  ringTextureScale: '--ring-texture-scale',
-  ringGranularity: '--ring-granularity',
-  ringPaletteInfluence: '--ring-palette-influence',
-  ringSolarization: '--ring-solarization',
-  ringOpacity: '--ring-opacity',
-  ringNoise: '--ring-noise',
-  ringGlitter: '--ring-glitter',
-}
-
-export const RingCliFlags = {
-  enabled: '--rings-enabled',
-  palette: '--ring-palette',
-} as const
-
-const RING_NUMERIC_SPECS: Record<RingRangeKey, NumericSanitizeSpec> = {
+export const RingSchema: SettingsSchema<RingSettings, 'rings'> = {
+  enableRings: {
+    kind: 'boolean',
+    label: 'Rings',
+    cliFlag: '--rings-enabled',
+    section: 'rings',
+    togglesSection: true,
+  },
+  ringPalette: {
+    kind: 'enum',
+    label: 'Ring palette',
+    cliFlag: '--ring-palette',
+    section: 'rings',
+    options: RingPaletteNames,
+  },
   ringInnerRadius: {
-    defaultValue: DefaultRingValues.ringInnerRadius,
-    min: RingMinValues.ringInnerRadius,
-    max: RingMaxValues.ringInnerRadius,
+    kind: 'number',
+    label: 'Inner radius',
+    cliFlag: '--ring-inner-radius',
+    section: 'rings',
+    min: 1.05,
+    max: 2.5,
+    step: 0.05,
   },
   ringOuterRadius: {
-    defaultValue: DefaultRingValues.ringOuterRadius,
-    min: RingMinValues.ringOuterRadius,
-    max: RingMaxValues.ringOuterRadius,
+    kind: 'number',
+    label: 'Outer radius',
+    cliFlag: '--ring-outer-radius',
+    section: 'rings',
+    min: 1.15,
+    max: 3.5,
+    step: 0.05,
   },
   ringTilt: {
-    defaultValue: DefaultRingValues.ringTilt,
-    min: RingMinValues.ringTilt,
-    max: RingMaxValues.ringTilt,
+    kind: 'number',
+    label: 'Tilt',
+    cliFlag: '--ring-tilt',
+    section: 'rings',
+    min: -45,
+    max: 45,
+    step: 1,
   },
   ringBandCount: {
-    defaultValue: DefaultRingValues.ringBandCount,
-    min: RingMinValues.ringBandCount,
-    max: RingMaxValues.ringBandCount,
-    round: true,
+    kind: 'number',
+    label: 'Band count',
+    cliFlag: '--ring-band-count',
+    section: 'rings',
+    min: 1,
+    max: 64,
+    step: 1,
+    integer: true,
   },
   ringBandSharpness: {
-    defaultValue: DefaultRingValues.ringBandSharpness,
-    min: RingMinValues.ringBandSharpness,
-    max: RingMaxValues.ringBandSharpness,
+    kind: 'number',
+    label: 'Band sharpness',
+    cliFlag: '--ring-band-sharpness',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   ringBandRegularity: {
-    defaultValue: DefaultRingValues.ringBandRegularity,
-    min: RingMinValues.ringBandRegularity,
-    max: RingMaxValues.ringBandRegularity,
+    kind: 'number',
+    label: 'Band regularity',
+    cliFlag: '--ring-band-regularity',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   ringDensity: {
-    defaultValue: DefaultRingValues.ringDensity,
-    min: RingMinValues.ringDensity,
-    max: RingMaxValues.ringDensity,
+    kind: 'number',
+    label: 'Density',
+    cliFlag: '--ring-density',
+    section: 'rings',
+    min: 0.05,
+    max: 1,
+    step: 0.05,
   },
   ringTextureScale: {
-    defaultValue: DefaultRingValues.ringTextureScale,
-    min: RingMinValues.ringTextureScale,
-    max: RingMaxValues.ringTextureScale,
+    kind: 'number',
+    label: 'Texture scale',
+    cliFlag: '--ring-texture-scale',
+    section: 'rings',
+    min: 0,
+    max: 24,
+    step: 0.5,
   },
   ringGranularity: {
-    defaultValue: DefaultRingValues.ringGranularity,
-    min: RingMinValues.ringGranularity,
-    max: RingMaxValues.ringGranularity,
+    kind: 'number',
+    label: 'Granularity',
+    cliFlag: '--ring-granularity',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   ringPaletteInfluence: {
-    defaultValue: DefaultRingValues.ringPaletteInfluence,
-    min: RingMinValues.ringPaletteInfluence,
-    max: RingMaxValues.ringPaletteInfluence,
+    kind: 'number',
+    label: 'Palette influence',
+    cliFlag: '--ring-palette-influence',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   ringSolarization: {
-    defaultValue: DefaultRingValues.ringSolarization,
-    min: RingMinValues.ringSolarization,
-    max: RingMaxValues.ringSolarization,
+    kind: 'number',
+    label: 'Solarization',
+    cliFlag: '--ring-solarization',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   ringOpacity: {
-    defaultValue: DefaultRingValues.ringOpacity,
-    min: RingMinValues.ringOpacity,
-    max: RingMaxValues.ringOpacity,
+    kind: 'number',
+    label: 'Opacity',
+    cliFlag: '--ring-opacity',
+    section: 'rings',
+    min: 0.05,
+    max: 1,
+    step: 0.05,
   },
   ringNoise: {
-    defaultValue: DefaultRingValues.ringNoise,
-    min: RingMinValues.ringNoise,
-    max: RingMaxValues.ringNoise,
+    kind: 'number',
+    label: 'Noise',
+    cliFlag: '--ring-noise',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
   ringGlitter: {
-    defaultValue: DefaultRingValues.ringGlitter,
-    min: RingMinValues.ringGlitter,
-    max: RingMaxValues.ringGlitter,
+    kind: 'number',
+    label: 'Glitter',
+    cliFlag: '--ring-glitter',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
+}
+
+assertValidSchema(RingSchema, DefaultRingValues, 'Ring')
+
+export const RingMinValues = numericTable(RingSchema, 'min')
+export const RingMaxValues = numericTable(RingSchema, 'max')
+export const RingStepValues = numericTable(RingSchema, 'step')
+export const RingRangeLabels = numericLabels(RingSchema)
+
+/** Keeps the outer radius at least slightly beyond the inner radius. */
+export function constrainRingRadii<T extends RingSettings>(settings: T): T {
+  const outerRadius = Math.max(settings.ringInnerRadius + 0.05, settings.ringOuterRadius)
+  return {
+    ...settings,
+    ringOuterRadius: Math.min(RingMaxValues.ringOuterRadius, outerRadius),
+  }
 }
 
 export function sanitizeRingSettings(input: unknown): RingSettings {
-  const raw = toRecord(input)
-  const numeric = sanitizeNumericMap(raw, RING_NUMERIC_SPECS)
-  const innerRadius = numeric.ringInnerRadius
-  const outerRadius = Math.max(innerRadius + 0.05, numeric.ringOuterRadius)
-
-  return {
-    ...numeric,
-    ringInnerRadius: innerRadius,
-    ringOuterRadius: Math.min(RingMaxValues.ringOuterRadius, outerRadius),
-    enableRings: sanitizeBoolean(raw, 'enableRings', DefaultRingValues.enableRings),
-    ringPalette: sanitizeEnum(raw, 'ringPalette', RingPaletteNames, DefaultRingValues.ringPalette),
-  }
+  return constrainRingRadii(sanitizeWithSchema(RingSchema, DefaultRingValues, input))
 }

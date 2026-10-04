@@ -5,10 +5,11 @@
     title: string
     open: boolean
     enabled?: boolean
+    toggleId?: string
     children: Snippet
   }
 
-  let { title, open = $bindable(), enabled = $bindable(), children }: Props = $props()
+  let { title, open = $bindable(), enabled = $bindable(), toggleId, children }: Props = $props()
 
   const hasToggle = $derived(enabled !== undefined)
 
@@ -43,6 +44,7 @@
     {#if hasToggle}
       <label class="summary-toggle">
         <input
+          id={toggleId}
           type="checkbox"
           bind:checked={enabled}
           aria-label={`Enable ${title}`}

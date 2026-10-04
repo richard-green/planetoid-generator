@@ -1,13 +1,4 @@
-import { clamp } from './math'
-
 export type UnknownRecord = Record<string, unknown>
-
-export type NumericSanitizeSpec = {
-  defaultValue: number
-  min: number
-  max: number
-  round?: boolean
-}
 
 export function toRecord(input: unknown): UnknownRecord {
   return typeof input === 'object' && input !== null ? (input as UnknownRecord) : {}
@@ -38,25 +29,4 @@ export function sanitizeHexColor(raw: UnknownRecord, key: string, fallback: stri
     .split('')
     .map((channel) => `${channel}${channel}`)
     .join('')}`
-}
-
-export function sanitizeNumber(raw: UnknownRecord, key: string, spec: NumericSanitizeSpec) {
-  const value = raw[key]
-  if (typeof value !== 'number') return spec.defaultValue
-
-  const clamped = clamp(value, spec.min, spec.max)
-  return spec.round ? Math.round(clamped) : clamped
-}
-
-export function sanitizeNumericMap<T extends string>(
-  raw: UnknownRecord,
-  specs: Record<T, NumericSanitizeSpec>
-): Record<T, number> {
-  const result = {} as Record<T, number>
-
-  for (const key of Object.keys(specs) as T[]) {
-    result[key] = sanitizeNumber(raw, key, specs[key])
-  }
-
-  return result
 }

@@ -12,6 +12,7 @@
     onClose: () => void
     onApplyPreset: (preset: PresetListItem) => void
     onExportPreset: (preset: PresetListItem) => void
+    onExportUserPresetJson?: (preset: PresetListItem) => void
     onDeleteUserPreset: (preset: PresetListItem) => void
   }
 
@@ -23,6 +24,7 @@
     onClose,
     onApplyPreset,
     onExportPreset,
+    onExportUserPresetJson,
     onDeleteUserPreset,
   }: Props = $props()
 </script>
@@ -81,6 +83,15 @@
                 >
                   CLI
                 </button>
+                {#if onExportUserPresetJson}
+                  <button
+                    type="button"
+                    class="preset-row-button"
+                    onclick={() => onExportUserPresetJson(preset)}
+                  >
+                    JSON
+                  </button>
+                {/if}
                 <button
                   type="button"
                   class="preset-row-button delete"

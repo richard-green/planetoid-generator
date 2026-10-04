@@ -9,6 +9,10 @@
   import PresetManager, {
     type PresetListItem,
   } from '../lib/components/Controls/PresetManager.svelte'
+  import { registerSettingsAutomation } from '../lib/automation'
+  import type { CameraView } from '../lib/utils/cameraView'
+  import { downloadPresetJson } from '../lib/utils/downloadJson'
+  import { fileTimestamp as getTimestamp } from '../lib/utils/fileTimestamp'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
   import ColorPicker from '../lib/components/Controls/ColorPicker.svelte'
@@ -26,21 +30,13 @@
     AtmospherePaletteNames,
     AtmospherePalettes,
   } from '../lib/components/Threlte/Atmosphere/AtmospherePalettes'
+  import { RingMaxValues, RingMinValues } from '../lib/components/Threlte/Rings/RingSettings'
   import {
-    RingCliFlagByRangeKey,
-    RingCliFlags,
-    RingMaxValues,
-    RingMinValues,
-    RingRangeLabels,
-    RingStepValues,
-    type RingRangeKey,
-  } from '../lib/components/Threlte/Rings/RingSettings'
-  import {
+    buildGasGiantCliCommand,
     DefaultValues,
-    GasGiantCliFlagByRangeKey,
-    GasGiantCliFeatureFlags,
-    GasGiantCliToggleFlags,
+    GasGiantNumericControls as controls,
     GasGiantRangeLabels,
+    GasGiantSchema as schema,
     GasGiantUiLabels,
     MaxValues,
     MinValues,
@@ -50,11 +46,13 @@
     type GasGiantSettings,
     type GasGiantViewMode,
   } from '../lib/components/Threlte/GasGiant/GasGiantSettings'
+  import {
+    reportMissingSettingControls,
+    settingControlId as controlId,
+  } from '../lib/types/settingsSchema'
   import { BUILTIN_GAS_GIANT_PRESETS, type GasGiantPreset } from '../presets/GasGiants'
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
-
-  type RangeControlKey = Exclude<GasGiantRangeKey, 'seed'>
 
   type GasGiantUiState = {
     viewMode: GasGiantViewMode
@@ -71,6 +69,8 @@
   }
 
   type GasGiantSceneExports = {
+    setCameraView: (view: CameraView) => void
+    getCameraView: () => CameraView | undefined
     downloadScenePng: (fileName?: string) => boolean
     downloadTextureMapPng: (fileName?: string) => Promise<boolean>
     downloadNormalMapPng: (fileName?: string) => Promise<boolean>
@@ -81,72 +81,6 @@
   const GAS_GIANT_PRESETS_STORAGE_KEY = 'gas-giant-view-presets-v1'
 
   const DEFAULT_GAS_GIANT_SETTINGS: GasGiantSettings = { ...DefaultValues }
-  const NUMERIC_RANGE_KEYS = (Object.keys(MinValues) as GasGiantRangeKey[]).filter(
-    (key) => key !== 'seed'
-  )
-
-  const numericControls: RangeControlKey[] = [
-    'colorScale',
-    'tintShadowFloor',
-    'cloudBandCount',
-    'cloudBandSharpness',
-    'cloudChaos',
-    'stormCount',
-    'stormScale',
-    'stormPower',
-    'stormStrength',
-    'stormColorStrength',
-    'normalStrength',
-    'roughness',
-    'metalness',
-    'atmosphereIntensity',
-    'atmosphereThickness',
-    'atmosphereDropoff',
-    'atmosphereTerminatorWrap',
-  ]
-
-  const colorControlKeys: RangeControlKey[] = ['colorScale', 'tintShadowFloor']
-  const cloudControlKeys: RangeControlKey[] = ['cloudBandCount', 'cloudBandSharpness', 'cloudChaos']
-  const stormControlKeys: RangeControlKey[] = [
-    'stormCount',
-    'stormScale',
-    'stormPower',
-    'stormStrength',
-    'stormColorStrength',
-  ]
-  const materialControlKeys: RangeControlKey[] = ['normalStrength', 'roughness', 'metalness']
-  const atmosphereControlKeys: RangeControlKey[] = [
-    'atmosphereIntensity',
-    'atmosphereThickness',
-    'atmosphereDropoff',
-    'atmosphereTerminatorWrap',
-  ]
-  const ringControls: RingRangeKey[] = [
-    'ringInnerRadius',
-    'ringOuterRadius',
-    'ringTilt',
-    'ringBandCount',
-    'ringBandSharpness',
-    'ringBandRegularity',
-    'ringDensity',
-    'ringTextureScale',
-    'ringGranularity',
-    'ringPaletteInfluence',
-    'ringSolarization',
-    'ringOpacity',
-    'ringNoise',
-    'ringGlitter',
-  ]
-
-  const colorControls = numericControls.filter((control) => colorControlKeys.includes(control))
-  const cloudControls = numericControls.filter((control) => cloudControlKeys.includes(control))
-  const stormControls = numericControls.filter((control) => stormControlKeys.includes(control))
-  const materialControls = numericControls.filter((control) =>
-    materialControlKeys.includes(control)
-  )
-  const atmosphereControls = numericControls.filter((control) =>
-    atmosphereControlKeys.includes(control)
-  )
 
   let canvasShell: HTMLDivElement | undefined = $state(undefined)
   let gasGiantScene: GasGiantSceneExports | undefined = $state(undefined)
@@ -178,18 +112,6 @@
   const effectiveStormsEnabled = $derived(stormsEnabled)
   const effectiveRingsEnabled = $derived(ringsEnabled)
 
-  function getTimestamp() {
-    const now = new Date()
-    const yyyy = String(now.getFullYear())
-    const mm = String(now.getMonth() + 1).padStart(2, '0')
-    const dd = String(now.getDate()).padStart(2, '0')
-    const hh = String(now.getHours()).padStart(2, '0')
-    const min = String(now.getMinutes()).padStart(2, '0')
-    const ss = String(now.getSeconds()).padStart(2, '0')
-
-    return `${yyyy}${mm}${dd}-${hh}${min}${ss}`
-  }
-
   function sanitizePresetName(input: unknown) {
     if (typeof input !== 'string') return ''
     return input.trim().replace(/\s+/g, ' ').slice(0, 48)
@@ -217,7 +139,7 @@
     }
   }
 
-  function applyGasGiantSettings(settings: GasGiantSettings) {
+  function applyGasGiantSettings(settings: unknown) {
     gasGiant = sanitizeGasGiantSettings(settings)
     stormsEnabled = gasGiant.enableStorms
     ringsEnabled = gasGiant.enableRings
@@ -283,54 +205,16 @@
     presetsManagerOpen = true
   }
 
-  function quoteCliValue(value: string) {
-    return JSON.stringify(value)
-  }
-
-  function toBooleanCliValue(value: boolean) {
-    return value ? 'true' : 'false'
-  }
-
   function buildCliCommandFromPreset(
     settings: GasGiantSettings,
     exportTextures: boolean,
     toggles: { stormsEnabled: boolean; ringsEnabled: boolean }
   ) {
-    const args: string[] = [
-      '--palette',
-      quoteCliValue(settings.palette),
-      '--surface-tint',
-      quoteCliValue(settings.surfaceTint),
-    ]
-
-    if (exportTextures) args.push('--export-textures')
-
-    for (const key of NUMERIC_RANGE_KEYS) {
-      const flag = GasGiantCliFlagByRangeKey[key]
-      const value = settings[key]
-      args.push(flag, String(value))
-    }
-
-    args.push(RingCliFlags.palette, quoteCliValue(settings.ringPalette))
-    for (const key of ringControls) {
-      args.push(RingCliFlagByRangeKey[key], String(settings[key]))
-    }
-
-    args.push(GasGiantCliFeatureFlags.atmospherePalette, quoteCliValue(settings.atmospherePalette))
-    args.push(
-      GasGiantCliToggleFlags.atmosphereEnabled,
-      toBooleanCliValue(settings.enableAtmosphere)
+    return buildGasGiantCliCommand(
+      { ...settings, enableStorms: toggles.stormsEnabled, enableRings: toggles.ringsEnabled },
+      exportTextures,
+      gasGiantScene?.getCameraView()
     )
-
-    args.push(GasGiantCliToggleFlags.autoRotate, toBooleanCliValue(settings.autoRotate))
-    args.push(GasGiantCliToggleFlags.stormsEnabled, toBooleanCliValue(toggles.stormsEnabled))
-    args.push(RingCliFlags.enabled, toBooleanCliValue(toggles.ringsEnabled))
-
-    args.push(GasGiantCliFlagByRangeKey.seed, '1')
-    args.push('--step', '1')
-    args.push('--count', '1')
-
-    return `npm run auto-generate-gas-giants -- ${args.join(' ')}`
   }
 
   async function copyTextToClipboard(text: string) {
@@ -368,14 +252,10 @@
       preset.settings.stormCount > 0 ||
       preset.settings.stormStrength > 0
 
-    const command = buildCliCommandFromPreset(
-      preset.settings,
-      sceneViewMode !== 'mesh',
-      {
-        stormsEnabled: stormsEnabledFromPreset,
-        ringsEnabled: preset.settings.enableRings,
-      }
-    )
+    const command = buildCliCommandFromPreset(preset.settings, sceneViewMode !== 'mesh', {
+      stormsEnabled: stormsEnabledFromPreset,
+      ringsEnabled: preset.settings.enableRings,
+    })
 
     const copied = await copyTextToClipboard(command)
     if (copied) {
@@ -418,6 +298,23 @@
   function closePresetManager() {
     presetsManagerOpen = false
   }
+
+  $effect(() => {
+    if (import.meta.env.DEV) reportMissingSettingControls(schema, 'Gas giant', document)
+  })
+
+  $effect(() =>
+    registerSettingsAutomation(
+      (overrides) =>
+        applyGasGiantSettings({
+          ...$state.snapshot(gasGiant),
+          enableStorms: stormsEnabled,
+          enableRings: ringsEnabled,
+          ...overrides,
+        }),
+      (view) => gasGiantScene?.setCameraView(view)
+    )
+  )
 
   $effect(() => {
     if (settingsHydrated) return
@@ -761,12 +658,12 @@
           ]}
         />
         <label class="toggle-row">
-          <span>{GasGiantUiLabels.autoRotate}</span>
-          <input type="checkbox" bind:checked={gasGiant.autoRotate} />
+          <span>{schema.autoRotate.label}</span>
+          <input id={controlId('autoRotate')} type="checkbox" bind:checked={gasGiant.autoRotate} />
         </label>
         <SeedControl
-          id="gas-giant-seed"
-          label={GasGiantUiLabels.seed}
+          id={controlId('seed')}
+          label={schema.seed.label}
           min={MinValues.seed}
           max={MaxValues.seed}
           step={StepValues.seed}
@@ -781,29 +678,20 @@
           bind:open={colorSettingsSectionOpen}
         >
           <PalettePicker
-            id="gas-giant-palette"
-            title={GasGiantUiLabels.palette}
+            id={controlId('palette')}
+            title={schema.palette.label}
             options={GasGiantPaletteNames}
             palettes={GasGiantPalettes}
             bind:value={gasGiant.palette}
           />
           <ColorPicker
-            id="gas-giant-surface-tint"
-            label={GasGiantUiLabels.surfaceTint}
+            id={controlId('surfaceTint')}
+            label={schema.surfaceTint.label}
             bind:value={gasGiant.surfaceTint}
           />
           <div class="control-grid">
-            {#each colorControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
-                />
-              </label>
+            {#each controls.color as control (control)}
+              {@render numberInput(control)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -814,13 +702,13 @@
         >
           <div class="control-grid">
             <TextureSizeControl
-              id="giant-normal-texture-size"
-              label="Normal texture size"
+              id={controlId('normalTextureSize')}
+              label={schema.normalTextureSize.label}
               bind:value={gasGiant.normalTextureSize}
             />
             <TextureSizeControl
-              id="giant-color-texture-size"
-              label="Color texture size"
+              id={controlId('colorTextureSize')}
+              label={schema.colorTextureSize.label}
               bind:value={gasGiant.colorTextureSize}
             />
           </div>
@@ -834,17 +722,8 @@
           bind:open={materialPropertiesSectionOpen}
         >
           <div class="control-grid">
-            {#each materialControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
-                />
-              </label>
+            {#each controls.material as control (control)}
+              {@render numberInput(control)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -858,97 +737,68 @@
           bind:open={cloudSettingsSectionOpen}
         >
           <div class="control-grid">
-            {#each cloudControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
-                />
-              </label>
+            {#each controls.cloudBands as control (control)}
+              {@render numberInput(control)}
             {/each}
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={GasGiantUiLabels.stormSystems}
+          title={schema.enableStorms.label}
           bind:open={stormSectionOpen}
           bind:enabled={stormsEnabled}
+          toggleId={controlId('enableStorms')}
         >
           <div class="control-grid">
-            {#each stormControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
-                  disabled={!effectiveStormsEnabled}
-                />
-              </label>
+            {#each controls.storms as control (control)}
+              {@render numberInput(control, !effectiveStormsEnabled)}
             {/each}
           </div>
         </CollapsibleControl>
 
-        <CollapsibleControl title="Rings" bind:open={ringSectionOpen} bind:enabled={ringsEnabled}>
+        <CollapsibleControl
+          title={schema.enableRings.label}
+          bind:open={ringSectionOpen}
+          bind:enabled={ringsEnabled}
+          toggleId={controlId('enableRings')}
+        >
           <PalettePicker
-            id="ring-palette"
-            title="Ring palette"
+            id={controlId('ringPalette')}
+            title={schema.ringPalette.label}
             options={RingPaletteNames}
             palettes={RingPalettes}
             bind:value={gasGiant.ringPalette}
           />
           <div class="control-grid">
-            {#each ringControls as control (control)}
-              <label class="compact-number-row">
-                <span>{RingRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={RingMinValues[control]}
-                  max={RingMaxValues[control]}
-                  step={RingStepValues[control]}
-                  bind:value={gasGiant[control]}
-                  oninput={control === 'ringInnerRadius' || control === 'ringOuterRadius'
-                    ? clampRingRadii
-                    : undefined}
-                  disabled={!effectiveRingsEnabled}
-                />
-              </label>
+            {#each controls.rings as control (control)}
+              {@render numberInput(
+                control,
+                !effectiveRingsEnabled,
+                control === 'ringInnerRadius' || control === 'ringOuterRadius'
+                  ? clampRingRadii
+                  : undefined
+              )}
             {/each}
           </div>
         </CollapsibleControl>
 
         <CollapsibleControl
-          title={GasGiantUiLabels.atmosphere}
+          title={schema.enableAtmosphere.label}
           bind:open={atmosphereSectionOpen}
           bind:enabled={gasGiant.enableAtmosphere}
+          toggleId={controlId('enableAtmosphere')}
         >
           <PalettePicker
-            id="gas-giant-atmosphere-palette"
-            title={GasGiantUiLabels.atmospherePalette}
+            id={controlId('atmospherePalette')}
+            title={schema.atmospherePalette.label}
             options={AtmospherePaletteNames}
             palettes={AtmospherePalettes}
             labels={AtmospherePaletteLabels}
             bind:value={gasGiant.atmospherePalette}
           />
           <div class="control-grid">
-            {#each atmosphereControls as control (control)}
-              <label class="compact-number-row">
-                <span>{GasGiantRangeLabels[control]}</span>
-                <input
-                  type="number"
-                  min={MinValues[control]}
-                  max={MaxValues[control]}
-                  step={StepValues[control]}
-                  bind:value={gasGiant[control]}
-                  disabled={!gasGiant.enableAtmosphere}
-                />
-              </label>
+            {#each controls.atmosphere as control (control)}
+              {@render numberInput(control, !gasGiant.enableAtmosphere)}
             {/each}
           </div>
         </CollapsibleControl>
@@ -956,6 +806,22 @@
     </div>
   </section>
 </div>
+
+{#snippet numberInput(control: GasGiantRangeKey, disabled = false, oninput?: () => void)}
+  <label class="compact-number-row">
+    <span>{GasGiantRangeLabels[control]}</span>
+    <input
+      id={controlId(control)}
+      type="number"
+      min={MinValues[control]}
+      max={MaxValues[control]}
+      step={StepValues[control]}
+      bind:value={gasGiant[control]}
+      {oninput}
+      {disabled}
+    />
+  </label>
+{/snippet}
 
 {#if presetsManagerOpen}
   <PresetManager
@@ -969,6 +835,15 @@
     onExportPreset={(entry: PresetListItem) => {
       const preset = findPresetById(entry.id)
       if (preset) exportPresetToCli(preset)
+    }}
+    onExportUserPresetJson={(entry: PresetListItem) => {
+      const preset = userPresets.find((candidate) => candidate.id === entry.id)
+      if (preset) {
+        downloadPresetJson('gas-giant', {
+          ...preset,
+          settings: sanitizeGasGiantSettings(preset.settings),
+        })
+      }
     }}
     onDeleteUserPreset={(entry: PresetListItem) => deleteUserPreset(entry.id)}
   />

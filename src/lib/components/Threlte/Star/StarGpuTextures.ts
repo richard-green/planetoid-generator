@@ -19,6 +19,19 @@ import { getPalettePosition, type Palette } from '../../../types/palette'
 
 const MAX_PALETTE = 16
 
+/** Maps a seed to a distant, well-mixed noise-space offset so each seed yields a distinct star. */
+export function starSeedOffset(seed: number): Vector3 {
+  const component = (salt: number) => {
+    let hash = Math.imul((Math.floor(seed) ^ salt) >>> 0, 0x9e3779b1)
+    hash ^= hash >>> 15
+    hash = Math.imul(hash, 0x85ebca6b)
+    hash ^= hash >>> 13
+    // Kept under ~100 so the sin-based shader hashes stay precise.
+    return ((hash >>> 0) / 4294967296) * 100
+  }
+  return new Vector3(component(0x68e31da4), component(0xb5297a4d), component(0x1b56c4e9))
+}
+
 const vertexShader = `
   varying vec2 vUv;
   void main() {
@@ -317,7 +330,7 @@ export function createStarColorTexture(
     vertexShader,
     fragmentShader,
     uniforms: {
-      uSeed: { value: new Vector3(seed * 0.0013, seed * 0.0021, seed * 0.0007) },
+      uSeed: { value: starSeedOffset(seed) },
       uScale: { value: scale },
       uBandContrast: { value: bandContrast },
       uBandSwirl: { value: bandSwirl },

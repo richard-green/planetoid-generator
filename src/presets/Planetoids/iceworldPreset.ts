@@ -15,7 +15,6 @@ export const iceworldPreset: PlanetoidPreset = {
     tintShadowFloor: 0,
     swirliness: 0.5,
     dustCloudCoverage: 0.75,
-    dustCloudStyle: 'worley',
     dustCloudWeights: { ...DefaultValues.dustCloudWeights, wisps: 0, worley: 1 },
     dustCloudPalette: 'silicate',
     dustCloudOpacity: 0.75,

@@ -6,12 +6,13 @@
     Color,
     Mesh,
     ShaderMaterial,
+    Vector3,
     WebGLRenderTarget,
     type Texture,
   } from 'three'
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
-  import { createStarColorTexture, disposeStarTexture } from './StarGpuTextures'
+  import { createStarColorTexture, disposeStarTexture, starSeedOffset } from './StarGpuTextures'
   import { StarPalettes } from './StarPalettes'
   import { MaxValues, MinValues, type StarRangeKey, type StarSettings } from './StarSettings'
   import { sanitizeTextureSize } from '../../../types/textureSize'
@@ -252,7 +253,7 @@
     uMap: { value: null },
     uLimbColor: { value: new Color('#ffffff') },
     uLimbIntensity: { value: 0 },
-    uSeed: { value: new Color() },
+    uSeed: { value: new Vector3() },
     uPlasmaSurfaceIntensity: { value: 0 },
     uPlasmaTurbulence: { value: 0 },
     uPlasmaSharpness: { value: 1 },
@@ -260,7 +261,7 @@
   }
   const haloUniforms = {
     uHaloColor: { value: new Color('#ffffff') },
-    uSeed: { value: new Color() },
+    uSeed: { value: new Vector3() },
     uHaloIntensity: { value: 0 },
     uHaloFalloff: { value: 1 },
     uHaloSize: { value: 1 },
@@ -273,7 +274,7 @@
   }
   const plasmaUniforms = {
     uHaloColor: { value: new Color('#ffffff') },
-    uSeed: { value: new Color() },
+    uSeed: { value: new Vector3() },
     uHaloIntensity: { value: 0 },
     uHaloFalloff: { value: 1 },
     uHaloSize: { value: 1 },
@@ -394,11 +395,8 @@
   })
 
   $effect(() => {
-    surfaceUniforms.uSeed.value.set(
-      settings.seed * 0.0013,
-      settings.seed * 0.0021,
-      settings.seed * 0.0007
-    )
+    const seedOffset = starSeedOffset(settings.seed)
+    surfaceUniforms.uSeed.value.copy(seedOffset)
     surfaceUniforms.uPlasmaSurfaceIntensity.value = settings.plasmaSurfaceIntensity
     surfaceUniforms.uPlasmaTurbulence.value = settings.plasmaTurbulence
     surfaceUniforms.uPlasmaSharpness.value = settings.plasmaSharpness
@@ -406,11 +404,7 @@
 
     if (!haloMaterial) return
     haloMaterial.uniforms.uHaloColor.value = haloColor
-    haloMaterial.uniforms.uSeed.value.set(
-      settings.seed * 0.0013,
-      settings.seed * 0.0021,
-      settings.seed * 0.0007
-    )
+    haloMaterial.uniforms.uSeed.value.copy(seedOffset)
     haloMaterial.uniforms.uHaloIntensity.value = settings.haloIntensity
     haloMaterial.uniforms.uHaloFalloff.value = settings.haloFalloff
     haloMaterial.uniforms.uHaloSize.value = settings.haloSize
@@ -422,11 +416,7 @@
     haloMaterial.uniforms.uPlasmaTextureScale.value = settings.plasmaTextureScale
 
     plasmaUniforms.uHaloColor.value = haloColor
-    plasmaUniforms.uSeed.value.set(
-      settings.seed * 0.0013,
-      settings.seed * 0.0021,
-      settings.seed * 0.0007
-    )
+    plasmaUniforms.uSeed.value.copy(seedOffset)
     plasmaUniforms.uHaloIntensity.value = settings.haloIntensity
     plasmaUniforms.uHaloFalloff.value = settings.haloFalloff
     plasmaUniforms.uHaloSize.value = plasmaShellScale

@@ -1,15 +1,15 @@
 import {
-  sanitizeBoolean,
-  sanitizeEnum,
-  sanitizeNumber,
-  toRecord,
-  type NumericSanitizeSpec,
-} from '../../../utils/sanitize'
-import {
-  DefaultTextureSize,
-  sanitizeTextureSize,
-  type TextureSize,
-} from '../../../types/textureSize'
+  assertValidSchema,
+  numericKeysBySection,
+  numericLabels,
+  numericTable,
+  sanitizeWithSchema,
+  toCliArgs,
+  type NumericKeys,
+  type SettingsSchema,
+} from '../../../types/settingsSchema'
+import { type TextureSize } from '../../../types/textureSize'
+import { cameraViewCliArgs, type CameraView } from '../../../utils/cameraView'
 
 export type StarPaletteName = 'White' | 'Blue' | 'Yellow' | 'Orange' | 'Red'
 
@@ -55,39 +55,19 @@ export type StarSettings = {
   autoRotate: boolean
 }
 
-export type StarRangeValues = Pick<
-  StarSettings,
-  | 'seed'
-  | 'brightness'
-  | 'saturation'
-  | 'contrast'
-  | 'limbBrightness'
-  | 'haloIntensity'
-  | 'haloFalloff'
-  | 'haloSize'
-  | 'haloTurbulence'
-  | 'plasmaIntensity'
-  | 'plasmaSurfaceIntensity'
-  | 'plasmaExtent'
-  | 'plasmaTurbulence'
-  | 'plasmaSharpness'
-  | 'plasmaTextureScale'
-  | 'textureScale'
-  | 'bandContrast'
-  | 'bandSwirl'
-  | 'granularity'
-  | 'turbulence'
-  | 'convection'
-  | 'sunspotCount'
-  | 'sunspotScale'
-  | 'sunspotPower'
-  | 'sunspotJaggedness'
-  | 'sunspotNeighbours'
-  | 'penumbraScale'
-  | 'sunspotDarkness'
->
+export const StarSections = [
+  'scene',
+  'color',
+  'surface',
+  'textureResolution',
+  'sunspots',
+  'halo',
+  'plasma',
+] as const
+export type StarSection = (typeof StarSections)[number]
 
-export type StarRangeKey = keyof StarRangeValues
+export type StarRangeKey = NumericKeys<StarSettings>
+export type StarRangeValues = Pick<StarSettings, StarRangeKey>
 
 export const DefaultValues: StarSettings = {
   seed: 1,
@@ -123,121 +103,94 @@ export const DefaultValues: StarSettings = {
   autoRotate: false,
 }
 
-export const MinValues: StarRangeValues = {
-  seed: 1,
-  brightness: 0.1,
-  saturation: 0,
-  contrast: 0,
-  limbBrightness: 0,
-  haloIntensity: 0,
-  haloFalloff: 0.5,
-  haloSize: 1,
-  haloTurbulence: 0,
-  plasmaIntensity: 1,
-  plasmaSurfaceIntensity: 0,
-  plasmaExtent: 0.02,
-  plasmaTurbulence: 0,
-  plasmaSharpness: 1,
-  plasmaTextureScale: 0.2,
-  textureScale: 0.2,
-  bandContrast: 0,
-  bandSwirl: 0,
-  granularity: 0.2,
-  turbulence: 0,
-  convection: 0,
-  sunspotCount: 0,
-  sunspotScale: 0.25,
-  sunspotPower: 0.25,
-  sunspotJaggedness: 0,
-  sunspotNeighbours: 0,
-  penumbraScale: 0.25,
-  sunspotDarkness: 0,
+type NumberSpecArgs = [
+  label: string,
+  cliFlag: `--${string}`,
+  min: number,
+  max: number,
+  step: number,
+]
+
+function num(section: StarSection, ...[label, cliFlag, min, max, step]: NumberSpecArgs) {
+  return { kind: 'number', section, label, cliFlag, min, max, step } as const
 }
 
-export const MaxValues: StarRangeValues = {
-  seed: 999999,
-  brightness: 3,
-  saturation: 2,
-  contrast: 2,
-  limbBrightness: 3,
-  haloIntensity: 3,
-  haloFalloff: 10,
-  haloSize: 1.4,
-  haloTurbulence: 2,
-  plasmaIntensity: 20,
-  plasmaSurfaceIntensity: 8,
-  plasmaExtent: 1,
-  plasmaTurbulence: 8,
-  plasmaSharpness: 12,
-  plasmaTextureScale: 8,
-  textureScale: 4,
-  bandContrast: 5,
-  bandSwirl: 5,
-  granularity: 8,
-  turbulence: 8,
-  convection: 8,
-  sunspotCount: 12,
-  sunspotScale: 3,
-  sunspotPower: 4,
-  sunspotJaggedness: 2,
-  sunspotNeighbours: 7,
-  penumbraScale: 3,
-  sunspotDarkness: 1,
+export const StarSchema: SettingsSchema<StarSettings, StarSection> = {
+  seed: { ...num('scene', 'Seed', '--seed', 1, 999999, 1), integer: true },
+  autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
+  palette: {
+    kind: 'enum',
+    label: 'Stellar class',
+    cliFlag: '--palette',
+    section: 'color',
+    options: StarPaletteNames,
+  },
+  brightness: num('color', 'Brightness', '--brightness', 0.1, 3, 0.1),
+  saturation: num('color', 'Saturation', '--saturation', 0, 2, 0.1),
+  contrast: num('color', 'Contrast', '--contrast', 0, 2, 0.1),
+  limbBrightness: num('color', 'Limb brightness', '--limb-brightness', 0, 3, 0.1),
+  textureScale: num('surface', 'Band scale', '--texture-scale', 0.2, 4, 0.1),
+  bandContrast: num('surface', 'Band contrast', '--band-contrast', 0, 5, 0.05),
+  bandSwirl: num('surface', 'Band swirl', '--band-swirl', 0, 5, 0.05),
+  granularity: num('surface', 'Granularity', '--granularity', 0.2, 8, 0.1),
+  turbulence: num('surface', 'Turbulence', '--turbulence', 0, 8, 0.1),
+  convection: num('surface', 'Convection', '--convection', 0, 8, 0.1),
+  colorTextureSize: {
+    kind: 'textureSize',
+    label: 'Color texture size',
+    cliFlag: '--color-texture-size',
+    section: 'textureResolution',
+  },
+  sunspotCount: {
+    ...num('sunspots', 'Sunspot groups', '--sunspot-count', 0, 12, 1),
+    integer: true,
+  },
+  sunspotScale: num('sunspots', 'Sunspot scale', '--sunspot-scale', 0.25, 3, 0.1),
+  sunspotPower: num('sunspots', 'Spot size power', '--sunspot-power', 0.25, 4, 0.1),
+  sunspotJaggedness: num('sunspots', 'Sunspot jaggedness', '--sunspot-jaggedness', 0, 2, 0.1),
+  sunspotNeighbours: {
+    ...num('sunspots', 'Max neighbours', '--sunspot-neighbours', 0, 7, 1),
+    integer: true,
+  },
+  penumbraScale: num('sunspots', 'Penumbra scale', '--penumbra-scale', 0.25, 3, 0.1),
+  sunspotDarkness: num('sunspots', 'Sunspot darkness', '--sunspot-darkness', 0, 1, 0.05),
+  haloIntensity: num('halo', 'Halo brightness', '--halo-intensity', 0, 3, 0.1),
+  haloFalloff: num('halo', 'Halo dropoff', '--halo-falloff', 0.5, 10, 0.25),
+  haloSize: num('halo', 'Halo size', '--halo-size', 1, 1.4, 0.01),
+  haloTurbulence: num('halo', 'Halo turbulence', '--halo-turbulence', 0, 2, 0.1),
+  plasmaIntensity: num('plasma', 'Plasma brightness', '--plasma-intensity', 1, 20, 0.1),
+  plasmaSurfaceIntensity: num(
+    'plasma',
+    'Surface plasma intensity',
+    '--plasma-surface-intensity',
+    0,
+    8,
+    0.05
+  ),
+  plasmaExtent: num('plasma', 'Plasma extent', '--plasma-extent', 0.02, 1, 0.01),
+  plasmaTurbulence: num('plasma', 'Plasma turbulence', '--plasma-turbulence', 0, 8, 0.1),
+  plasmaSharpness: num('plasma', 'Plasma sharpness', '--plasma-sharpness', 1, 12, 0.25),
+  plasmaTextureScale: num('plasma', 'Plasma texture scale', '--plasma-texture-scale', 0.2, 8, 0.1),
 }
 
-export const StepValues: StarRangeValues = {
-  seed: 1,
-  brightness: 0.1,
-  saturation: 0.1,
-  contrast: 0.1,
-  limbBrightness: 0.1,
-  haloIntensity: 0.1,
-  haloFalloff: 0.25,
-  haloSize: 0.01,
-  haloTurbulence: 0.1,
-  plasmaIntensity: 0.1,
-  plasmaSurfaceIntensity: 0.05,
-  plasmaExtent: 0.01,
-  plasmaTurbulence: 0.1,
-  plasmaSharpness: 0.25,
-  plasmaTextureScale: 0.1,
-  textureScale: 0.1,
-  bandContrast: 0.05,
-  bandSwirl: 0.05,
-  granularity: 0.1,
-  turbulence: 0.1,
-  convection: 0.1,
-  sunspotCount: 1,
-  sunspotScale: 0.1,
-  sunspotPower: 0.1,
-  sunspotJaggedness: 0.1,
-  sunspotNeighbours: 1,
-  penumbraScale: 0.1,
-  sunspotDarkness: 0.05,
-}
+assertValidSchema(StarSchema, DefaultValues, 'Star')
 
-const INTEGER_RANGE_KEYS: readonly StarRangeKey[] = ['seed', 'sunspotCount', 'sunspotNeighbours']
+export const MinValues = numericTable(StarSchema, 'min')
+export const MaxValues = numericTable(StarSchema, 'max')
+export const StepValues = numericTable(StarSchema, 'step')
+export const StarRangeLabels = numericLabels(StarSchema)
+export const StarNumericControls = numericKeysBySection(StarSchema, StarSections)
 
 export function sanitizeStarSettings(input: unknown): StarSettings {
-  const raw = toRecord(input)
-  const numeric = {} as StarRangeValues
+  return sanitizeWithSchema(StarSchema, DefaultValues, input)
+}
 
-  for (const key of Object.keys(MinValues) as StarRangeKey[]) {
-    const spec: NumericSanitizeSpec = {
-      defaultValue: DefaultValues[key],
-      min: MinValues[key],
-      max: MaxValues[key],
-      round: INTEGER_RANGE_KEYS.includes(key),
-    }
-    numeric[key] = sanitizeNumber(raw, key, spec)
-  }
+export function buildStarCliCommand(settings: StarSettings, camera?: CameraView) {
+  const args = toCliArgs(StarSchema, sanitizeStarSettings(settings), ['seed'])
+  if (camera) args.push(...cameraViewCliArgs(camera))
+  args.push(StarSchema.seed.cliFlag, '1', '--step', '1', '--count', '1')
 
-  return {
-    ...numeric,
-    colorTextureSize: sanitizeTextureSize(raw.colorTextureSize, DefaultValues.colorTextureSize),
-    palette: sanitizeEnum(raw, 'palette', StarPaletteNames, DefaultValues.palette),
-    autoRotate: sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate),
-  }
+  return `npm run auto-generate-stars -- ${args.join(' ')}`
 }
 
 export const DefaultStarSettings = DefaultValues

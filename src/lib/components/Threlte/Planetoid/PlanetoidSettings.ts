@@ -5,15 +5,20 @@ import {
   AtmospherePaletteNames,
   type AtmospherePaletteName,
 } from '../Atmosphere/AtmospherePalettes'
-import { sanitizeTextureSize, type TextureSize } from '../../../types/textureSize'
+import { type TextureSize } from '../../../types/textureSize'
 import {
-  sanitizeBoolean,
-  sanitizeEnum,
-  sanitizeHexColor,
-  sanitizeNumericMap,
-  toRecord,
-  type NumericSanitizeSpec,
-} from '../../../utils/sanitize'
+  assertValidSchema,
+  numericKeysBySection,
+  numericLabels,
+  numericTable,
+  sanitizeWithSchema,
+  toCliArgs,
+  type NumericKeys,
+  type SettingsSchema,
+} from '../../../types/settingsSchema'
+import { clamp } from '../../../utils/math'
+import { cameraViewCliArgs, type CameraView } from '../../../utils/cameraView'
+import { toRecord } from '../../../utils/sanitize'
 
 export const PlanetoidViewModeNames = [
   'mesh',
@@ -74,7 +79,6 @@ export type PlanetoidSettings = {
   tintShadowFloor: number
   swirliness: number
   dustCloudCoverage: number
-  dustCloudStyle: DustCloudStyle
   dustCloudWeights: DustCloudWeights
   dustCloudPalette: DustCloudPaletteName
   dustCloudOpacity: number
@@ -129,58 +133,24 @@ export type PlanetoidViewSettings = Pick<
   viewMode: PlanetoidViewMode
 }
 
-export type PlanetoidRangeValues = Pick<
-  PlanetoidSettings,
-  | 'seed'
-  | 'iceCapCoverage'
-  | 'iceCapEdgeNoise'
-  | 'snowExtent'
-  | 'snowCoverage'
-  | 'colorScale'
-  | 'tintShadowFloor'
-  | 'swirliness'
-  | 'dustCloudCoverage'
-  | 'dustCloudOpacity'
-  | 'dustCloudElevation'
-  | 'dustCloudFrequency'
-  | 'dustCloudSwirliness'
-  | 'dustCloudCoriolis'
-  | 'dustCloudNormalStrength'
-  | 'atmosphereIntensity'
-  | 'atmosphereThickness'
-  | 'atmosphereDropoff'
-  | 'atmosphereTerminatorWrap'
-  | 'craterCount'
-  | 'craterScale'
-  | 'craterStrength'
-  | 'craterSharpness'
-  | 'craterColorStrength'
-  | 'volcanoCount'
-  | 'volcanoScale'
-  | 'volcanoStrength'
-  | 'volcanoColorStrength'
-  | 'ridgeColorWeight'
-  | 'riftColorWeight'
-  | 'ridgeStrength'
-  | 'ridgeFrequency'
-  | 'ridgeSharpness'
-  | 'riftStrength'
-  | 'riftFrequency'
-  | 'riftWidth'
-  | 'riftSharpness'
-  | 'ridgesRiftsBlend'
-  | 'normalStrength'
-  | 'roughness'
-  | 'metalness'
-  | 'largeScale'
-  | 'mediumScale'
-  | 'smallScale'
-  | 'mediumFrequency'
-  | 'smallFrequency'
-  | 'triangleDetail'
->
+export const PlanetoidSections = [
+  'scene',
+  'color',
+  'textureResolution',
+  'material',
+  'iceCaps',
+  'dustClouds',
+  'atmosphere',
+  'craters',
+  'volcanoes',
+  'ridges',
+  'rifts',
+  'geometry',
+] as const
+export type PlanetoidSection = (typeof PlanetoidSections)[number]
 
-export type PlanetoidRangeKey = keyof PlanetoidRangeValues
+export type PlanetoidRangeKey = NumericKeys<PlanetoidSettings>
+export type PlanetoidRangeValues = Pick<PlanetoidSettings, PlanetoidRangeKey>
 
 export const DefaultValues: PlanetoidSettings = {
   autoRotate: false,
@@ -205,7 +175,6 @@ export const DefaultValues: PlanetoidSettings = {
   tintShadowFloor: 0.18,
   swirliness: 1,
   dustCloudCoverage: 0.4,
-  dustCloudStyle: 'wisps',
   dustCloudWeights: {
     wisps: 1,
     worley: 0,
@@ -257,514 +226,610 @@ export const DefaultValues: PlanetoidSettings = {
   triangleDetail: 15,
 }
 
-export const MinValues: PlanetoidRangeValues = {
-  iceCapCoverage: 0,
-  iceCapEdgeNoise: 0,
-  snowExtent: 0,
-  snowCoverage: 0,
-  seed: 1,
-  colorScale: 0.0,
-  tintShadowFloor: 0,
-  swirliness: 0,
-  dustCloudCoverage: 0,
-  dustCloudOpacity: 0,
-  dustCloudElevation: 0.01,
-  dustCloudFrequency: 0.25,
-  dustCloudSwirliness: 0,
-  dustCloudCoriolis: 0,
-  dustCloudNormalStrength: 0,
-  atmosphereIntensity: 0,
-  atmosphereThickness: 0.01,
-  atmosphereDropoff: 0.25,
-  atmosphereTerminatorWrap: 0,
-  craterCount: 0,
-  craterScale: 0.25,
-  craterStrength: 0,
-  craterSharpness: 0.5,
-  craterColorStrength: 0,
-  volcanoCount: 0,
-  volcanoScale: 0.35,
-  volcanoStrength: 0,
-  volcanoColorStrength: 0,
-  ridgeColorWeight: 0,
-  riftColorWeight: 0,
-  ridgeStrength: 0,
-  ridgeFrequency: 0.5,
-  ridgeSharpness: 0.5,
-  riftStrength: 0,
-  riftFrequency: 0.5,
-  riftWidth: 0.01,
-  riftSharpness: 0.5,
-  ridgesRiftsBlend: 0,
-  normalStrength: 0,
-  roughness: 0,
-  metalness: 0,
-  largeScale: 0,
-  mediumScale: 0,
-  smallScale: 0,
-  mediumFrequency: 0.5,
-  smallFrequency: 1,
-  triangleDetail: 1,
+function sanitizeDustCloudWeights(value: unknown, fallback: DustCloudWeights): DustCloudWeights {
+  const raw = toRecord(value)
+  if (!DustCloudStyleNames.some((style) => style in raw)) return { ...fallback }
+
+  return Object.fromEntries(
+    DustCloudStyleNames.map((style) => {
+      const weight = raw[style]
+      return [
+        style,
+        typeof weight === 'number' && Number.isFinite(weight) ? clamp(weight, 0, 1) : 0,
+      ]
+    })
+  ) as DustCloudWeights
 }
 
-export const MaxValues: PlanetoidRangeValues = {
-  iceCapCoverage: 1,
-  iceCapEdgeNoise: 1,
-  snowExtent: 0.5,
-  snowCoverage: 1,
-  seed: 999999,
-  colorScale: 2,
-  tintShadowFloor: 0.8,
-  swirliness: 2,
-  dustCloudCoverage: 1,
-  dustCloudOpacity: 1,
-  dustCloudElevation: 1,
-  dustCloudFrequency: 4,
-  dustCloudSwirliness: 2,
-  dustCloudCoriolis: 2,
-  dustCloudNormalStrength: 3,
-  atmosphereIntensity: 5,
-  atmosphereThickness: 1,
-  atmosphereDropoff: 16,
-  atmosphereTerminatorWrap: 1,
-  craterCount: 120,
-  craterScale: 3,
-  craterStrength: 10,
-  craterSharpness: 8,
-  craterColorStrength: 3,
-  volcanoCount: 96,
-  volcanoScale: 2.5,
-  volcanoStrength: 3,
-  volcanoColorStrength: 2.5,
-  ridgeColorWeight: 4,
-  riftColorWeight: 4,
-  ridgeStrength: 2,
-  ridgeFrequency: 8,
-  ridgeSharpness: 4,
-  riftStrength: 2,
-  riftFrequency: 12,
-  riftWidth: 0.25,
-  riftSharpness: 6,
-  ridgesRiftsBlend: 1,
-  normalStrength: 10,
-  roughness: 1,
-  metalness: 1,
-  largeScale: 2,
-  mediumScale: 2,
-  smallScale: 2,
-  mediumFrequency: 5,
-  smallFrequency: 20,
-  triangleDetail: 40,
+/** Accepts `wisps=1,worley=0.5` (unlisted styles are 0) or a bare style name meaning weight 1. */
+function parseDustCloudWeights(text: string): DustCloudWeights {
+  const weights = Object.fromEntries(
+    DustCloudStyleNames.map((style) => [style, 0])
+  ) as DustCloudWeights
+
+  // Windows npm/npx shims turn commas into spaces, so accept either as a separator.
+  for (const part of text.split(/[\s,]+/).filter(Boolean)) {
+    const [name, rawWeight = '1'] = part.split('=').map((token) => token.trim())
+    if (!DustCloudStyleNames.includes(name as DustCloudStyle)) {
+      throw new Error(
+        `Unknown dust-cloud style "${name}". Expected: ${DustCloudStyleNames.join(', ')}`
+      )
+    }
+    const weight = Number(rawWeight)
+    if (!Number.isFinite(weight) || weight < 0 || weight > 1) {
+      throw new Error(
+        `Dust-cloud weight for ${name} must be between 0 and 1. Received: ${rawWeight}`
+      )
+    }
+    weights[name as DustCloudStyle] = weight
+  }
+
+  return weights
 }
 
-export const StepValues: PlanetoidRangeValues = {
-  iceCapCoverage: 0.01,
-  iceCapEdgeNoise: 0.05,
-  snowExtent: 0.01,
-  snowCoverage: 0.05,
-  seed: 1,
-  colorScale: 0.1,
-  tintShadowFloor: 0.01,
-  swirliness: 0.05,
-  dustCloudCoverage: 0.05,
-  dustCloudOpacity: 0.05,
-  dustCloudElevation: 0.01,
-  dustCloudFrequency: 0.05,
-  dustCloudSwirliness: 0.05,
-  dustCloudCoriolis: 0.05,
-  dustCloudNormalStrength: 0.05,
-  atmosphereIntensity: 0.05,
-  atmosphereThickness: 0.01,
-  atmosphereDropoff: 0.25,
-  atmosphereTerminatorWrap: 0.05,
-  craterCount: 1,
-  craterScale: 0.05,
-  craterStrength: 0.1,
-  craterSharpness: 0.1,
-  craterColorStrength: 0.05,
-  volcanoCount: 1,
-  volcanoScale: 0.05,
-  volcanoStrength: 0.05,
-  volcanoColorStrength: 0.05,
-  ridgeColorWeight: 0.05,
-  riftColorWeight: 0.05,
-  ridgeStrength: 0.05,
-  ridgeFrequency: 0.1,
-  ridgeSharpness: 0.05,
-  riftStrength: 0.05,
-  riftFrequency: 0.1,
-  riftWidth: 0.01,
-  riftSharpness: 0.05,
-  ridgesRiftsBlend: 0.05,
-  normalStrength: 0.1,
-  roughness: 0.1,
-  metalness: 0.1,
-  largeScale: 0.1,
-  mediumScale: 0.1,
-  smallScale: 0.1,
-  mediumFrequency: 0.1,
-  smallFrequency: 0.1,
-  triangleDetail: 1,
-}
-
-const NUMERIC_SANITIZE_SPECS: Record<PlanetoidRangeKey, NumericSanitizeSpec> = {
-  snowExtent: {
-    defaultValue: DefaultValues.snowExtent,
-    min: MinValues.snowExtent,
-    max: MaxValues.snowExtent,
-  },
-  snowCoverage: {
-    defaultValue: DefaultValues.snowCoverage,
-    min: MinValues.snowCoverage,
-    max: MaxValues.snowCoverage,
-  },
-  iceCapCoverage: {
-    defaultValue: DefaultValues.iceCapCoverage,
-    min: MinValues.iceCapCoverage,
-    max: MaxValues.iceCapCoverage,
-  },
-  iceCapEdgeNoise: {
-    defaultValue: DefaultValues.iceCapEdgeNoise,
-    min: MinValues.iceCapEdgeNoise,
-    max: MaxValues.iceCapEdgeNoise,
-  },
+export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection> = {
   seed: {
-    defaultValue: DefaultValues.seed,
-    min: MinValues.seed,
-    max: MaxValues.seed,
-    round: true,
+    kind: 'number',
+    label: 'Seed',
+    cliFlag: '--seed',
+    section: 'scene',
+    min: 1,
+    max: 999999,
+    step: 1,
+    integer: true,
+  },
+  autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
+  showDebugMeshes: {
+    kind: 'boolean',
+    label: 'Show debug meshes',
+    cliFlag: '--show-debug-meshes',
+    section: 'scene',
+  },
+  palette: {
+    kind: 'enum',
+    label: 'Palette',
+    cliFlag: '--palette',
+    section: 'color',
+    options: PlanetoidPaletteNames,
+  },
+  surfaceTint: {
+    kind: 'color',
+    label: 'Surface tint',
+    cliFlag: '--surface-tint',
+    section: 'color',
   },
   colorScale: {
-    defaultValue: DefaultValues.colorScale,
-    min: MinValues.colorScale,
-    max: MaxValues.colorScale,
+    kind: 'number',
+    label: 'Color scale',
+    cliFlag: '--color-scale',
+    section: 'color',
+    min: 0,
+    max: 2,
+    step: 0.1,
   },
   tintShadowFloor: {
-    defaultValue: DefaultValues.tintShadowFloor,
-    min: MinValues.tintShadowFloor,
-    max: MaxValues.tintShadowFloor,
+    kind: 'number',
+    label: 'Tint shadow floor',
+    cliFlag: '--tint-shadow-floor',
+    section: 'color',
+    min: 0,
+    max: 0.8,
+    step: 0.01,
   },
   swirliness: {
-    defaultValue: DefaultValues.swirliness,
-    min: MinValues.swirliness,
-    max: MaxValues.swirliness,
+    kind: 'number',
+    label: 'Swirliness',
+    cliFlag: '--swirliness',
+    section: 'color',
+    min: 0,
+    max: 2,
+    step: 0.05,
   },
-  dustCloudCoverage: {
-    defaultValue: DefaultValues.dustCloudCoverage,
-    min: MinValues.dustCloudCoverage,
-    max: MaxValues.dustCloudCoverage,
+  normalTextureSize: {
+    kind: 'textureSize',
+    label: 'Normal texture size',
+    cliFlag: '--normal-texture-size',
+    section: 'textureResolution',
   },
-  dustCloudOpacity: {
-    defaultValue: DefaultValues.dustCloudOpacity,
-    min: MinValues.dustCloudOpacity,
-    max: MaxValues.dustCloudOpacity,
-  },
-  dustCloudElevation: {
-    defaultValue: DefaultValues.dustCloudElevation,
-    min: MinValues.dustCloudElevation,
-    max: MaxValues.dustCloudElevation,
-  },
-  dustCloudFrequency: {
-    defaultValue: DefaultValues.dustCloudFrequency,
-    min: MinValues.dustCloudFrequency,
-    max: MaxValues.dustCloudFrequency,
-  },
-  dustCloudSwirliness: {
-    defaultValue: DefaultValues.dustCloudSwirliness,
-    min: MinValues.dustCloudSwirliness,
-    max: MaxValues.dustCloudSwirliness,
-  },
-  dustCloudCoriolis: {
-    defaultValue: DefaultValues.dustCloudCoriolis,
-    min: MinValues.dustCloudCoriolis,
-    max: MaxValues.dustCloudCoriolis,
-  },
-  dustCloudNormalStrength: {
-    defaultValue: DefaultValues.dustCloudNormalStrength,
-    min: MinValues.dustCloudNormalStrength,
-    max: MaxValues.dustCloudNormalStrength,
-  },
-  atmosphereIntensity: {
-    defaultValue: DefaultValues.atmosphereIntensity,
-    min: MinValues.atmosphereIntensity,
-    max: MaxValues.atmosphereIntensity,
-  },
-  atmosphereThickness: {
-    defaultValue: DefaultValues.atmosphereThickness,
-    min: MinValues.atmosphereThickness,
-    max: MaxValues.atmosphereThickness,
-  },
-  atmosphereDropoff: {
-    defaultValue: DefaultValues.atmosphereDropoff,
-    min: MinValues.atmosphereDropoff,
-    max: MaxValues.atmosphereDropoff,
-  },
-  atmosphereTerminatorWrap: {
-    defaultValue: DefaultValues.atmosphereTerminatorWrap,
-    min: MinValues.atmosphereTerminatorWrap,
-    max: MaxValues.atmosphereTerminatorWrap,
-  },
-  craterCount: {
-    defaultValue: DefaultValues.craterCount,
-    min: MinValues.craterCount,
-    max: MaxValues.craterCount,
-    round: true,
-  },
-  craterScale: {
-    defaultValue: DefaultValues.craterScale,
-    min: MinValues.craterScale,
-    max: MaxValues.craterScale,
-  },
-  craterStrength: {
-    defaultValue: DefaultValues.craterStrength,
-    min: MinValues.craterStrength,
-    max: MaxValues.craterStrength,
-  },
-  craterSharpness: {
-    defaultValue: DefaultValues.craterSharpness,
-    min: MinValues.craterSharpness,
-    max: MaxValues.craterSharpness,
-  },
-  craterColorStrength: {
-    defaultValue: DefaultValues.craterColorStrength,
-    min: MinValues.craterColorStrength,
-    max: MaxValues.craterColorStrength,
-  },
-  volcanoCount: {
-    defaultValue: DefaultValues.volcanoCount,
-    min: MinValues.volcanoCount,
-    max: MaxValues.volcanoCount,
-    round: true,
-  },
-  volcanoScale: {
-    defaultValue: DefaultValues.volcanoScale,
-    min: MinValues.volcanoScale,
-    max: MaxValues.volcanoScale,
-  },
-  volcanoStrength: {
-    defaultValue: DefaultValues.volcanoStrength,
-    min: MinValues.volcanoStrength,
-    max: MaxValues.volcanoStrength,
-  },
-  volcanoColorStrength: {
-    defaultValue: DefaultValues.volcanoColorStrength,
-    min: MinValues.volcanoColorStrength,
-    max: MaxValues.volcanoColorStrength,
-  },
-  ridgeColorWeight: {
-    defaultValue: DefaultValues.ridgeColorWeight,
-    min: MinValues.ridgeColorWeight,
-    max: MaxValues.ridgeColorWeight,
-  },
-  riftColorWeight: {
-    defaultValue: DefaultValues.riftColorWeight,
-    min: MinValues.riftColorWeight,
-    max: MaxValues.riftColorWeight,
-  },
-  ridgeStrength: {
-    defaultValue: DefaultValues.ridgeStrength,
-    min: MinValues.ridgeStrength,
-    max: MaxValues.ridgeStrength,
-  },
-  ridgeFrequency: {
-    defaultValue: DefaultValues.ridgeFrequency,
-    min: MinValues.ridgeFrequency,
-    max: MaxValues.ridgeFrequency,
-  },
-  ridgeSharpness: {
-    defaultValue: DefaultValues.ridgeSharpness,
-    min: MinValues.ridgeSharpness,
-    max: MaxValues.ridgeSharpness,
-  },
-  riftStrength: {
-    defaultValue: DefaultValues.riftStrength,
-    min: MinValues.riftStrength,
-    max: MaxValues.riftStrength,
-  },
-  riftFrequency: {
-    defaultValue: DefaultValues.riftFrequency,
-    min: MinValues.riftFrequency,
-    max: MaxValues.riftFrequency,
-  },
-  riftWidth: {
-    defaultValue: DefaultValues.riftWidth,
-    min: MinValues.riftWidth,
-    max: MaxValues.riftWidth,
-  },
-  riftSharpness: {
-    defaultValue: DefaultValues.riftSharpness,
-    min: MinValues.riftSharpness,
-    max: MaxValues.riftSharpness,
-  },
-  ridgesRiftsBlend: {
-    defaultValue: DefaultValues.ridgesRiftsBlend,
-    min: MinValues.ridgesRiftsBlend,
-    max: MaxValues.ridgesRiftsBlend,
+  colorTextureSize: {
+    kind: 'textureSize',
+    label: 'Color texture size',
+    cliFlag: '--color-texture-size',
+    section: 'textureResolution',
   },
   normalStrength: {
-    defaultValue: DefaultValues.normalStrength,
-    min: MinValues.normalStrength,
-    max: MaxValues.normalStrength,
+    kind: 'number',
+    label: 'Normal strength',
+    cliFlag: '--normal-strength',
+    section: 'material',
+    min: 0,
+    max: 10,
+    step: 0.1,
   },
   roughness: {
-    defaultValue: DefaultValues.roughness,
-    min: MinValues.roughness,
-    max: MaxValues.roughness,
+    kind: 'number',
+    label: 'Roughness',
+    cliFlag: '--roughness',
+    section: 'material',
+    min: 0,
+    max: 1,
+    step: 0.1,
   },
   metalness: {
-    defaultValue: DefaultValues.metalness,
-    min: MinValues.metalness,
-    max: MaxValues.metalness,
+    kind: 'number',
+    label: 'Metalness',
+    cliFlag: '--metalness',
+    section: 'material',
+    min: 0,
+    max: 1,
+    step: 0.1,
+  },
+  enableIceCaps: {
+    kind: 'boolean',
+    label: 'Ice caps',
+    cliFlag: '--ice-caps-enabled',
+    section: 'iceCaps',
+    togglesSection: true,
+  },
+  iceCapPalette: {
+    kind: 'enum',
+    label: 'Ice palette',
+    cliFlag: '--ice-cap-palette',
+    section: 'iceCaps',
+    options: IceCapPaletteNames,
+  },
+  iceCapColor: { kind: 'color', label: 'Ice tint', cliFlag: '--ice-cap-color', section: 'iceCaps' },
+  iceCapCoverage: {
+    kind: 'number',
+    label: 'Ice-cap coverage',
+    cliFlag: '--ice-cap-coverage',
+    section: 'iceCaps',
+    min: 0,
+    max: 1,
+    step: 0.01,
+  },
+  iceCapEdgeNoise: {
+    kind: 'number',
+    label: 'Ice-cap edge breakup',
+    cliFlag: '--ice-cap-edge-noise',
+    section: 'iceCaps',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  snowExtent: {
+    kind: 'number',
+    label: 'Snow extent',
+    cliFlag: '--snow-extent',
+    section: 'iceCaps',
+    min: 0,
+    max: 0.5,
+    step: 0.01,
+  },
+  snowCoverage: {
+    kind: 'number',
+    label: 'Snow coverage',
+    cliFlag: '--snow-coverage',
+    section: 'iceCaps',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  enableDustClouds: {
+    kind: 'boolean',
+    label: 'Dust clouds',
+    cliFlag: '--dust-clouds-enabled',
+    section: 'dustClouds',
+    togglesSection: true,
+  },
+  dustCloudPalette: {
+    kind: 'enum',
+    label: 'Cloud palette',
+    cliFlag: '--dust-cloud-palette',
+    section: 'dustClouds',
+    options: DustCloudPaletteNames,
+  },
+  dustCloudWeights: {
+    kind: 'custom',
+    label: 'Cloud formation',
+    cliFlag: '--dust-cloud-weights',
+    cliHint: '<style=weight,...>',
+    section: 'dustClouds',
+    sanitize: sanitizeDustCloudWeights,
+    formatCli: (weights) =>
+      DustCloudStyleNames.map((style) => `${style}=${weights[style]}`).join(','),
+    parseCli: parseDustCloudWeights,
+  },
+  dustCloudCoverage: {
+    kind: 'number',
+    label: 'Dust-cloud coverage',
+    cliFlag: '--dust-cloud-coverage',
+    section: 'dustClouds',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  dustCloudOpacity: {
+    kind: 'number',
+    label: 'Dust-cloud opacity',
+    cliFlag: '--dust-cloud-opacity',
+    section: 'dustClouds',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  dustCloudElevation: {
+    kind: 'number',
+    label: 'Dust-cloud elevation',
+    cliFlag: '--dust-cloud-elevation',
+    section: 'dustClouds',
+    min: 0.01,
+    max: 1,
+    step: 0.01,
+  },
+  dustCloudFrequency: {
+    kind: 'number',
+    label: 'Dust-cloud frequency',
+    cliFlag: '--dust-cloud-frequency',
+    section: 'dustClouds',
+    min: 0.25,
+    max: 4,
+    step: 0.05,
+  },
+  dustCloudSwirliness: {
+    kind: 'number',
+    label: 'Dust-cloud swirliness',
+    cliFlag: '--dust-cloud-swirliness',
+    section: 'dustClouds',
+    min: 0,
+    max: 2,
+    step: 0.05,
+  },
+  dustCloudCoriolis: {
+    kind: 'number',
+    label: 'Coriolis strength',
+    cliFlag: '--dust-cloud-coriolis',
+    section: 'dustClouds',
+    min: 0,
+    max: 2,
+    step: 0.05,
+  },
+  dustCloudNormalStrength: {
+    kind: 'number',
+    label: 'Dust-cloud relief',
+    cliFlag: '--dust-cloud-normal-strength',
+    section: 'dustClouds',
+    min: 0,
+    max: 3,
+    step: 0.05,
+  },
+  enableAtmosphere: {
+    kind: 'boolean',
+    label: 'Atmosphere',
+    cliFlag: '--atmosphere-enabled',
+    section: 'atmosphere',
+    togglesSection: true,
+  },
+  atmospherePalette: {
+    kind: 'enum',
+    label: 'Atmosphere palette',
+    cliFlag: '--atmosphere-palette',
+    section: 'atmosphere',
+    options: AtmospherePaletteNames,
+  },
+  atmosphereIntensity: {
+    kind: 'number',
+    label: 'Atmosphere intensity',
+    cliFlag: '--atmosphere-intensity',
+    section: 'atmosphere',
+    min: 0,
+    max: 5,
+    step: 0.05,
+  },
+  atmosphereThickness: {
+    kind: 'number',
+    label: 'Atmosphere thickness',
+    cliFlag: '--atmosphere-thickness',
+    section: 'atmosphere',
+    min: 0.01,
+    max: 1,
+    step: 0.01,
+  },
+  atmosphereDropoff: {
+    kind: 'number',
+    label: 'Atmosphere drop-off',
+    cliFlag: '--atmosphere-dropoff',
+    section: 'atmosphere',
+    min: 0.25,
+    max: 16,
+    step: 0.25,
+  },
+  atmosphereTerminatorWrap: {
+    kind: 'number',
+    label: 'Terminator wrap',
+    cliFlag: '--atmosphere-terminator-wrap',
+    section: 'atmosphere',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  enableCraters: {
+    kind: 'boolean',
+    label: 'Craters',
+    cliFlag: '--craters-enabled',
+    section: 'craters',
+    togglesSection: true,
+  },
+  craterCount: {
+    kind: 'number',
+    label: 'Crater count',
+    cliFlag: '--crater-count',
+    section: 'craters',
+    min: 0,
+    max: 120,
+    step: 1,
+    integer: true,
+  },
+  craterScale: {
+    kind: 'number',
+    label: 'Crater scale',
+    cliFlag: '--crater-scale',
+    section: 'craters',
+    min: 0.25,
+    max: 3,
+    step: 0.05,
+  },
+  craterStrength: {
+    kind: 'number',
+    label: 'Crater strength',
+    cliFlag: '--crater-strength',
+    section: 'craters',
+    min: 0,
+    max: 10,
+    step: 0.1,
+  },
+  craterSharpness: {
+    kind: 'number',
+    label: 'Crater sharpness',
+    cliFlag: '--crater-sharpness',
+    section: 'craters',
+    min: 0.5,
+    max: 8,
+    step: 0.1,
+  },
+  craterColorStrength: {
+    kind: 'number',
+    label: 'Crater color',
+    cliFlag: '--crater-color',
+    section: 'craters',
+    min: 0,
+    max: 3,
+    step: 0.05,
+  },
+  enableVolcanoes: {
+    kind: 'boolean',
+    label: 'Volcanoes',
+    cliFlag: '--volcanoes-enabled',
+    section: 'volcanoes',
+    togglesSection: true,
+  },
+  volcanoCount: {
+    kind: 'number',
+    label: 'Volcano count',
+    cliFlag: '--volcano-count',
+    section: 'volcanoes',
+    min: 0,
+    max: 96,
+    step: 1,
+    integer: true,
+  },
+  volcanoScale: {
+    kind: 'number',
+    label: 'Volcano scale',
+    cliFlag: '--volcano-scale',
+    section: 'volcanoes',
+    min: 0.35,
+    max: 2.5,
+    step: 0.05,
+  },
+  volcanoStrength: {
+    kind: 'number',
+    label: 'Volcano strength',
+    cliFlag: '--volcano-strength',
+    section: 'volcanoes',
+    min: 0,
+    max: 3,
+    step: 0.05,
+  },
+  volcanoColorStrength: {
+    kind: 'number',
+    label: 'Volcano color',
+    cliFlag: '--volcano-color',
+    section: 'volcanoes',
+    min: 0,
+    max: 2.5,
+    step: 0.05,
+  },
+  enableRidges: {
+    kind: 'boolean',
+    label: 'Ridges',
+    cliFlag: '--ridges-enabled',
+    section: 'ridges',
+    togglesSection: true,
+  },
+  ridgeStrength: {
+    kind: 'number',
+    label: 'Ridge strength',
+    cliFlag: '--ridge-strength',
+    section: 'ridges',
+    min: 0,
+    max: 2,
+    step: 0.05,
+  },
+  ridgeFrequency: {
+    kind: 'number',
+    label: 'Ridge frequency',
+    cliFlag: '--ridge-frequency',
+    section: 'ridges',
+    min: 0.5,
+    max: 8,
+    step: 0.1,
+  },
+  ridgeSharpness: {
+    kind: 'number',
+    label: 'Ridge sharpness',
+    cliFlag: '--ridge-sharpness',
+    section: 'ridges',
+    min: 0.5,
+    max: 4,
+    step: 0.05,
+  },
+  ridgeColorWeight: {
+    kind: 'number',
+    label: 'Ridge color weight',
+    cliFlag: '--ridge-color-weight',
+    section: 'ridges',
+    min: 0,
+    max: 4,
+    step: 0.05,
+  },
+  ridgesRiftsBlend: {
+    kind: 'number',
+    label: 'Ridges/rifts blend',
+    cliFlag: '--ridges-rifts-blend',
+    section: 'ridges',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  enableRifts: {
+    kind: 'boolean',
+    label: 'Rifts',
+    cliFlag: '--rifts-enabled',
+    section: 'rifts',
+    togglesSection: true,
+  },
+  riftStrength: {
+    kind: 'number',
+    label: 'Rift strength',
+    cliFlag: '--rift-strength',
+    section: 'rifts',
+    min: 0,
+    max: 2,
+    step: 0.05,
+  },
+  riftFrequency: {
+    kind: 'number',
+    label: 'Rift frequency',
+    cliFlag: '--rift-frequency',
+    section: 'rifts',
+    min: 0.5,
+    max: 12,
+    step: 0.1,
+  },
+  riftWidth: {
+    kind: 'number',
+    label: 'Rift width',
+    cliFlag: '--rift-width',
+    section: 'rifts',
+    min: 0.01,
+    max: 0.25,
+    step: 0.01,
+  },
+  riftSharpness: {
+    kind: 'number',
+    label: 'Rift sharpness',
+    cliFlag: '--rift-sharpness',
+    section: 'rifts',
+    min: 0.5,
+    max: 6,
+    step: 0.05,
+  },
+  riftColorWeight: {
+    kind: 'number',
+    label: 'Rift color weight',
+    cliFlag: '--rift-color-weight',
+    section: 'rifts',
+    min: 0,
+    max: 4,
+    step: 0.05,
   },
   largeScale: {
-    defaultValue: DefaultValues.largeScale,
-    min: MinValues.largeScale,
-    max: MaxValues.largeScale,
+    kind: 'number',
+    label: 'Large-scale',
+    cliFlag: '--large-scale',
+    section: 'geometry',
+    min: 0,
+    max: 2,
+    step: 0.1,
   },
   mediumScale: {
-    defaultValue: DefaultValues.mediumScale,
-    min: MinValues.mediumScale,
-    max: MaxValues.mediumScale,
+    kind: 'number',
+    label: 'Medium-scale',
+    cliFlag: '--medium-scale',
+    section: 'geometry',
+    min: 0,
+    max: 2,
+    step: 0.1,
   },
   smallScale: {
-    defaultValue: DefaultValues.smallScale,
-    min: MinValues.smallScale,
-    max: MaxValues.smallScale,
+    kind: 'number',
+    label: 'Small-scale',
+    cliFlag: '--small-scale',
+    section: 'geometry',
+    min: 0,
+    max: 2,
+    step: 0.1,
   },
   mediumFrequency: {
-    defaultValue: DefaultValues.mediumFrequency,
-    min: MinValues.mediumFrequency,
-    max: MaxValues.mediumFrequency,
+    kind: 'number',
+    label: 'Medium frequency',
+    cliFlag: '--medium-frequency',
+    section: 'geometry',
+    min: 0.5,
+    max: 5,
+    step: 0.1,
   },
   smallFrequency: {
-    defaultValue: DefaultValues.smallFrequency,
-    min: MinValues.smallFrequency,
-    max: MaxValues.smallFrequency,
+    kind: 'number',
+    label: 'Small frequency',
+    cliFlag: '--small-frequency',
+    section: 'geometry',
+    min: 1,
+    max: 20,
+    step: 0.1,
   },
   triangleDetail: {
-    defaultValue: DefaultValues.triangleDetail,
-    min: MinValues.triangleDetail,
-    max: MaxValues.triangleDetail,
-    round: true,
+    kind: 'number',
+    label: 'Triangle detail',
+    cliFlag: '--triangle-detail',
+    section: 'geometry',
+    min: 1,
+    max: 40,
+    step: 1,
+    integer: true,
   },
 }
+
+assertValidSchema(PlanetoidSchema, DefaultValues, 'Planetoid')
+
+export const MinValues = numericTable(PlanetoidSchema, 'min')
+export const MaxValues = numericTable(PlanetoidSchema, 'max')
+export const StepValues = numericTable(PlanetoidSchema, 'step')
+export const PlanetoidRangeLabels = numericLabels(PlanetoidSchema)
+export const PlanetoidNumericControls = numericKeysBySection(PlanetoidSchema, PlanetoidSections)
 
 export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
   const raw = toRecord(input)
-  const numeric = sanitizeNumericMap(raw, NUMERIC_SANITIZE_SPECS)
+  const legacyStyle = raw.dustCloudStyle
+  const migratedRaw =
+    raw.dustCloudWeights === undefined &&
+    typeof legacyStyle === 'string' &&
+    DustCloudStyleNames.includes(legacyStyle as DustCloudStyle)
+      ? { ...raw, dustCloudWeights: { [legacyStyle]: 1 } }
+      : raw
 
-  const autoRotate = sanitizeBoolean(raw, 'autoRotate', DefaultValues.autoRotate)
-  const showDebugMeshes = sanitizeBoolean(raw, 'showDebugMeshes', DefaultValues.showDebugMeshes)
-  const enableCraters = sanitizeBoolean(raw, 'enableCraters', DefaultValues.enableCraters)
-  const enableVolcanoes = sanitizeBoolean(raw, 'enableVolcanoes', DefaultValues.enableVolcanoes)
-  const enableRidges = sanitizeBoolean(raw, 'enableRidges', DefaultValues.enableRidges)
-  const enableRifts = sanitizeBoolean(raw, 'enableRifts', DefaultValues.enableRifts)
-  const enableDustClouds = sanitizeBoolean(raw, 'enableDustClouds', DefaultValues.enableDustClouds)
-  const enableAtmosphere = sanitizeBoolean(raw, 'enableAtmosphere', DefaultValues.enableAtmosphere)
-
-  const palette = sanitizeEnum(raw, 'palette', PlanetoidPaletteNames, DefaultValues.palette)
-  const dustCloudPalette = sanitizeEnum(
-    raw,
-    'dustCloudPalette',
-    DustCloudPaletteNames,
-    DefaultValues.dustCloudPalette
-  )
-  const dustCloudStyle = sanitizeEnum(
-    raw,
-    'dustCloudStyle',
-    DustCloudStyleNames,
-    DefaultValues.dustCloudStyle
-  )
-  const rawDustCloudWeights = toRecord(raw.dustCloudWeights)
-  const hasDustCloudWeights = DustCloudStyleNames.some((style) => style in rawDustCloudWeights)
-  const dustCloudWeights = Object.fromEntries(
-    DustCloudStyleNames.map((style) => {
-      const rawWeight = rawDustCloudWeights[style]
-      const fallbackWeight = hasDustCloudWeights
-        ? 0
-        : style === dustCloudStyle
-          ? 1
-          : 0
-      const weight =
-        typeof rawWeight === 'number' && Number.isFinite(rawWeight) ? rawWeight : fallbackWeight
-      return [style, Math.max(0, Math.min(1, weight))]
-    })
-  ) as DustCloudWeights
-  const atmospherePalette = sanitizeEnum(
-    raw,
-    'atmospherePalette',
-    AtmospherePaletteNames,
-    DefaultValues.atmospherePalette
-  )
-  const surfaceTint = sanitizeHexColor(raw, 'surfaceTint', DefaultValues.surfaceTint)
-  return {
-    palette,
-    enableIceCaps: sanitizeBoolean(raw, 'enableIceCaps', DefaultValues.enableIceCaps),
-    iceCapColor: sanitizeHexColor(raw, 'iceCapColor', DefaultValues.iceCapColor),
-    iceCapPalette: sanitizeEnum(raw, 'iceCapPalette', IceCapPaletteNames, DefaultValues.iceCapPalette),
-    iceCapCoverage: numeric.iceCapCoverage,
-    iceCapEdgeNoise: numeric.iceCapEdgeNoise,
-    snowExtent: numeric.snowExtent,
-    snowCoverage: numeric.snowCoverage,
-    surfaceTint,
-    colorScale: numeric.colorScale,
-    tintShadowFloor: numeric.tintShadowFloor,
-    swirliness: numeric.swirliness,
-    dustCloudCoverage: numeric.dustCloudCoverage,
-    dustCloudStyle,
-    dustCloudWeights,
-    dustCloudPalette,
-    dustCloudOpacity: numeric.dustCloudOpacity,
-    dustCloudElevation: numeric.dustCloudElevation,
-    dustCloudFrequency: numeric.dustCloudFrequency,
-    dustCloudSwirliness: numeric.dustCloudSwirliness,
-    dustCloudCoriolis: numeric.dustCloudCoriolis,
-    dustCloudNormalStrength: numeric.dustCloudNormalStrength,
-    atmospherePalette,
-    atmosphereIntensity: numeric.atmosphereIntensity,
-    atmosphereThickness: numeric.atmosphereThickness,
-    atmosphereDropoff: numeric.atmosphereDropoff,
-    atmosphereTerminatorWrap: numeric.atmosphereTerminatorWrap,
-    craterCount: numeric.craterCount,
-    craterScale: numeric.craterScale,
-    craterStrength: numeric.craterStrength,
-    craterSharpness: numeric.craterSharpness,
-    craterColorStrength: numeric.craterColorStrength,
-    volcanoCount: numeric.volcanoCount,
-    volcanoScale: numeric.volcanoScale,
-    volcanoStrength: numeric.volcanoStrength,
-    volcanoColorStrength: numeric.volcanoColorStrength,
-    ridgeColorWeight: numeric.ridgeColorWeight,
-    riftColorWeight: numeric.riftColorWeight,
-    enableCraters,
-    enableVolcanoes,
-    enableRidges,
-    enableRifts,
-    enableDustClouds,
-    enableAtmosphere,
-    ridgeStrength: numeric.ridgeStrength,
-    ridgeFrequency: numeric.ridgeFrequency,
-    ridgeSharpness: numeric.ridgeSharpness,
-    riftStrength: numeric.riftStrength,
-    riftFrequency: numeric.riftFrequency,
-    riftWidth: numeric.riftWidth,
-    riftSharpness: numeric.riftSharpness,
-    ridgesRiftsBlend: numeric.ridgesRiftsBlend,
-    normalTextureSize: sanitizeTextureSize(raw.normalTextureSize, DefaultValues.normalTextureSize),
-    colorTextureSize: sanitizeTextureSize(raw.colorTextureSize, DefaultValues.colorTextureSize),
-    seed: numeric.seed,
-    largeScale: numeric.largeScale,
-    mediumScale: numeric.mediumScale,
-    smallScale: numeric.smallScale,
-    mediumFrequency: numeric.mediumFrequency,
-    smallFrequency: numeric.smallFrequency,
-    triangleDetail: numeric.triangleDetail,
-    normalStrength: numeric.normalStrength,
-    roughness: numeric.roughness,
-    metalness: numeric.metalness,
-    autoRotate,
-    showDebugMeshes,
-  }
+  return sanitizeWithSchema(PlanetoidSchema, DefaultValues, migratedRaw)
 }
 
 export function toPlanetoidPresetSettings(settings: PlanetoidSettings): PlanetoidPresetSettings {
@@ -795,152 +860,28 @@ export function mergePlanetoidPresetSettings(
   })
 }
 
-export const PlanetoidRangeLabels: Record<PlanetoidRangeKey, string> = {
-  snowExtent: 'Snow extent',
-  snowCoverage: 'Snow coverage',
-  iceCapCoverage: 'Ice-cap coverage',
-  iceCapEdgeNoise: 'Ice-cap edge breakup',
-  seed: 'Seed',
-  colorScale: 'Color scale',
-  tintShadowFloor: 'Tint shadow floor',
-  swirliness: 'Swirliness',
-  dustCloudCoverage: 'Dust-cloud coverage',
-  dustCloudOpacity: 'Dust-cloud opacity',
-  dustCloudElevation: 'Dust-cloud elevation',
-  dustCloudFrequency: 'Dust-cloud frequency',
-  dustCloudSwirliness: 'Dust-cloud swirliness',
-  dustCloudCoriolis: 'Coriolis strength',
-  dustCloudNormalStrength: 'Dust-cloud relief',
-  atmosphereIntensity: 'Atmosphere intensity',
-  atmosphereThickness: 'Atmosphere thickness',
-  atmosphereDropoff: 'Atmosphere drop-off',
-  atmosphereTerminatorWrap: 'Terminator wrap',
-  craterCount: 'Crater count',
-  craterScale: 'Crater scale',
-  craterStrength: 'Crater strength',
-  craterSharpness: 'Crater sharpness',
-  craterColorStrength: 'Crater color',
-  volcanoCount: 'Volcano count',
-  volcanoScale: 'Volcano scale',
-  volcanoStrength: 'Volcano strength',
-  volcanoColorStrength: 'Volcano color',
-  ridgeColorWeight: 'Ridge color weight',
-  riftColorWeight: 'Rift color weight',
-  ridgeStrength: 'Ridge strength',
-  ridgeFrequency: 'Ridge frequency',
-  ridgeSharpness: 'Ridge sharpness',
-  riftStrength: 'Rift strength',
-  riftFrequency: 'Rift frequency',
-  riftWidth: 'Rift width',
-  riftSharpness: 'Rift sharpness',
-  ridgesRiftsBlend: 'Ridges/rifts blend',
-  normalStrength: 'Normal strength',
-  roughness: 'Roughness',
-  metalness: 'Metalness',
-  largeScale: 'Large-scale',
-  mediumScale: 'Medium-scale',
-  smallScale: 'Small-scale',
-  mediumFrequency: 'Medium frequency',
-  smallFrequency: 'Small frequency',
-  triangleDetail: 'Triangle detail',
+export function buildPlanetoidCliCommand(
+  settings: PlanetoidSettings,
+  exportTextures: boolean,
+  camera?: CameraView
+) {
+  const args = toCliArgs(PlanetoidSchema, sanitizePlanetoidSettings(settings), ['seed'])
+  if (exportTextures) args.push('--export-textures')
+  else if (camera) args.push(...cameraViewCliArgs(camera))
+  args.push(PlanetoidSchema.seed.cliFlag, '1', '--step', '1', '--count', '1')
+
+  return `npm run auto-generate-planetoids -- ${args.join(' ')}`
 }
 
 export const PlanetoidUiLabels = {
   scene: 'Scene',
   viewMode: 'View mode',
-  autoRotate: 'Auto-rotate',
-  showDebugMeshes: 'Show debug meshes',
-  seed: 'Seed',
   texture: 'Texture',
   colorSettings: 'Color settings',
-  palette: 'Palette',
-  surfaceTint: 'Surface tint',
   textureResolution: 'Texture resolution',
   material: 'Material',
   properties: 'Properties',
   features: 'Features',
-  iceCaps: 'Ice caps',
-  iceCapColor: 'Ice tint',
-  iceCapPalette: 'Ice palette',
-  dustClouds: 'Dust clouds',
-  dustCloudStyle: 'Cloud formation',
-  dustCloudPalette: 'Cloud palette',
-  atmosphere: 'Atmosphere',
-  atmospherePalette: 'Atmosphere palette',
-  craters: 'Craters',
-  volcanoes: 'Volcanoes',
-  ridges: 'Ridges',
-  rifts: 'Rifts',
   geometry: 'Geometry',
   deformation: 'Deformation',
-} as const
-
-export const PlanetoidCliFlagByRangeKey: Record<PlanetoidRangeKey, string> = {
-  snowExtent: '--snow-extent',
-  snowCoverage: '--snow-coverage',
-  iceCapCoverage: '--ice-cap-coverage',
-  iceCapEdgeNoise: '--ice-cap-edge-noise',
-  seed: '--seed',
-  colorScale: '--color-scale',
-  tintShadowFloor: '--tint-shadow-floor',
-  swirliness: '--swirliness',
-  dustCloudCoverage: '--dust-cloud-coverage',
-  dustCloudOpacity: '--dust-cloud-opacity',
-  dustCloudElevation: '--dust-cloud-elevation',
-  dustCloudFrequency: '--dust-cloud-frequency',
-  dustCloudSwirliness: '--dust-cloud-swirliness',
-  dustCloudCoriolis: '--dust-cloud-coriolis',
-  dustCloudNormalStrength: '--dust-cloud-normal-strength',
-  atmosphereIntensity: '--atmosphere-intensity',
-  atmosphereThickness: '--atmosphere-thickness',
-  atmosphereDropoff: '--atmosphere-dropoff',
-  atmosphereTerminatorWrap: '--atmosphere-terminator-wrap',
-  craterCount: '--crater-count',
-  craterScale: '--crater-scale',
-  craterStrength: '--crater-strength',
-  craterSharpness: '--crater-sharpness',
-  craterColorStrength: '--crater-color',
-  volcanoCount: '--volcano-count',
-  volcanoScale: '--volcano-scale',
-  volcanoStrength: '--volcano-strength',
-  volcanoColorStrength: '--volcano-color',
-  ridgeColorWeight: '--ridge-color-weight',
-  riftColorWeight: '--rift-color-weight',
-  ridgeStrength: '--ridge-strength',
-  ridgeFrequency: '--ridge-frequency',
-  ridgeSharpness: '--ridge-sharpness',
-  riftStrength: '--rift-strength',
-  riftFrequency: '--rift-frequency',
-  riftWidth: '--rift-width',
-  riftSharpness: '--rift-sharpness',
-  ridgesRiftsBlend: '--ridges-rifts-blend',
-  normalStrength: '--normal-strength',
-  roughness: '--roughness',
-  metalness: '--metalness',
-  largeScale: '--large-scale',
-  mediumScale: '--medium-scale',
-  smallScale: '--small-scale',
-  mediumFrequency: '--medium-frequency',
-  smallFrequency: '--small-frequency',
-  triangleDetail: '--triangle-detail',
-}
-
-export const PlanetoidCliToggleFlags = {
-  iceCapsEnabled: '--ice-caps-enabled',
-  autoRotate: '--auto-rotate',
-  showDebugMeshes: '--show-debug-meshes',
-  cratersEnabled: '--craters-enabled',
-  ridgesEnabled: '--ridges-enabled',
-  riftsEnabled: '--rifts-enabled',
-  volcanoesEnabled: '--volcanoes-enabled',
-  dustCloudsEnabled: '--dust-clouds-enabled',
-  atmosphereEnabled: '--atmosphere-enabled',
-} as const
-
-export const PlanetoidCliFeatureFlags = {
-  iceCapPalette: '--ice-cap-palette',
-  iceCapColor: '--ice-cap-color',
-  dustCloudStyle: '--dust-cloud-style',
-  dustCloudPalette: '--dust-cloud-palette',
-  atmospherePalette: '--atmosphere-palette',
 } as const
