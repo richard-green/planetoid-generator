@@ -104,7 +104,7 @@ const fragmentShader = `
   }
 
   vec3 variableBandGradientInfo(float lat01, vec3 seed) {
-    int bandCountInt = int(floor(clamp(uBandCount, 1.0, 28.0) + 0.5));
+    int bandCountInt = int(floor(uBandCount + 0.5));
     float safeLat = clamp(lat01, 0.0, 1.0);
     float widthSum = 0.0;
 
@@ -143,10 +143,10 @@ const fragmentShader = `
   }
 
   vec4 stormField(vec2 uv, vec3 seed) {
-    int stormCountInt = int(floor(clamp(uStormCount, 0.0, 32.0) + 0.5));
-    float baseScale = clamp(uStormScale, 0.0, 0.45);
+    int stormCountInt = int(floor(uStormCount + 0.5));
+    float baseScale = uStormScale;
     float falloffPower = max(0.5, uStormPower);
-    float strength = clamp(uStormStrength, 0.0, 1.5);
+    float strength = uStormStrength;
 
     float lonOffset = 0.0;
     float latOffset = 0.0;
@@ -223,9 +223,9 @@ const fragmentShader = `
   }
 
   vec2 cloudBandSignals(vec2 uv, vec3 remappedPos, vec3 seed) {
-    float chaosControl = clamp(uCloudChaos, 0.0, 2.0);
+    float chaosControl = uCloudChaos;
     float chaosNorm = chaosControl * 0.5;
-    float bandCount = clamp(uBandCount, 1.0, 28.0);
+    float bandCount = uBandCount;
     float lowWarp = fractalNoise(remappedPos * 2.6 + seed * 0.19 + vec3(17.3, 9.7, 33.1));
     float midWarp = fractalNoise(remappedPos * 6.4 + seed * 0.43 + vec3(5.1, 29.3, 11.7));
     float shear = sin((uv.x * TAU * 2.0) + seed.y * 0.0023 + uv.y * PI * 1.7) * mix(0.02, 0.14, chaosNorm);
@@ -233,10 +233,10 @@ const fragmentShader = `
     float bandAxis = uv.y * bandCount + lowWarp * mix(0.08, 0.48, chaosNorm) + midWarp * mix(0.04, 0.28, chaosNorm) + shear;
     float bandWave = sin((bandAxis + seed.x * 0.00073) * TAU);
 
-    float shapePower = mix(0.72, 3.0, clamp(uBandSharpness, 0.0, 1.0));
+    float shapePower = mix(0.72, 3.0, uBandSharpness);
     float broadBands = sign(bandWave) * pow(abs(bandWave), shapePower);
     float seamBase = clamp(1.0 - abs(bandWave), 0.0, 1.0);
-    float seamExponent = mix(8.5, 2.8, chaosNorm) * mix(0.9, 1.45, clamp(uBandSharpness, 0.0, 1.0));
+    float seamExponent = mix(8.5, 2.8, chaosNorm) * mix(0.9, 1.45, uBandSharpness);
     float seamMask = pow(seamBase, seamExponent);
 
     float streamAxis = uv.x * (30.0 + bandCount * 1.6) + lowWarp * 3.7 + midWarp * 2.3;
@@ -304,13 +304,13 @@ const fragmentShader = `
       dot(warpedSpherePos, vec3(0.56, 0.00, 0.83)),
       dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
     );
-    float turbulence = clamp(uCloudTurbulence, 0.0, 1.0);
+    float turbulence = uCloudTurbulence;
     distortedUv = vec2(
       fract(distortedUv.x + (warpY - warpZ) * turbulence * 0.38),
       clamp(distortedUv.y + (warpZ - warpX) * turbulence * 0.22, 0.0, 1.0)
     );
     vec2 cloudSignals = cloudBandSignals(distortedUv, remappedPos, seed);
-    float chaosNorm = clamp(uCloudChaos, 0.0, 2.0) * 0.5;
+    float chaosNorm = uCloudChaos * 0.5;
     float latWarpLow = fractalNoise(
       remappedPos * 2.7 + seed * 0.31 + vec3(7.4, 39.1, 13.7)
     ) * mix(0.01, 0.08, chaosNorm);
@@ -389,7 +389,7 @@ const fragmentShader = `
       dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
     );
 
-    float turbulence = clamp(uCloudTurbulence, 0.0, 1.0);
+    float turbulence = uCloudTurbulence;
     distortedUv = vec2(
       fract(distortedUv.x + (warpY - warpZ) * turbulence * 0.38),
       clamp(distortedUv.y + (warpZ - warpX) * turbulence * 0.22, 0.0, 1.0)
@@ -397,7 +397,7 @@ const fragmentShader = `
     vec2 cloudSignals = cloudBandSignals(distortedUv, remappedPos, seed);
     float broadBands = cloudSignals.x;
     float filigree = cloudSignals.y;
-    float chaosControl = clamp(uCloudChaos, 0.0, 2.0);
+    float chaosControl = uCloudChaos;
     float chaosNorm = chaosControl * 0.5;
 
     float latWarpLow = fractalNoise(remappedPos * 2.7 + seed * 0.31 + vec3(7.4, 39.1, 13.7)) * mix(0.01, 0.08, chaosNorm);
@@ -419,7 +419,7 @@ const fragmentShader = `
       cloudFine * 0.015 +
       filigree * mix(0.02, 0.42, chaosNorm);
 
-    cloudValue += stormActivity * mix(0.02, 0.14, clamp(uStormStrength / 1.5, 0.0, 1.0));
+    cloudValue += stormActivity * mix(0.02, 0.14, uStormStrength / 1.5);
 
     float edgeDistance = min(bandLocalT, 1.0 - bandLocalT);
     float seamRegion = 1.0 - smoothstep(0.06, 0.24, edgeDistance);
@@ -430,7 +430,7 @@ const fragmentShader = `
     float paletteT = clamp(baseBandT + gradientDrift, 0.0, 1.0);
 
     int size = safePaletteSize();
-    float stormColorAmount = clamp(uStormColorStrength / 1.5, 0.0, 1.0);
+    float stormColorAmount = uStormColorStrength / 1.5;
     float stormBandMask = smoothstep(0.02, 0.58, clamp(stormActivity, 0.0, 1.5));
     float stormEyeMask = smoothstep(0.06, 0.9, clamp(stormEyeActivity, 0.0, 1.5));
 
@@ -471,7 +471,7 @@ const fragmentShader = `
     float bandMix = bandLocalT * bandLocalT * (3.0 - 2.0 * bandLocalT);
     vec3 pseudoRandomBandGradient = mix(bandAExtended, bandBExtended, bandMix);
 
-    float edgeSoftness = mix(0.22, 0.08, clamp(uBandSharpness, 0.0, 1.0));
+    float edgeSoftness = mix(0.22, 0.08, uBandSharpness);
     float edgeFeather = smoothstep(0.0, edgeSoftness, edgeDistance);
     vec3 softenedBandGradient = mix(baseGradientColor, pseudoRandomBandGradient, edgeFeather);
 
@@ -498,10 +498,10 @@ const fragmentShader = `
     paletteColor = clamp(paletteColor, 0.0, 1.0);
 
     float normalizedValue = clamp(integratedPaletteT + cloudValue * 0.08, 0.0, 1.0);
-    float textureDominance = clamp(uTextureScale, 0.0, 1.0);
+    float textureDominance = uTextureScale;
 
-    vec3 tintColor = clamp(uTint, 0.0, 1.0);
-    vec3 darkTint = tintColor * clamp(uTintShadowFloor, 0.0, 1.0);
+    vec3 tintColor = uTint;
+    vec3 darkTint = tintColor * uTintShadowFloor;
     vec3 tintMapped = mix(darkTint, tintColor, normalizedValue);
     vec3 finalColor = mix(tintMapped, paletteColor, textureDominance);
 
@@ -659,12 +659,19 @@ function renderTexture(
     MinValues.tintShadowFloor,
     MaxValues.tintShadowFloor
   )
-  material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
-  material.uniforms.uBandCount.value = toClampedNumber(
-    options.cloudBandCount,
-    DefaultValues.cloudBandCount,
-    MinValues.cloudBandCount,
-    MaxValues.cloudBandCount
+  material.uniforms.uTextureScale.value = toClampedNumber(
+    options.textureScale,
+    DefaultValues.colorScale,
+    MinValues.colorScale,
+    MaxValues.colorScale
+  )
+  material.uniforms.uBandCount.value = Math.round(
+    toClampedNumber(
+      options.cloudBandCount,
+      DefaultValues.cloudBandCount,
+      MinValues.cloudBandCount,
+      MaxValues.cloudBandCount
+    )
   )
   material.uniforms.uBandSharpness.value = toClampedNumber(
     options.cloudBandSharpness,
@@ -684,11 +691,13 @@ function renderTexture(
     MinValues.cloudTurbulence,
     MaxValues.cloudTurbulence
   )
-  material.uniforms.uStormCount.value = toClampedNumber(
-    options.stormCount,
-    DefaultValues.stormCount,
-    MinValues.stormCount,
-    MaxValues.stormCount
+  material.uniforms.uStormCount.value = Math.round(
+    toClampedNumber(
+      options.stormCount,
+      DefaultValues.stormCount,
+      MinValues.stormCount,
+      MaxValues.stormCount
+    )
   )
   material.uniforms.uStormScale.value = toClampedNumber(
     options.stormScale,

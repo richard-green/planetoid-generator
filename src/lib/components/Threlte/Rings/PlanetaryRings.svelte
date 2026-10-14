@@ -3,7 +3,7 @@
   import { DoubleSide, Uniform, Vector3 } from 'three'
   import { getPalettePosition } from '../../../types/palette'
   import { trackPalette } from '../../../types/paletteState.svelte'
-  import type { RingSettings } from './RingSettings'
+  import { sanitizeRingSettings, type RingSettings } from './RingSettings'
   import { RingPalettes } from './RingPalettes'
 
   type Props = {
@@ -17,6 +17,7 @@
   let { settings, seed, planetRadius = 1, lightPosition = [-5, 1, 2], spin = 0 }: Props = $props()
 
   const MAX_PALETTE_SIZE = 8
+  const safeSettings = $derived(sanitizeRingSettings(settings))
   const uniforms = {
     uInnerRadius: new Uniform(0),
     uOuterRadius: new Uniform(0),
@@ -33,20 +34,20 @@
     uSolarization: new Uniform(0),
     uOpacity: new Uniform(0),
     uNoise: new Uniform(0),
-    uGlitter: new Uniform(0),
+    uParticleContrast: new Uniform(0),
+    uParticleDensity: new Uniform(0),
+    uParticleSize: new Uniform(1),
     uPaletteSize: new Uniform(0),
     uPalette: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => new Vector3())),
     uPalettePositions: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => 1)),
   }
 
-  const innerRadius = $derived(settings.ringInnerRadius * planetRadius)
-  const outerRadius = $derived(
-    Math.max(settings.ringOuterRadius, settings.ringInnerRadius + 0.05) * planetRadius
-  )
-  const tiltRadians = $derived((settings.ringTilt * Math.PI) / 180)
+  const innerRadius = $derived(safeSettings.ringInnerRadius * planetRadius)
+  const outerRadius = $derived(safeSettings.ringOuterRadius * planetRadius)
+  const tiltRadians = $derived((safeSettings.ringTilt * Math.PI) / 180)
 
   $effect(() => {
-    const colors = trackPalette(RingPalettes[settings.ringPalette])
+    const colors = trackPalette(RingPalettes[safeSettings.ringPalette])
     const fallback = colors.at(-1) ?? { r: 255, g: 255, b: 255 }
     uniforms.uPalette.value = Array.from({ length: MAX_PALETTE_SIZE }, (_, index) => {
       const color = colors[index] ?? fallback
@@ -61,17 +62,19 @@
     uniforms.uPlanetRadius.value = planetRadius
     uniforms.uLightPosition.value = new Vector3(...lightPosition)
     uniforms.uSeed.value = seed
-    uniforms.uBandCount.value = settings.ringBandCount
-    uniforms.uBandSharpness.value = settings.ringBandSharpness
-    uniforms.uBandRegularity.value = settings.ringBandRegularity
-    uniforms.uDensity.value = settings.ringDensity
-    uniforms.uTextureScale.value = settings.ringTextureScale
-    uniforms.uGranularity.value = settings.ringGranularity
-    uniforms.uPaletteInfluence.value = settings.ringPaletteInfluence
-    uniforms.uSolarization.value = settings.ringSolarization
-    uniforms.uOpacity.value = settings.ringOpacity
-    uniforms.uNoise.value = settings.ringNoise
-    uniforms.uGlitter.value = settings.ringGlitter
+    uniforms.uBandCount.value = safeSettings.ringBandCount
+    uniforms.uBandSharpness.value = safeSettings.ringBandSharpness
+    uniforms.uBandRegularity.value = safeSettings.ringBandRegularity
+    uniforms.uDensity.value = safeSettings.ringDensity
+    uniforms.uTextureScale.value = safeSettings.ringTextureScale
+    uniforms.uGranularity.value = safeSettings.ringGranularity
+    uniforms.uPaletteInfluence.value = safeSettings.ringPaletteInfluence
+    uniforms.uSolarization.value = safeSettings.ringSolarization
+    uniforms.uOpacity.value = safeSettings.ringOpacity
+    uniforms.uNoise.value = safeSettings.ringNoise
+    uniforms.uParticleContrast.value = safeSettings.ringParticleContrast
+    uniforms.uParticleDensity.value = safeSettings.ringParticleDensity
+    uniforms.uParticleSize.value = safeSettings.ringParticleSize
     uniforms.uPaletteSize.value = colors.length
   })
 
@@ -80,10 +83,8 @@
 
     varying float vRadius;
     varying vec2 vPosition;
-    varying vec3 vWorldPosition;
     varying vec3 vPlanetPosition;
     varying vec3 vLightDirection;
-    varying vec3 vWorldNormal;
     varying float vWorldScale;
 
     void main() {
@@ -91,10 +92,8 @@
       vPosition = position.xy;
       vec4 worldPosition = modelMatrix * vec4(position, 1.0);
       vec3 planetCenter = modelMatrix[3].xyz;
-      vWorldPosition = worldPosition.xyz;
       vPlanetPosition = worldPosition.xyz - planetCenter;
       vLightDirection = normalize(uLightPosition - planetCenter);
-      vWorldNormal = normalize(mat3(modelMatrix) * normal);
       vWorldScale = length(modelMatrix[0].xyz);
       gl_Position = projectionMatrix * viewMatrix * worldPosition;
     }
@@ -105,10 +104,8 @@
 
     varying float vRadius;
     varying vec2 vPosition;
-    varying vec3 vWorldPosition;
     varying vec3 vPlanetPosition;
     varying vec3 vLightDirection;
-    varying vec3 vWorldNormal;
     varying float vWorldScale;
 
     uniform float uInnerRadius;
@@ -125,7 +122,9 @@
     uniform float uSolarization;
     uniform float uOpacity;
     uniform float uNoise;
-    uniform float uGlitter;
+    uniform float uParticleContrast;
+    uniform float uParticleDensity;
+    uniform float uParticleSize;
     uniform int uPaletteSize;
     uniform vec3 uPalette[${MAX_PALETTE_SIZE}];
     uniform float uPalettePositions[${MAX_PALETTE_SIZE}];
@@ -178,8 +177,8 @@
     }
 
     vec4 variableBandInfo(float radial) {
-      int count = int(floor(clamp(uBandCount, 1.0, 64.0) + 0.5));
-      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
+      int count = int(floor(uBandCount + 0.5));
+      float variance = 1.0 - uBandRegularity;
       float widthLow = mix(1.0, 0.02, variance);
       float widthHigh = mix(1.0, 8.0, variance);
       float totalWidth = 0.0;
@@ -255,7 +254,7 @@
       );
       vec4 band = variableBandInfo(radial);
       float distanceFromCenter = abs(band.x - 0.5);
-      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
+      float variance = 1.0 - uBandRegularity;
       float fillMultiplier = mix(1.0, band.z, variance);
       float fillRatio = clamp(
         mix(0.15, 0.96, uDensity) * fillMultiplier,
@@ -282,8 +281,46 @@
         grainPosition * 4.731 + domainWarp * 5.2 + vec2(31.2, 7.8)
       );
       float grain = clamp(coarseGrain * 0.7 + fineGrain * 0.3, 0.0, 1.0);
+      float striaeSpacingNoise = fractalNoise(
+        vec2(radial * 6.0 + 19.7, uSeed * 0.031 + 13.0)
+      );
+      float baseStriaeCoordinate = radial * 12.0 + (striaeSpacingNoise - 0.5) * 0.5;
+      float baseStriaeIndex = floor(baseStriaeCoordinate);
+      float localStriaeCoordinate = fract(baseStriaeCoordinate);
+      float startJitter = (hash11(baseStriaeIndex * 19.13 + 7.1) - 0.5) * 0.64;
+      float endJitter = (hash11((baseStriaeIndex + 1.0) * 19.13 + 7.1) - 0.5) * 0.64;
+      float striaeCoordinate = baseStriaeCoordinate + mix(
+        startJitter,
+        endJitter,
+        smoothstep(0.0, 1.0, localStriaeCoordinate)
+      );
+      float striaePhase = striaeCoordinate * 3.141592653589793;
+      float striaeIndex = floor(striaeCoordinate * 0.5);
+      float striaIndex = floor(striaeCoordinate);
+      float striaeRandom = hash11(striaeIndex * 3.73 + 71.9);
+      float striaeSharpness = mix(
+        0.35,
+        5.0,
+        hash11(striaIndex * 7.31 + 37.7)
+      );
+      float secondHarmonic = mix(0.08, 0.24, hash11(striaeIndex * 11.13 + 53.1));
+      float thirdHarmonic = mix(0.03, 0.13, hash11(striaeIndex * 17.71 + 29.3));
+      float fifthHarmonic = mix(0.01, 0.07, hash11(striaeIndex * 23.47 + 61.9));
+      float harmonicAmplitude = 1.0 + secondHarmonic + thirdHarmonic + fifthHarmonic;
+      float striaeVisibility = max(
+        0.85,
+        1.0 - smoothstep(1.8, 8.0, fwidth(striaePhase))
+      );
+      float striaeWave = (
+        sin(striaePhase)
+        + secondHarmonic * sin(striaePhase * 2.0 + striaeRandom * TAU)
+        + thirdHarmonic * sin(striaePhase * 3.0 + hash11(striaeIndex * 31.9 + 17.1) * TAU)
+        + fifthHarmonic * sin(striaePhase * 5.0 + striaeRandom * TAU * 2.0)
+      ) / harmonicAmplitude;
+      float fineStriae =
+        sign(striaeWave) * pow(abs(striaeWave), striaeSharpness) * striaeVisibility * 1.5;
       float edgeFade = smoothstep(0.0, 0.025, radial) * smoothstep(0.0, 0.035, 1.0 - radial);
-      float paletteInfluence = clamp(uPaletteInfluence, 0.0, 1.0);
+      float paletteInfluence = uPaletteInfluence;
       float colorPosition = clamp(
         mix(0.5, band.w + (grain - 0.5) * 0.16, paletteInfluence),
         0.0,
@@ -298,6 +335,40 @@
       vec3 solarColor = paletteColor(solarPosition);
       vec3 color = mix(baseColor, solarColor, solarMask * 0.72);
       color *= mix(granularVariation, 2.0 - granularVariation, solarMask * 0.55);
+      float striaeColorPosition = clamp(
+        colorPosition + (striaeRandom - 0.5) * 0.35 + fineStriae * 0.08,
+        0.0,
+        1.0
+      );
+      vec3 striaeColor = paletteColor(striaeColorPosition);
+      color = mix(color, striaeColor, max(fineStriae, 0.0) * 0.28);
+      color *= 1.0 + fineStriae * 0.55;
+      float particleGridScale = 40.0;
+      vec2 particleGridPosition = vPosition * particleGridScale;
+      vec2 particleCell = floor(particleGridPosition);
+      vec2 particleLocal = fract(particleGridPosition);
+      vec2 particleSeedOffset = vec2(uSeed * 0.0137, uSeed * 0.0219);
+      vec2 particleRandom = hash22(particleCell + particleSeedOffset + vec2(17.3, 53.1));
+      vec2 particleCenter = mix(vec2(0.25), vec2(0.75), particleRandom);
+      float particleSize = (uParticleSize - 0.25) / 2.25;
+      float particleRadius = mix(0.08, 0.3, particleSize) * mix(0.8, 1.2, particleRandom.x);
+      float particleDistance = length(particleLocal - particleCenter);
+      float particleEdge = max(fwidth(particleDistance), 0.005);
+      float particleShape = 1.0 - smoothstep(
+        particleRadius - particleEdge,
+        particleRadius + particleEdge,
+        particleDistance
+      );
+      float particleChance = uParticleDensity * 0.12;
+      float particlePresent = 1.0 - step(
+        particleChance,
+        hash22(particleCell + particleSeedOffset + vec2(71.9, 11.7)).x
+      );
+      float particleMask = particleShape * particlePresent;
+      float particlePalettePosition =
+        hash22(particleCell + particleSeedOffset + vec2(29.1, 97.3)).x;
+      vec3 particleColor = paletteColor(particlePalettePosition);
+      color = mix(color, particleColor, particleMask * uParticleContrast);
       color *= illumination;
       float alphaGrain = mix(1.0, mix(0.72, 1.0, grain), uGranularity);
       vec2 sparkleBase = vPosition * (420.0 + uSeed * 2.7);
@@ -305,24 +376,8 @@
       float sparkleNoise = hash22(sparkleBase + sparkleSalt).x;
       float alphaNoise = mix(1.0, sparkleNoise, uNoise);
 
-      vec3 glitterNormal = normalize(vWorldNormal);
-      vec3 glitterAxis = abs(glitterNormal.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
-      vec3 glitterTangent = normalize(cross(glitterAxis, glitterNormal));
-      vec3 glitterBitangent = cross(glitterNormal, glitterTangent);
-      vec2 glitterCell = floor(vPosition * (260.0 + uSeed * 1.3));
-      vec2 glitterJitter = hash22(glitterCell + vec2(61.7, 12.4)) * 2.0 - 1.0;
-      float glitterGate = step(0.992, hash22(glitterCell + vec2(5.5, 88.2)).x);
-      vec3 perturbedNormal = normalize(
-        glitterNormal + (glitterTangent * glitterJitter.x + glitterBitangent * glitterJitter.y) * 0.9
-      );
-      vec3 viewDirection = normalize(cameraPosition - vWorldPosition);
-      vec3 halfVector = normalize(viewDirection + normalize(vLightDirection));
-      float specular = pow(max(dot(perturbedNormal, halfVector), 0.0), 60.0);
-      float glitter = specular * glitterGate * illumination * uGlitter;
-
-      color += glitter * vec3(1.3, 1.25, 1.1);
       float alpha = clamp(
-        coverage * edgeFade * uOpacity * alphaGrain * alphaNoise + glitter,
+        coverage * edgeFade * uOpacity * alphaGrain * alphaNoise,
         0.0,
         1.0
       );
@@ -333,7 +388,9 @@
   `
 </script>
 
-{#if settings.enableRings}
+float baseStriaeCoordinate = radial * 32.0 + (striaeSpacingNoise - 0.5) * 0.5;
+
+{#if safeSettings.enableRings}
   <T.Group rotation={[0, 0, tiltRadians]}>
     <T.Group rotation={[0, spin, 0]}>
       <T.Mesh rotation={[Math.PI / 2, 0, 0]} renderOrder={1}>

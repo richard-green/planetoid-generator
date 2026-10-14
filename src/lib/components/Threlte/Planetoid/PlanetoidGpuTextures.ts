@@ -340,7 +340,7 @@ const fragmentShader = `
 
     vec3 ridgePos = p * (ridgeFrequency * 1.2) + seed * 0.91 + vec3(17.7, 53.2, 91.4);
     // Higher ridge sharpness should produce narrower, crisper ridge crests.
-    float ridgeExponent = mix(1.5, 6.0, clamp((uRidgeSharpness - 0.5) / 3.5, 0.0, 1.0));
+    float ridgeExponent = mix(1.5, 6.0, (uRidgeSharpness - 0.5) / 3.5);
     float ridgeField = ridgedMultiPerlin(ridgePos, ridgeExponent);
     // Low-frequency mask confines ridges to discrete ranges separated by plains.
     float rangeNoise = perlin3(p * (ridgeFrequency * 0.45) + seed * 0.73 + vec3(83.1, 7.9, 29.4)) * 1.4;
@@ -364,7 +364,7 @@ const fragmentShader = `
     float ridgeHeight = signals.x;
     float riftDepth = signals.y;
 
-    float blend = clamp(uRidgesRiftsBlend, 0.0, 1.0);
+    float blend = uRidgesRiftsBlend;
     float ridgeTerm = ridgeHeight * (1.0 - blend);
     float riftTerm = -riftDepth * blend;
 
@@ -484,7 +484,7 @@ const fragmentShader = `
 
     centerUv = vec2(u, v);
     float baseRadius = mix(minRadius, maxRadius, normalizedRadius);
-    float scale = clamp(uCraterScale, 0.25, 3.0);
+    float scale = uCraterScale;
     radius = baseRadius * scale;
   }
 
@@ -609,7 +609,7 @@ const fragmentShader = `
 
     float minRadius = 0.012;
     float maxRadius = 0.048;
-    float scale = clamp(uVolcanoScale, 0.35, 2.5);
+    float scale = uVolcanoScale;
     float scaleNorm = (scale - 0.35) / 2.15;
     float adjusted = mix(pow(radiusSample, 2.2), pow(radiusSample, 0.75), scaleNorm);
 
@@ -814,7 +814,7 @@ const fragmentShader = `
     float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
     float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
     float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
-    float swirlStrength = 0.22 * clamp(uSwirliness, 0.0, 2.0);
+    float swirlStrength = 0.22 * uSwirliness;
     vec3 warpedSpherePos = normalize(spherePos + vec3(warpX, warpY, warpZ) * swirlStrength);
 
     vec3 remappedPos = vec3(
@@ -828,7 +828,7 @@ const fragmentShader = `
     float ridgeRift = 0.0;
     if (uEnableRidges == 1 || uEnableRifts == 1) {
       vec2 ridgeRiftSignalsLocal = ridgeRiftSignals(remappedPos, seed);
-      float blend = clamp(uRidgesRiftsBlend, 0.0, 1.0);
+      float blend = uRidgesRiftsBlend;
       float ridgeTerm = (uEnableRidges == 1) ? ridgeRiftSignalsLocal.x * (1.0 - blend) : 0.0;
       float riftTerm = (uEnableRifts == 1) ? -ridgeRiftSignalsLocal.y * blend : 0.0;
       ridgeRift = ridgeTerm + riftTerm;
@@ -897,7 +897,7 @@ const fragmentShader = `
     float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
     float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
     float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
-    float swirlStrength = 0.22 * clamp(uSwirliness, 0.0, 2.0);
+    float swirlStrength = 0.22 * uSwirliness;
     vec3 warpedSpherePos = normalize(spherePos + vec3(warpX, warpY, warpZ) * swirlStrength);
 
     vec3 remappedPos = vec3(
@@ -906,10 +906,10 @@ const fragmentShader = `
       dot(warpedSpherePos, vec3(0.83, 0.56, 0.00))
     );
 
-    float coverage = clamp(uDustCloudCoverage, 0.0, 1.0);
+    float coverage = uDustCloudCoverage;
     float frequency = max(0.05, uDustCloudFrequency);
-    float cloudSwirliness = clamp(uDustCloudSwirliness, 0.0, 2.0);
-    float coriolis = spherePos.y * clamp(uDustCloudCoriolis, 0.0, 2.0);
+    float cloudSwirliness = uDustCloudSwirliness;
+    float coriolis = spherePos.y * uDustCloudCoriolis;
     vec3 cloudWarp = vec3(
       fractalNoise(remappedPos * (frequency * 2.4) + seed * 0.91 + vec3(13.1, 37.2, 73.8)),
       fractalNoise(remappedPos * (frequency * 2.1) + seed * 1.17 + vec3(29.4, 11.8, 47.3)),
@@ -1012,7 +1012,7 @@ const fragmentShader = `
     float cellThreshold = mix(0.2, -0.45, coverage);
     float cellEdge = mix(0.55, -0.15, coverage);
     coverageMask *= mix(1.0, smoothstep(cellThreshold, cellEdge, worleyField), stormWorleyShare);
-    float cloudAlpha = coverageMask * clamp(uDustCloudOpacity, 0.0, 1.0);
+    float cloudAlpha = coverageMask * uDustCloudOpacity;
 
     lumps = fractalNoise(cloudPosition * (13.0 * frequency) + seed * 2.71 + vec3(67.3, 5.1, 89.7));
 
@@ -1053,7 +1053,7 @@ const fragmentShader = `
     float warpX = fractalNoise(spherePos * 7.3 + seed * 0.43 + vec3(13.1, 37.2, 73.8));
     float warpY = fractalNoise(spherePos * 6.7 + seed * 0.57 + vec3(29.4, 11.8, 47.3));
     float warpZ = fractalNoise(spherePos * 8.1 + seed * 0.49 + vec3(41.7, 59.6, 19.5));
-    float swirlStrength = 0.22 * clamp(uSwirliness, 0.0, 2.0);
+    float swirlStrength = 0.22 * uSwirliness;
     vec3 warpedSpherePos = normalize(spherePos + vec3(warpX, warpY, warpZ) * swirlStrength);
 
     vec3 remappedPos = vec3(
@@ -1123,7 +1123,7 @@ const fragmentShader = `
       // normal-map relief only reads near the terminator; baking shading into the
       // albedo keeps cloud structure visible in full daylight too.
       float lumpShade = mix(0.42, 1.2, clamp(lumps * 0.5 + 0.5, 0.0, 1.0));
-      float shadeStrength = clamp(uDustCloudRelief, 0.0, 2.0) * 0.65;
+      float shadeStrength = uDustCloudRelief * 0.65;
       cloudColor *= mix(1.0, lumpShade, shadeStrength);
 
       gl_FragColor = vec4(clamp(cloudColor, 0.0, 1.0), cloud.z);
@@ -1187,11 +1187,11 @@ const fragmentShader = `
     paletteColor = clamp(paletteColor, 0.0, 1.0);
 
     float normalizedValue = clamp((value + 1.0) * 0.5, 0.0, 1.0);
-    float textureDominance = clamp(uTextureScale, 0.0, 1.0);
+    float textureDominance = uTextureScale;
 
     // Tint leg: grayscale-driven ramp from darker tint to full tint.
-    vec3 tintColor = clamp(uTint, 0.0, 1.0);
-    vec3 darkTint = tintColor * clamp(uTintShadowFloor, 0.0, 1.0);
+    vec3 tintColor = uTint;
+    vec3 darkTint = tintColor * uTintShadowFloor;
     vec3 tintMapped = mix(darkTint, tintColor, normalizedValue);
 
     vec3 finalColor = mix(tintMapped, paletteColor, textureDominance);
@@ -1370,11 +1370,6 @@ function toClampedNumber(value: number | undefined, fallback: number, min: numbe
   return MathUtils.clamp(finite, min, max)
 }
 
-function toNonNegativeInt(value: number | undefined, fallback: number) {
-  const finite = toFiniteNumber(value, fallback)
-  return Math.max(0, Math.floor(finite))
-}
-
 function srgbChannelToLinear(value: number) {
   if (value <= 0.04045) {
     return value / 12.92
@@ -1407,7 +1402,10 @@ function parseHexTint(value: string | undefined) {
   return srgbToLinearVector(r, g, b)
 }
 
-function setPaletteUniform(palette: PaletteColor[], uniformName: 'uPalette' | 'uIcePalette' = 'uPalette') {
+function setPaletteUniform(
+  palette: PaletteColor[],
+  uniformName: 'uPalette' | 'uIcePalette' = 'uPalette'
+) {
   const paletteVectors = material.uniforms[uniformName].value as Vector3[]
   const palettePositions = material.uniforms[`${uniformName}Positions`].value as number[]
 
@@ -1506,7 +1504,9 @@ function renderTexture(
     MinValues.iceCapEdgeNoise,
     MaxValues.iceCapEdgeNoise
   )
-  material.uniforms.uIceCapColor.value.copy(parseHexTint(options.iceCapColor ?? DefaultValues.iceCapColor))
+  material.uniforms.uIceCapColor.value.copy(
+    parseHexTint(options.iceCapColor ?? DefaultValues.iceCapColor)
+  )
   material.uniforms.uSnowExtent.value = toClampedNumber(
     options.snowExtent,
     DefaultValues.snowExtent,
@@ -1539,12 +1539,7 @@ function renderTexture(
     MaxValues.dustCloudCoverage
   )
   material.uniforms.uDustCloudWeights.value = DustCloudStyleNames.map((style) =>
-    toClampedNumber(
-      options.dustCloudWeights?.[style],
-      DefaultValues.dustCloudWeights[style],
-      0,
-      1
-    )
+    toClampedNumber(options.dustCloudWeights?.[style], DefaultValues.dustCloudWeights[style], 0, 1)
   )
   material.uniforms.uDustCloudOpacity.value = toClampedNumber(
     options.dustCloudOpacity,
@@ -1576,9 +1571,21 @@ function renderTexture(
     MinValues.dustCloudNormalStrength,
     MaxValues.dustCloudNormalStrength
   )
-  material.uniforms.uTextureScale.value = toFiniteNumber(options.textureScale, 1)
+  material.uniforms.uTextureScale.value = toClampedNumber(
+    options.textureScale,
+    DefaultValues.colorScale,
+    MinValues.colorScale,
+    MaxValues.colorScale
+  )
   material.uniforms.uEnableCraters.value = (options.enableCraters ?? true) ? 1 : 0
-  material.uniforms.uCraterCount.value = Math.min(96, toNonNegativeInt(options.craterCount, 22))
+  material.uniforms.uCraterCount.value = Math.round(
+    toClampedNumber(
+      options.craterCount,
+      DefaultValues.craterCount,
+      MinValues.craterCount,
+      MaxValues.craterCount
+    )
+  )
   material.uniforms.uCraterScale.value = toClampedNumber(
     options.craterScale,
     DefaultValues.craterScale,
@@ -1604,7 +1611,14 @@ function renderTexture(
     MaxValues.craterSharpness
   )
   material.uniforms.uEnableVolcanoes.value = options.enableVolcanoes ? 1 : 0
-  material.uniforms.uVolcanoCount.value = Math.min(80, toNonNegativeInt(options.volcanoCount, 10))
+  material.uniforms.uVolcanoCount.value = Math.round(
+    toClampedNumber(
+      options.volcanoCount,
+      DefaultValues.volcanoCount,
+      MinValues.volcanoCount,
+      MaxValues.volcanoCount
+    )
+  )
   material.uniforms.uVolcanoScale.value = toClampedNumber(
     options.volcanoScale,
     DefaultValues.volcanoScale,

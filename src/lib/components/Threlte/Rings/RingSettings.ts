@@ -24,7 +24,9 @@ export type RingSettings = {
   ringSolarization: number
   ringOpacity: number
   ringNoise: number
-  ringGlitter: number
+  ringParticleContrast: number
+  ringParticleDensity: number
+  ringParticleSize: number
 }
 
 export type RingRangeKey = NumericKeys<RingSettings>
@@ -46,7 +48,9 @@ export const DefaultRingValues: RingSettings = {
   ringSolarization: 1,
   ringOpacity: 0.7,
   ringNoise: 0.35,
-  ringGlitter: 0,
+  ringParticleContrast: 0,
+  ringParticleDensity: 0.2,
+  ringParticleSize: 1,
 }
 
 export const RingSchema: SettingsSchema<RingSettings, 'rings'> = {
@@ -182,13 +186,31 @@ export const RingSchema: SettingsSchema<RingSettings, 'rings'> = {
     max: 1,
     step: 0.05,
   },
-  ringGlitter: {
+  ringParticleContrast: {
     kind: 'number',
-    label: 'Glitter',
-    cliFlag: '--ring-glitter',
+    label: 'Particle contrast',
+    cliFlag: '--ring-particle-contrast',
     section: 'rings',
     min: 0,
     max: 1,
+    step: 0.05,
+  },
+  ringParticleDensity: {
+    kind: 'number',
+    label: 'Particle density',
+    cliFlag: '--ring-particle-density',
+    section: 'rings',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  ringParticleSize: {
+    kind: 'number',
+    label: 'Particle size',
+    cliFlag: '--ring-particle-size',
+    section: 'rings',
+    min: 0.001,
+    max: 2.5,
     step: 0.05,
   },
 }

@@ -62,7 +62,9 @@
     ringSolarization = DefaultValues.ringSolarization,
     ringOpacity = DefaultValues.ringOpacity,
     ringNoise = DefaultValues.ringNoise,
-    ringGlitter = DefaultValues.ringGlitter,
+    ringParticleContrast = DefaultValues.ringParticleContrast,
+    ringParticleDensity = DefaultValues.ringParticleDensity,
+    ringParticleSize = DefaultValues.ringParticleSize,
   }: Props = $props()
 
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
@@ -188,7 +190,9 @@
     ringSolarization,
     ringOpacity,
     ringNoise,
-    ringGlitter,
+    ringParticleContrast,
+    ringParticleDensity,
+    ringParticleSize,
   })
 
   const ringSettings: RingSettings = $derived({
@@ -207,7 +211,9 @@
     ringSolarization,
     ringOpacity,
     ringNoise,
-    ringGlitter,
+    ringParticleContrast,
+    ringParticleDensity,
+    ringParticleSize,
   })
 
   const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })

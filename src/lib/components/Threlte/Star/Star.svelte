@@ -90,7 +90,7 @@
       float filamentThreshold = mix(0.22, 0.62, sharpness);
       float filaments = smoothstep(filamentThreshold, 0.9, filamentField);
       float overlayStrength =
-        clamp(uPlasmaSurfaceIntensity, 0.0, 8.0) *
+        uPlasmaSurfaceIntensity *
         clamp(turbulenceAmount, 0.0, 1.0);
       color *= 1.0 + filaments * overlayStrength * 0.4;
       float edge = 1.0 - abs(dot(normalize(vNormal), normalize(vViewPosition)));

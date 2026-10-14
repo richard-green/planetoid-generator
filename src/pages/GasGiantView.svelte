@@ -585,7 +585,9 @@
             ringSolarization={gasGiant.ringSolarization}
             ringOpacity={gasGiant.ringOpacity}
             ringNoise={gasGiant.ringNoise}
-            ringGlitter={gasGiant.ringGlitter}
+            ringParticleContrast={gasGiant.ringParticleContrast}
+            ringParticleDensity={gasGiant.ringParticleDensity}
+            ringParticleSize={gasGiant.ringParticleSize}
           />
         </Canvas>
         {#snippet failed(error)}

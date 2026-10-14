@@ -132,7 +132,7 @@ export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> =
     cliFlag: '--color-scale',
     section: 'color',
     min: 0,
-    max: 2,
+    max: 1,
     step: 0.05,
   },
   tintShadowFloor: {

@@ -203,7 +203,7 @@
       float stepLength = segment / float(${RAY_STEPS});
       float dither = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));
       float shellDepth = max(outerRadius - innerRadius, 0.0001);
-      float wrap = mix(0.02, 0.9, clamp(uTerminatorWrap, 0.0, 1.0));
+      float wrap = mix(0.02, 0.9, uTerminatorWrap);
       vec3 sun = normalize(uSunDirection);
       vec3 scattered = vec3(0.0);
 

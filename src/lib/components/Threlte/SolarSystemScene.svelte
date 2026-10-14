@@ -285,7 +285,9 @@
       ringSolarization: settings.ringSolarization,
       ringOpacity: settings.ringOpacity,
       ringNoise: settings.ringNoise,
-      ringGlitter: settings.ringGlitter,
+      ringParticleContrast: settings.ringParticleContrast,
+      ringParticleDensity: settings.ringParticleDensity,
+      ringParticleSize: settings.ringParticleSize,
     }
   }
 
