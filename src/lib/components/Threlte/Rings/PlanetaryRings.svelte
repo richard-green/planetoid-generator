@@ -1,9 +1,10 @@
+  float baseStriaeCoordinate = radial * 32.0 + (striaeSpacingNoise - 0.5) * 0.5;
 <script lang="ts">
   import { T } from '@threlte/core'
   import { DoubleSide, Uniform, Vector3 } from 'three'
   import { getPalettePosition } from '../../../types/palette'
   import { trackPalette } from '../../../types/paletteState.svelte'
-  import { sanitizeRingSettings, type RingSettings } from './RingSettings'
+  import type { RingSettings } from './RingSettings'
   import { RingPalettes } from './RingPalettes'
 
   type Props = {
@@ -17,7 +18,6 @@
   let { settings, seed, planetRadius = 1, lightPosition = [-5, 1, 2], spin = 0 }: Props = $props()
 
   const MAX_PALETTE_SIZE = 8
-  const safeSettings = $derived(sanitizeRingSettings(settings))
   const uniforms = {
     uInnerRadius: new Uniform(0),
     uOuterRadius: new Uniform(0),
@@ -42,12 +42,14 @@
     uPalettePositions: new Uniform(Array.from({ length: MAX_PALETTE_SIZE }, () => 1)),
   }
 
-  const innerRadius = $derived(safeSettings.ringInnerRadius * planetRadius)
-  const outerRadius = $derived(safeSettings.ringOuterRadius * planetRadius)
-  const tiltRadians = $derived((safeSettings.ringTilt * Math.PI) / 180)
+  const innerRadius = $derived(settings.ringInnerRadius * planetRadius)
+  const outerRadius = $derived(
+    Math.max(settings.ringOuterRadius, settings.ringInnerRadius + 0.05) * planetRadius
+  )
+  const tiltRadians = $derived((settings.ringTilt * Math.PI) / 180)
 
   $effect(() => {
-    const colors = trackPalette(RingPalettes[safeSettings.ringPalette])
+    const colors = trackPalette(RingPalettes[settings.ringPalette])
     const fallback = colors.at(-1) ?? { r: 255, g: 255, b: 255 }
     uniforms.uPalette.value = Array.from({ length: MAX_PALETTE_SIZE }, (_, index) => {
       const color = colors[index] ?? fallback
@@ -62,19 +64,19 @@
     uniforms.uPlanetRadius.value = planetRadius
     uniforms.uLightPosition.value = new Vector3(...lightPosition)
     uniforms.uSeed.value = seed
-    uniforms.uBandCount.value = safeSettings.ringBandCount
-    uniforms.uBandSharpness.value = safeSettings.ringBandSharpness
-    uniforms.uBandRegularity.value = safeSettings.ringBandRegularity
-    uniforms.uDensity.value = safeSettings.ringDensity
-    uniforms.uTextureScale.value = safeSettings.ringTextureScale
-    uniforms.uGranularity.value = safeSettings.ringGranularity
-    uniforms.uPaletteInfluence.value = safeSettings.ringPaletteInfluence
-    uniforms.uSolarization.value = safeSettings.ringSolarization
-    uniforms.uOpacity.value = safeSettings.ringOpacity
-    uniforms.uNoise.value = safeSettings.ringNoise
-    uniforms.uParticleContrast.value = safeSettings.ringParticleContrast
-    uniforms.uParticleDensity.value = safeSettings.ringParticleDensity
-    uniforms.uParticleSize.value = safeSettings.ringParticleSize
+    uniforms.uBandCount.value = settings.ringBandCount
+    uniforms.uBandSharpness.value = settings.ringBandSharpness
+    uniforms.uBandRegularity.value = settings.ringBandRegularity
+    uniforms.uDensity.value = settings.ringDensity
+    uniforms.uTextureScale.value = settings.ringTextureScale
+    uniforms.uGranularity.value = settings.ringGranularity
+    uniforms.uPaletteInfluence.value = settings.ringPaletteInfluence
+    uniforms.uSolarization.value = settings.ringSolarization
+    uniforms.uOpacity.value = settings.ringOpacity
+    uniforms.uNoise.value = settings.ringNoise
+    uniforms.uParticleContrast.value = settings.ringParticleContrast
+    uniforms.uParticleDensity.value = settings.ringParticleDensity
+    uniforms.uParticleSize.value = settings.ringParticleSize
     uniforms.uPaletteSize.value = colors.length
   })
 
@@ -177,8 +179,8 @@
     }
 
     vec4 variableBandInfo(float radial) {
-      int count = int(floor(uBandCount + 0.5));
-      float variance = 1.0 - uBandRegularity;
+      int count = int(floor(clamp(uBandCount, 1.0, 64.0) + 0.5));
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
       float widthLow = mix(1.0, 0.02, variance);
       float widthHigh = mix(1.0, 8.0, variance);
       float totalWidth = 0.0;
@@ -254,7 +256,7 @@
       );
       vec4 band = variableBandInfo(radial);
       float distanceFromCenter = abs(band.x - 0.5);
-      float variance = 1.0 - uBandRegularity;
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
       float fillMultiplier = mix(1.0, band.z, variance);
       float fillRatio = clamp(
         mix(0.15, 0.96, uDensity) * fillMultiplier,
@@ -320,7 +322,7 @@
       float fineStriae =
         sign(striaeWave) * pow(abs(striaeWave), striaeSharpness) * striaeVisibility * 1.5;
       float edgeFade = smoothstep(0.0, 0.025, radial) * smoothstep(0.0, 0.035, 1.0 - radial);
-      float paletteInfluence = uPaletteInfluence;
+      float paletteInfluence = clamp(uPaletteInfluence, 0.0, 1.0);
       float colorPosition = clamp(
         mix(0.5, band.w + (grain - 0.5) * 0.16, paletteInfluence),
         0.0,
@@ -350,7 +352,7 @@
       vec2 particleSeedOffset = vec2(uSeed * 0.0137, uSeed * 0.0219);
       vec2 particleRandom = hash22(particleCell + particleSeedOffset + vec2(17.3, 53.1));
       vec2 particleCenter = mix(vec2(0.25), vec2(0.75), particleRandom);
-      float particleSize = (uParticleSize - 0.25) / 2.25;
+      float particleSize = clamp((uParticleSize - 0.25) / 2.25, 0.0, 1.0);
       float particleRadius = mix(0.08, 0.3, particleSize) * mix(0.8, 1.2, particleRandom.x);
       float particleDistance = length(particleLocal - particleCenter);
       float particleEdge = max(fwidth(particleDistance), 0.005);
@@ -359,7 +361,7 @@
         particleRadius + particleEdge,
         particleDistance
       );
-      float particleChance = uParticleDensity * 0.12;
+      float particleChance = clamp(uParticleDensity, 0.0, 1.0) * 0.12;
       float particlePresent = 1.0 - step(
         particleChance,
         hash22(particleCell + particleSeedOffset + vec2(71.9, 11.7)).x
@@ -368,7 +370,7 @@
       float particlePalettePosition =
         hash22(particleCell + particleSeedOffset + vec2(29.1, 97.3)).x;
       vec3 particleColor = paletteColor(particlePalettePosition);
-      color = mix(color, particleColor, particleMask * uParticleContrast);
+      color = mix(color, particleColor, particleMask * clamp(uParticleContrast, 0.0, 1.0));
       color *= illumination;
       float alphaGrain = mix(1.0, mix(0.72, 1.0, grain), uGranularity);
       vec2 sparkleBase = vPosition * (420.0 + uSeed * 2.7);
@@ -388,9 +390,7 @@
   `
 </script>
 
-float baseStriaeCoordinate = radial * 32.0 + (striaeSpacingNoise - 0.5) * 0.5;
-
-{#if safeSettings.enableRings}
+{#if settings.enableRings}
   <T.Group rotation={[0, 0, tiltRadians]}>
     <T.Group rotation={[0, spin, 0]}>
       <T.Mesh rotation={[Math.PI / 2, 0, 0]} renderOrder={1}>

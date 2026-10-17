@@ -2,7 +2,7 @@
   import { T } from '@threlte/core'
   import { IcosahedronGeometry, Uniform, Vector3 } from 'three'
   import { onDestroy } from 'svelte'
-  import { sanitizeRingSettings, type RingSettings } from './RingSettings'
+  import type { RingSettings } from './RingSettings'
 
   type Props = {
     settings: RingSettings
@@ -13,7 +13,6 @@
 
   let { settings, seed, planetRadius = 1, lightPosition = [-5, 1, 2] }: Props = $props()
 
-  const safeSettings = $derived(sanitizeRingSettings(settings))
   const geometry = new IcosahedronGeometry(1, 16)
   const meshScale = $derived(planetRadius * 1.001)
   const uniforms = {
@@ -31,18 +30,18 @@
   }
 
   $effect(() => {
-    const tilt = (safeSettings.ringTilt * Math.PI) / 180
-    uniforms.uInnerRadius.value = safeSettings.ringInnerRadius * planetRadius
-    uniforms.uOuterRadius.value = safeSettings.ringOuterRadius * planetRadius
+    const tilt = (settings.ringTilt * Math.PI) / 180
+    uniforms.uInnerRadius.value = settings.ringInnerRadius * planetRadius
+    uniforms.uOuterRadius.value = settings.ringOuterRadius * planetRadius
     uniforms.uLightPosition.value = new Vector3(...lightPosition)
     uniforms.uMeshScale.value = meshScale
     uniforms.uRingNormal.value = new Vector3(Math.sin(tilt), -Math.cos(tilt), 0).normalize()
     uniforms.uSeed.value = seed
-    uniforms.uBandCount.value = safeSettings.ringBandCount
-    uniforms.uBandSharpness.value = safeSettings.ringBandSharpness
-    uniforms.uBandRegularity.value = safeSettings.ringBandRegularity
-    uniforms.uDensity.value = safeSettings.ringDensity
-    uniforms.uOpacity.value = safeSettings.ringOpacity
+    uniforms.uBandCount.value = settings.ringBandCount
+    uniforms.uBandSharpness.value = settings.ringBandSharpness
+    uniforms.uBandRegularity.value = settings.ringBandRegularity
+    uniforms.uDensity.value = settings.ringDensity
+    uniforms.uOpacity.value = settings.ringOpacity
   })
 
   onDestroy(() => {
@@ -104,8 +103,8 @@
     }
 
     vec3 variableBandInfo(float radial) {
-      int count = int(floor(uBandCount + 0.5));
-      float variance = 1.0 - uBandRegularity;
+      int count = int(floor(clamp(uBandCount, 2.0, 64.0) + 0.5));
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
       float widthLow = mix(1.0, 0.02, variance);
       float widthHigh = mix(1.0, 8.0, variance);
       float totalWidth = 0.0;
@@ -151,7 +150,7 @@
 
       float radial = (ringRadius - uInnerRadius) / max(0.0001, uOuterRadius - uInnerRadius);
       vec3 band = variableBandInfo(radial);
-      float variance = 1.0 - uBandRegularity;
+      float variance = 1.0 - clamp(uBandRegularity, 0.0, 1.0);
       float fillMultiplier = mix(1.0, band.z, variance);
       float fillRatio = clamp(
         mix(0.15, 0.96, uDensity) * fillMultiplier,
@@ -176,7 +175,7 @@
   `
 </script>
 
-{#if safeSettings.enableRings}
+{#if settings.enableRings}
   <T.Mesh {geometry} scale={meshScale} renderOrder={0}>
     <T.ShaderMaterial
       {vertexShader}

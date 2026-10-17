@@ -5,6 +5,7 @@
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
+  import RenderViewport from '../lib/components/Threlte/RenderViewport.svelte'
   import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
   import TextureSizeControl from '../lib/components/Controls/TextureSizeControl.svelte'
   import SeedControl from '../lib/components/Controls/SeedControl.svelte'
@@ -114,8 +115,9 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
-      <svelte:boundary>
-        <Canvas
+      <RenderViewport title="solar system">
+        <svelte:boundary>
+          <Canvas
           dpr={1}
           createRenderer={(canvas) =>
             new WebGLRenderer({
@@ -125,8 +127,8 @@
               alpha: true,
               preserveDrawingBuffer: true,
             })}
-        >
-          <SolarSystemScene
+          >
+            <SolarSystemScene
             bind:this={solarSystemScene}
             {bodies}
             {rockyPresets}
@@ -138,12 +140,13 @@
             {orbitScale}
             {textureSize}
             {seed}
-          />
-        </Canvas>
-        {#snippet failed(error)}
-          <WebGLFailure {error} />
-        {/snippet}
-      </svelte:boundary>
+            />
+          </Canvas>
+          {#snippet failed(error)}
+            <WebGLFailure {error} />
+          {/snippet}
+        </svelte:boundary>
+      </RenderViewport>
       <FullscreenControl target={canvasShell} />
     </div>
 

@@ -21,7 +21,7 @@
     createGasGiantNormalTexture,
     createGasGiantColorTexture,
     disposeGeneratedTexture,
-  } from '../GasGiant/GasGiantGpuTextures'
+  } from './GasGiantGpuTextures'
 
   type Props = {
     settings: GasGiantSettings

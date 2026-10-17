@@ -158,6 +158,20 @@ export function numericKeysBySection<T, Section extends string>(
   return result
 }
 
+function sanitizeNumber(spec: NumberFieldSpec, value: unknown, fallback: number): number {
+  const finite = typeof value === 'number' && Number.isFinite(value) ? value : fallback
+  const clamped = clamp(finite, spec.min, spec.max)
+  return spec.integer ? Math.round(clamped) : clamped
+}
+
+export function createNumericSanitizer<T, Section extends string>(
+  schema: SettingsSchema<T, Section>,
+  defaults: T
+) {
+  return (key: NumericKeys<T>, value: unknown): number =>
+    sanitizeNumber(schema[key] as NumberFieldSpec, value, defaults[key] as number)
+}
+
 export function sanitizeWithSchema<T, Section extends string>(
   schema: SettingsSchema<T, Section>,
   defaults: T,
@@ -173,12 +187,7 @@ export function sanitizeWithSchema<T, Section extends string>(
 
     switch (spec.kind) {
       case 'number': {
-        if (typeof value !== 'number' || !Number.isFinite(value)) {
-          result[key] = fallback
-          break
-        }
-        const clamped = clamp(value, spec.min, spec.max)
-        result[key] = spec.integer ? Math.round(clamped) : clamped
+        result[key] = sanitizeNumber(spec, value, fallback as number)
         break
       }
       case 'boolean':

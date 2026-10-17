@@ -129,6 +129,16 @@
     transform: rotate(90deg);
   }
 
+  @media (max-width: 560px) {
+    .control-section {
+      padding: 0.25rem 0.5rem;
+    }
+
+    .control-content {
+      margin-top: 0.45rem;
+    }
+  }
+
   .summary-toggle {
     display: inline-flex;
     align-items: center;

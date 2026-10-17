@@ -8,6 +8,7 @@ import {
 import { type TextureSize } from '../../../types/textureSize'
 import {
   assertValidSchema,
+  createNumericSanitizer,
   numericKeysBySection,
   numericLabels,
   numericTable,
@@ -19,6 +20,7 @@ import {
 import { clamp } from '../../../utils/math'
 import { cameraViewCliArgs, type CameraView } from '../../../utils/cameraView'
 import { toRecord } from '../../../utils/sanitize'
+import { DefaultSceneValues, SceneSchema, type SceneSettings } from '../SceneSettings'
 
 export const PlanetoidViewModeNames = [
   'mesh',
@@ -54,11 +56,10 @@ export const DustCloudStyleLabels: Record<DustCloudStyle, string> = {
 }
 
 export type PlanetoidPresetExcludedKey =
-  'seed' | 'autoRotate' | 'showDebugMeshes' | 'normalTextureSize' | 'colorTextureSize'
+  'seed' | 'autoRotate' | 'normalTextureSize' | 'colorTextureSize'
 
-export type PlanetoidSettings = {
+export type PlanetoidSettings = SceneSettings & {
   autoRotate: boolean
-  showDebugMeshes: boolean
   enableCraters: boolean
   enableRidges: boolean
   enableRifts: boolean
@@ -104,6 +105,7 @@ export type PlanetoidSettings = {
   ridgeColorWeight: number
   riftColorWeight: number
   ridgeStrength: number
+  ridgeElevation: number
   ridgeFrequency: number
   ridgeSharpness: number
   riftStrength: number
@@ -128,7 +130,7 @@ export type PlanetoidPresetSettings = Omit<PlanetoidSettings, PlanetoidPresetExc
 
 export type PlanetoidViewSettings = Pick<
   PlanetoidSettings,
-  'autoRotate' | 'showDebugMeshes' | 'normalTextureSize' | 'colorTextureSize'
+  'autoRotate' | 'normalTextureSize' | 'colorTextureSize'
 > & {
   viewMode: PlanetoidViewMode
 }
@@ -153,8 +155,8 @@ export type PlanetoidRangeKey = NumericKeys<PlanetoidSettings>
 export type PlanetoidRangeValues = Pick<PlanetoidSettings, PlanetoidRangeKey>
 
 export const DefaultValues: PlanetoidSettings = {
+  ...DefaultSceneValues,
   autoRotate: false,
-  showDebugMeshes: false,
   enableCraters: true,
   enableRidges: false,
   enableRifts: false,
@@ -204,6 +206,7 @@ export const DefaultValues: PlanetoidSettings = {
   volcanoStrength: 2,
   volcanoColorStrength: 1.2,
   ridgeStrength: 2,
+  ridgeElevation: 2,
   ridgeFrequency: 2.5,
   ridgeSharpness: 2.5,
   ridgeColorWeight: 0.1,
@@ -268,6 +271,7 @@ function parseDustCloudWeights(text: string): DustCloudWeights {
 }
 
 export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection> = {
+  ...SceneSchema,
   seed: {
     kind: 'number',
     label: 'Seed',
@@ -279,12 +283,6 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
     integer: true,
   },
   autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
-  showDebugMeshes: {
-    kind: 'boolean',
-    label: 'Show debug meshes',
-    cliFlag: '--show-debug-meshes',
-    section: 'scene',
-  },
   palette: {
     kind: 'enum',
     label: 'Palette',
@@ -666,6 +664,15 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
     max: 2,
     step: 0.05,
   },
+  ridgeElevation: {
+    kind: 'number',
+    label: 'Ridge elevation',
+    cliFlag: '--ridge-elevation',
+    section: 'ridges',
+    min: 0,
+    max: 4,
+    step: 0.1,
+  },
   ridgeFrequency: {
     kind: 'number',
     label: 'Ridge frequency',
@@ -681,7 +688,7 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
     cliFlag: '--ridge-sharpness',
     section: 'ridges',
     min: 0.5,
-    max: 4,
+    max: 8,
     step: 0.05,
   },
   ridgeColorWeight: {
@@ -813,6 +820,7 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
 
 assertValidSchema(PlanetoidSchema, DefaultValues, 'Planetoid')
 
+export const sanitizePlanetoidNumber = createNumericSanitizer(PlanetoidSchema, DefaultValues)
 export const MinValues = numericTable(PlanetoidSchema, 'min')
 export const MaxValues = numericTable(PlanetoidSchema, 'max')
 export const StepValues = numericTable(PlanetoidSchema, 'step')
@@ -836,7 +844,6 @@ export function toPlanetoidPresetSettings(settings: PlanetoidSettings): Planetoi
   const {
     seed: _seed,
     autoRotate: _autoRotate,
-    showDebugMeshes: _showDebugMeshes,
     normalTextureSize: _normalTextureSize,
     colorTextureSize: _colorTextureSize,
     ...presetSettings

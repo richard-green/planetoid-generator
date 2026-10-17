@@ -248,7 +248,6 @@
       ...preset.settings,
       seed,
       autoRotate,
-      showDebugMeshes: false,
       normalTextureSize: textureSize,
       colorTextureSize: textureSize,
       viewMode: 'mesh',

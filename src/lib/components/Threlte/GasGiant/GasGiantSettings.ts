@@ -12,6 +12,7 @@ import {
 } from '../Rings/RingSettings'
 import {
   assertValidSchema,
+  createNumericSanitizer,
   numericKeysBySection,
   numericLabels,
   numericTable,
@@ -22,38 +23,40 @@ import {
 } from '../../../types/settingsSchema'
 import { toRecord } from '../../../utils/sanitize'
 import { cameraViewCliArgs, type CameraView } from '../../../utils/cameraView'
+import { DefaultSceneValues, SceneSchema, type SceneSettings } from '../SceneSettings'
 
 export type GasGiantViewMode = 'mesh' | 'normal' | 'texture'
 
-export type GasGiantSettings = RingSettings & {
-  seed: number
-  autoRotate: boolean
-  palette: GasGiantPaletteName
-  surfaceTint: string
-  colorScale: number
-  tintShadowFloor: number
-  cloudBandCount: number
-  cloudBandSharpness: number
-  cloudChaos: number
-  cloudTurbulence: number
-  enableStorms: boolean
-  stormCount: number
-  stormScale: number
-  stormPower: number
-  stormStrength: number
-  stormColorStrength: number
-  normalStrength: number
-  roughness: number
-  metalness: number
-  enableAtmosphere: boolean
-  atmospherePalette: AtmospherePaletteName
-  atmosphereIntensity: number
-  atmosphereThickness: number
-  atmosphereDropoff: number
-  atmosphereTerminatorWrap: number
-  normalTextureSize: TextureSize
-  colorTextureSize: TextureSize
-}
+export type GasGiantSettings = RingSettings &
+  SceneSettings & {
+    seed: number
+    autoRotate: boolean
+    palette: GasGiantPaletteName
+    surfaceTint: string
+    colorScale: number
+    tintShadowFloor: number
+    cloudBandCount: number
+    cloudBandSharpness: number
+    cloudChaos: number
+    cloudTurbulence: number
+    enableStorms: boolean
+    stormCount: number
+    stormScale: number
+    stormPower: number
+    stormStrength: number
+    stormColorStrength: number
+    normalStrength: number
+    roughness: number
+    metalness: number
+    enableAtmosphere: boolean
+    atmospherePalette: AtmospherePaletteName
+    atmosphereIntensity: number
+    atmosphereThickness: number
+    atmosphereDropoff: number
+    atmosphereTerminatorWrap: number
+    normalTextureSize: TextureSize
+    colorTextureSize: TextureSize
+  }
 
 export const GasGiantSections = [
   'scene',
@@ -72,6 +75,7 @@ export type GasGiantRangeValues = Pick<GasGiantSettings, GasGiantRangeKey>
 
 export const DefaultValues: GasGiantSettings = {
   ...DefaultRingValues,
+  ...DefaultSceneValues,
   seed: 1,
   autoRotate: false,
   palette: 'verdantCeruleanDrift',
@@ -102,6 +106,7 @@ export const DefaultValues: GasGiantSettings = {
 }
 
 export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> = {
+  ...SceneSchema,
   seed: {
     kind: 'number',
     label: 'Seed',
@@ -328,6 +333,7 @@ export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> =
 
 assertValidSchema(GasGiantSchema, DefaultValues, 'Gas giant')
 
+export const sanitizeGasGiantNumber = createNumericSanitizer(GasGiantSchema, DefaultValues)
 export const MinValues = numericTable(GasGiantSchema, 'min')
 export const MaxValues = numericTable(GasGiantSchema, 'max')
 export const StepValues = numericTable(GasGiantSchema, 'step')

@@ -96,7 +96,7 @@ function log(level: 'INFO' | 'ERROR', message: string) {
   else console.log(line)
 }
 
-async function readPngDimensions(filePath: string) {
+export async function readPngDimensions(filePath: string) {
   const file = await open(filePath, 'r')
 
   try {

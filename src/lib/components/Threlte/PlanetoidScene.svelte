@@ -1,7 +1,7 @@
 <script lang="ts">
   import { T, useThrelte } from '@threlte/core'
   import { OrbitControls, interactivity } from '@threlte/extras'
-  import { MOUSE } from 'three'
+  import { Group, MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
   import { onDestroy } from 'svelte'
   import { downloadScenePng as downloadScenePngFile } from '../../utils/downloadScenePng'
@@ -14,6 +14,7 @@
   import type { AtmospherePaletteName } from './Atmosphere/AtmospherePalettes'
   import type { TextureSize } from '../../types/textureSize'
   import type { IceCapPaletteName } from './Planetoid/IceCapPalettes'
+  import { sunPosition } from './SceneSettings'
 
   type Props = {
     enableIceCaps?: boolean
@@ -68,6 +69,7 @@
     enableRidges?: boolean
     enableRifts?: boolean
     ridgeStrength?: number
+    ridgeElevation?: number
     ridgeFrequency?: number
     ridgeSharpness?: number
     riftStrength?: number
@@ -78,7 +80,9 @@
     roughness?: number
     metalness?: number
     autoRotate?: boolean
-    showDebugMeshes?: boolean
+    axialTilt?: number
+    sunElevation?: number
+    sunAscension?: number
     triangleDetail?: number
     normalTextureSize?: TextureSize
     colorTextureSize?: TextureSize
@@ -137,6 +141,7 @@
     enableRidges = DefaultValues.enableRidges,
     enableRifts = DefaultValues.enableRifts,
     ridgeStrength = DefaultValues.ridgeStrength,
+    ridgeElevation = DefaultValues.ridgeElevation,
     ridgeFrequency = DefaultValues.ridgeFrequency,
     ridgeSharpness = DefaultValues.ridgeSharpness,
     riftStrength = DefaultValues.riftStrength,
@@ -147,7 +152,9 @@
     roughness = DefaultValues.roughness,
     metalness = DefaultValues.metalness,
     autoRotate = DefaultValues.autoRotate,
-    showDebugMeshes = DefaultValues.showDebugMeshes,
+    axialTilt = DefaultValues.axialTilt,
+    sunElevation = DefaultValues.sunElevation,
+    sunAscension = DefaultValues.sunAscension,
     triangleDetail = DefaultValues.triangleDetail,
     normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
@@ -206,6 +213,7 @@
     enableRidges,
     enableRifts,
     ridgeStrength,
+    ridgeElevation,
     ridgeFrequency,
     ridgeSharpness,
     riftStrength,
@@ -215,8 +223,10 @@
     ridgesRiftsBlend,
     roughness,
     metalness,
-    autoRotate,
-    showDebugMeshes,
+    autoRotate: false,
+    axialTilt,
+    sunElevation,
+    sunAscension,
     triangleDetail,
     normalTextureSize,
     colorTextureSize,
@@ -238,6 +248,7 @@
 
   let planetoidRef: PlanetoidExports | undefined = $state(undefined)
   let controlsRef: OrbitControlsImpl | undefined = $state(undefined)
+  let planetarySystem: Group | undefined = $state(undefined)
   let previousViewMode: PlanetoidViewMode = 'mesh'
   const viewCameraStateByKey: Record<ViewCameraStateKey, ViewCameraState> = {
     mesh: {
@@ -251,6 +262,23 @@
   }
 
   const { camera, renderer, scene, invalidate } = useThrelte()
+  const tiltRadians = $derived(viewMode === 'mesh' ? (axialTilt * Math.PI) / 180 : 0)
+  const lightPosition = $derived(sunPosition(sunElevation, sunAscension))
+
+  $effect(() => {
+    if (viewMode !== 'mesh' || !autoRotate) return
+    let previousTime = performance.now()
+    let frame: number
+    function rotate(time: number) {
+      const delta = Math.min((time - previousTime) / 1000, 0.1)
+      previousTime = time
+      if (planetarySystem) planetarySystem.rotation.y += delta * 0.18
+      invalidate()
+      frame = requestAnimationFrame(rotate)
+    }
+    frame = requestAnimationFrame(rotate)
+    return () => cancelAnimationFrame(frame)
+  })
 
   interactivity()
 
@@ -298,6 +326,7 @@
 
     if (previousViewMode !== currentViewMode) {
       saveCurrentViewCameraState(previousViewMode)
+      planetarySystem?.rotation.set(0, 0, 0)
       if (previousStateKey !== currentStateKey) {
         restoreViewCameraState(currentViewMode)
       }
@@ -368,6 +397,10 @@
   />
 </T.PerspectiveCamera>
 <T.AmbientLight intensity={0.05} />
-<T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
+<T.DirectionalLight position={lightPosition} intensity={6} />
 
-<Planetoid bind:this={planetoidRef} {settings} />
+<T.Group rotation={[0, 0, tiltRadians]}>
+  <T.Group bind:ref={planetarySystem}>
+    <Planetoid bind:this={planetoidRef} {settings} />
+  </T.Group>
+</T.Group>

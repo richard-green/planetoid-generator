@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useTask, useThrelte } from '@threlte/core'
+  import { T, useThrelte } from '@threlte/core'
   import { OrbitControls, interactivity } from '@threlte/extras'
   import { Group, MOUSE } from 'three'
   import type { OrbitControls as OrbitControlsImpl } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -15,6 +15,7 @@
   import PlanetaryRingShadow from './Rings/PlanetaryRingShadow.svelte'
   import PlanetaryRings from './Rings/PlanetaryRings.svelte'
   import type { RingSettings } from './Rings/RingSettings'
+  import { sunPosition } from './SceneSettings'
 
   type Props = Partial<GasGiantSettings> & { viewMode?: GasGiantViewMode }
 
@@ -45,6 +46,9 @@
     atmosphereDropoff = DefaultValues.atmosphereDropoff,
     atmosphereTerminatorWrap = DefaultValues.atmosphereTerminatorWrap,
     autoRotate = DefaultValues.autoRotate,
+    axialTilt = DefaultValues.axialTilt,
+    sunElevation = DefaultValues.sunElevation,
+    sunAscension = DefaultValues.sunAscension,
     normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
     enableRings = DefaultValues.enableRings,
@@ -71,7 +75,7 @@
   let planetarySystem: Group | undefined = $state(undefined)
   let previousViewMode: GasGiantViewMode = 'mesh'
   const viewCameraState = {
-    mesh: { position: [0, 2, 7] as const, target: [0, 0, 0] as const },
+    mesh: { position: [0, 2, 9] as const, target: [0, 0, 0] as const },
     map: { position: [0, 0, 7] as const, target: [0, 0, 0] as const },
   }
   type GasGiantExports = {
@@ -173,6 +177,9 @@
     atmosphereDropoff,
     atmosphereTerminatorWrap,
     autoRotate,
+    axialTilt,
+    sunElevation,
+    sunAscension,
     normalTextureSize,
     colorTextureSize,
     enableRings,
@@ -217,17 +224,29 @@
   })
 
   const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })
+  const tiltRadians = $derived(viewMode === 'mesh' ? (axialTilt * Math.PI) / 180 : 0)
+  const lightPosition = $derived(sunPosition(sunElevation, sunAscension))
 
   let ringSpin = $state(0)
 
-  useTask((delta) => {
+  $effect(() => {
     if (viewMode !== 'mesh' || !autoRotate) return
-    if (planetarySystem) planetarySystem.rotation.y += delta * 0.18
-    ringSpin += delta * 0.06
+    let previousTime = performance.now()
+    let frame: number
+    function rotate(time: number) {
+      const delta = Math.min((time - previousTime) / 1000, 0.1)
+      previousTime = time
+      if (planetarySystem) planetarySystem.rotation.y += delta * 0.18
+      ringSpin += delta * 0.06
+      invalidate()
+      frame = requestAnimationFrame(rotate)
+    }
+    frame = requestAnimationFrame(rotate)
+    return () => cancelAnimationFrame(frame)
   })
 </script>
 
-<T.PerspectiveCamera makeDefault position={[0, 2, 7]}>
+<T.PerspectiveCamera makeDefault position={[0, 2, 9]}>
   <OrbitControls
     bind:ref={controlsRef}
     enableRotate={true}
@@ -243,9 +262,9 @@
 </T.PerspectiveCamera>
 
 <T.AmbientLight intensity={0.08} />
-<T.DirectionalLight position={[-5, 1, 2]} intensity={6} />
+<T.DirectionalLight position={lightPosition} intensity={6} />
 
-<T.Group>
+<T.Group rotation={[0, 0, tiltRadians]}>
   <T.Group bind:ref={planetarySystem}>
     <GasGiant bind:this={gasGiantRef} settings={planetSettings} {viewMode} />
   </T.Group>
@@ -254,13 +273,13 @@
       settings={ringSettings}
       {seed}
       planetRadius={2}
-      lightPosition={[-5, 1, 2]}
+      {lightPosition}
     />
     <PlanetaryRings
       settings={ringSettings}
       {seed}
       planetRadius={2}
-      lightPosition={[-5, 1, 2]}
+      {lightPosition}
       spin={ringSpin}
     />
   {/if}

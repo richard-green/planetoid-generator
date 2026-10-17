@@ -33,6 +33,16 @@ function applySphericalUVs(geometry: BufferGeometry): void {
     }
 
     for (let vertexOffset = 0; vertexOffset < 3; vertexOffset += 1) {
+      vertex.fromBufferAttribute(position, index + vertexOffset)
+      if (Math.hypot(vertex.x, vertex.z) < 1e-6) {
+        const nextOffset = ((vertexOffset + 1) % 3) * 2
+        const previousOffset = ((vertexOffset + 2) % 3) * 2
+        coordinates[vertexOffset * 2] =
+          (coordinates[nextOffset] + coordinates[previousOffset]) * 0.5
+      }
+    }
+
+    for (let vertexOffset = 0; vertexOffset < 3; vertexOffset += 1) {
       const uvIndex = vertexOffset * 2
       const targetIndex = (index + vertexOffset) * 2
       uv[targetIndex] = coordinates[uvIndex]

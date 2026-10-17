@@ -1,4 +1,5 @@
 <script lang="ts">
+  import RenderViewport from '../lib/components/Threlte/RenderViewport.svelte'
   import { Canvas } from '@threlte/core'
   import { WebGLRenderer } from 'three'
   import '../styles/common.css'
@@ -528,72 +529,77 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
-      <svelte:boundary>
-        <Canvas
-          dpr={1}
-          createRenderer={(canvas) =>
-            new WebGLRenderer({
-              canvas,
-              powerPreference: 'high-performance',
-              antialias: true,
-              alpha: true,
-              preserveDrawingBuffer: true,
-            })}
-        >
-          <GasGiantScene
-            bind:this={gasGiantScene}
-            viewMode={sceneViewMode}
-            seed={gasGiant.seed}
-            autoRotate={gasGiant.autoRotate}
-            palette={gasGiant.palette}
-            surfaceTint={gasGiant.surfaceTint}
-            colorScale={gasGiant.colorScale}
-            tintShadowFloor={gasGiant.tintShadowFloor}
-            cloudBandCount={gasGiant.cloudBandCount}
-            cloudBandSharpness={gasGiant.cloudBandSharpness}
-            cloudChaos={gasGiant.cloudChaos}
-            cloudTurbulence={gasGiant.cloudTurbulence}
-            enableStorms={effectiveStormsEnabled}
-            stormCount={gasGiant.stormCount}
-            stormScale={gasGiant.stormScale}
-            stormPower={gasGiant.stormPower}
-            stormStrength={gasGiant.stormStrength}
-            stormColorStrength={gasGiant.stormColorStrength}
-            normalStrength={gasGiant.normalStrength}
-            roughness={gasGiant.roughness}
-            metalness={gasGiant.metalness}
-            enableAtmosphere={gasGiant.enableAtmosphere}
-            atmospherePalette={gasGiant.atmospherePalette}
-            atmosphereIntensity={gasGiant.atmosphereIntensity}
-            atmosphereThickness={gasGiant.atmosphereThickness}
-            atmosphereDropoff={gasGiant.atmosphereDropoff}
-            atmosphereTerminatorWrap={gasGiant.atmosphereTerminatorWrap}
-            normalTextureSize={gasGiant.normalTextureSize}
-            colorTextureSize={gasGiant.colorTextureSize}
-            enableRings={effectiveRingsEnabled}
-            ringPalette={gasGiant.ringPalette}
-            ringInnerRadius={gasGiant.ringInnerRadius}
-            ringOuterRadius={gasGiant.ringOuterRadius}
-            ringTilt={gasGiant.ringTilt}
-            ringBandCount={gasGiant.ringBandCount}
-            ringBandSharpness={gasGiant.ringBandSharpness}
-            ringBandRegularity={gasGiant.ringBandRegularity}
-            ringDensity={gasGiant.ringDensity}
-            ringTextureScale={gasGiant.ringTextureScale}
-            ringGranularity={gasGiant.ringGranularity}
-            ringPaletteInfluence={gasGiant.ringPaletteInfluence}
-            ringSolarization={gasGiant.ringSolarization}
-            ringOpacity={gasGiant.ringOpacity}
-            ringNoise={gasGiant.ringNoise}
-            ringParticleContrast={gasGiant.ringParticleContrast}
-            ringParticleDensity={gasGiant.ringParticleDensity}
-            ringParticleSize={gasGiant.ringParticleSize}
-          />
-        </Canvas>
-        {#snippet failed(error)}
-          <WebGLFailure {error} />
-        {/snippet}
-      </svelte:boundary>
+      <RenderViewport title="gas giant">
+        <svelte:boundary>
+          <Canvas
+            dpr={1}
+            createRenderer={(canvas) =>
+              new WebGLRenderer({
+                canvas,
+                powerPreference: 'high-performance',
+                antialias: true,
+                alpha: true,
+                preserveDrawingBuffer: true,
+              })}
+          >
+            <GasGiantScene
+              bind:this={gasGiantScene}
+              viewMode={sceneViewMode}
+              seed={gasGiant.seed}
+              autoRotate={gasGiant.autoRotate}
+              axialTilt={gasGiant.axialTilt}
+              sunElevation={gasGiant.sunElevation}
+              sunAscension={gasGiant.sunAscension}
+              palette={gasGiant.palette}
+              surfaceTint={gasGiant.surfaceTint}
+              colorScale={gasGiant.colorScale}
+              tintShadowFloor={gasGiant.tintShadowFloor}
+              cloudBandCount={gasGiant.cloudBandCount}
+              cloudBandSharpness={gasGiant.cloudBandSharpness}
+              cloudChaos={gasGiant.cloudChaos}
+              cloudTurbulence={gasGiant.cloudTurbulence}
+              enableStorms={effectiveStormsEnabled}
+              stormCount={gasGiant.stormCount}
+              stormScale={gasGiant.stormScale}
+              stormPower={gasGiant.stormPower}
+              stormStrength={gasGiant.stormStrength}
+              stormColorStrength={gasGiant.stormColorStrength}
+              normalStrength={gasGiant.normalStrength}
+              roughness={gasGiant.roughness}
+              metalness={gasGiant.metalness}
+              enableAtmosphere={gasGiant.enableAtmosphere}
+              atmospherePalette={gasGiant.atmospherePalette}
+              atmosphereIntensity={gasGiant.atmosphereIntensity}
+              atmosphereThickness={gasGiant.atmosphereThickness}
+              atmosphereDropoff={gasGiant.atmosphereDropoff}
+              atmosphereTerminatorWrap={gasGiant.atmosphereTerminatorWrap}
+              normalTextureSize={gasGiant.normalTextureSize}
+              colorTextureSize={gasGiant.colorTextureSize}
+              enableRings={effectiveRingsEnabled}
+              ringPalette={gasGiant.ringPalette}
+              ringInnerRadius={gasGiant.ringInnerRadius}
+              ringOuterRadius={gasGiant.ringOuterRadius}
+              ringTilt={gasGiant.ringTilt}
+              ringBandCount={gasGiant.ringBandCount}
+              ringBandSharpness={gasGiant.ringBandSharpness}
+              ringBandRegularity={gasGiant.ringBandRegularity}
+              ringDensity={gasGiant.ringDensity}
+              ringTextureScale={gasGiant.ringTextureScale}
+              ringGranularity={gasGiant.ringGranularity}
+              ringPaletteInfluence={gasGiant.ringPaletteInfluence}
+              ringSolarization={gasGiant.ringSolarization}
+              ringOpacity={gasGiant.ringOpacity}
+              ringNoise={gasGiant.ringNoise}
+              ringParticleContrast={gasGiant.ringParticleContrast}
+              ringParticleDensity={gasGiant.ringParticleDensity}
+              ringParticleSize={gasGiant.ringParticleSize}
+            />
+          </Canvas>
+          {#snippet failed(error)}
+            <WebGLFailure {error} />
+          {/snippet}
+        </svelte:boundary>
+      </RenderViewport>
       <FullscreenControl target={canvasShell} />
     </div>
 
@@ -664,6 +670,11 @@
           <span>{schema.autoRotate.label}</span>
           <input id={controlId('autoRotate')} type="checkbox" bind:checked={gasGiant.autoRotate} />
         </label>
+        <div class="control-grid">
+          {#each controls.scene.filter((control) => control !== 'seed') as control (control)}
+            {@render numberInput(control, sceneViewMode !== 'mesh')}
+          {/each}
+        </div>
         <SeedControl
           id={controlId('seed')}
           label={schema.seed.label}

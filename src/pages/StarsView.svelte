@@ -6,6 +6,7 @@
   import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
   import WebGLFailure from '../lib/components/Threlte/WebGLFailure.svelte'
+  import RenderViewport from '../lib/components/Threlte/RenderViewport.svelte'
   import PalettePicker from '../lib/components/Controls/PalettePicker.svelte'
   import PresetManager, {
     type PresetListItem,
@@ -257,8 +258,9 @@
 
   <section class="threlte-view">
     <div class="canvas-shell" bind:this={canvasShell}>
-      <svelte:boundary>
-        <Canvas
+      <RenderViewport title="star">
+        <svelte:boundary>
+          <Canvas
           dpr={1}
           createRenderer={(canvas) =>
             new WebGLRenderer({
@@ -268,13 +270,14 @@
               alpha: true,
               preserveDrawingBuffer: true,
             })}
-        >
-          <StarsScene bind:this={starScene} {...star} showStarSurface={starSurfaceVisible} />
-        </Canvas>
-        {#snippet failed(error)}
-          <WebGLFailure {error} />
-        {/snippet}
-      </svelte:boundary>
+          >
+            <StarsScene bind:this={starScene} {...star} showStarSurface={starSurfaceVisible} />
+          </Canvas>
+          {#snippet failed(error)}
+            <WebGLFailure {error} />
+          {/snippet}
+        </svelte:boundary>
+      </RenderViewport>
       <FullscreenControl target={canvasShell} />
     </div>
 

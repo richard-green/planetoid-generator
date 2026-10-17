@@ -423,19 +423,25 @@ input[type='color'] {
 
 .cloud-mix-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.5rem;
+  min-width: 0;
 }
 
 .cloud-mix-grid label {
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) minmax(6rem, 2fr) 3rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) 3rem;
   align-items: center;
   gap: 0.75rem;
+  min-width: 0;
 }
 
 .cloud-mix-grid input[type='range'] {
   width: 100%;
   min-width: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 .cloud-mix-grid output {
@@ -465,6 +471,44 @@ input[type='color'] {
   gap: 0.75rem;
 }
 
+@media (max-width: 560px) {
+  .threlte-view {
+    gap: 0.65rem;
+    padding-top: 0.75rem;
+  }
+
+  .controls {
+    gap: 0.65rem;
+    padding-bottom: 0.65rem;
+  }
+
+  fieldset {
+    gap: 0.65rem;
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  label {
+    gap: 0.25rem;
+  }
+
+  .label-row {
+    column-gap: 0.5rem;
+  }
+
+  .save-actions {
+    gap: 0.5rem;
+  }
+
+  .export-actions {
+    gap: 0.4rem;
+  }
+
+  .control-grid {
+    gap: 0.55rem;
+  }
+}
+
 @media (min-width: 1200px) {
   .canvas-shell {
     width: 100%;
@@ -478,11 +522,13 @@ input[type='color'] {
 @media (max-width: 900px) {
   .threlte-view {
     grid-template-columns: 1fr;
+    padding-inline: 0.5rem;
   }
 
   .canvas-shell {
     width: min(100%, calc(100vh - 2rem));
     justify-self: center;
-    position: static;
+    position: relative;
+    top: auto;
   }
 }

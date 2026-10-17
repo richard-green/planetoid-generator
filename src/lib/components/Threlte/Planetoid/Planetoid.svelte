@@ -3,11 +3,9 @@
   import {
     BufferGeometry,
     Color,
-    MathUtils,
     Mesh,
     MeshBasicMaterial,
     MeshStandardMaterial,
-    PerspectiveCamera,
     SphereGeometry,
     Vector2,
     Vector3,
@@ -20,8 +18,7 @@
   import { convertLinearRgbaToSrgb } from '../../../utils/colorSpace'
   import { createFrameMonitor, traceSpan } from '../../../utils/perfTrace'
   import {
-    MaxValues,
-    MinValues,
+    sanitizePlanetoidNumber,
     type PlanetoidSettings,
     type PlanetoidViewMode,
   } from './PlanetoidSettings'
@@ -30,7 +27,6 @@
     createPlanetoidDustCloudNormalTexture,
     createPlanetoidDustCloudTexture,
     createPlanetoidNormalTexture,
-    createPlanetoidPaletteGradientTexture,
     disposeGeneratedTexture,
   } from './PlanetoidGpuTextures'
   import { SvelteMap } from 'svelte/reactivity'
@@ -38,6 +34,7 @@
   import { PlanetoidPalettes } from './PlanetoidPalettes'
   import { DustCloudPalettes } from './DustCloudPalettes'
   import { IceCapPalettes } from './IceCapPalettes'
+  import { configureSphericalSurfaceSampling } from './PlanetoidShaders'
   import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
   import PlanetoidAtmosphere from '../Atmosphere/BodyAtmosphere.svelte'
 
@@ -100,6 +97,7 @@
     enableRidges,
     enableRifts,
     ridgeStrength,
+    ridgeElevation,
     ridgeFrequency,
     ridgeSharpness,
     riftStrength,
@@ -110,7 +108,6 @@
     roughness,
     metalness,
     autoRotate,
-    showDebugMeshes,
     triangleDetail,
     normalTextureSize,
     colorTextureSize,
@@ -120,27 +117,18 @@
   let mapPreviewMesh = $state<Mesh | undefined>(undefined)
   let material = $state<MeshStandardMaterial | undefined>(undefined)
   let mapPreviewMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let normalDebugMesh = $state<Mesh | undefined>(undefined)
-  let colorDebugMesh = $state<Mesh | undefined>(undefined)
-  let paletteDebugMesh = $state<Mesh | undefined>(undefined)
-  let normalDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let colorDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
-  let paletteDebugMaterial = $state<MeshBasicMaterial | undefined>(undefined)
   let dustCloudTexture = $state<ReturnType<typeof createPlanetoidDustCloudTexture> | undefined>(
     undefined
   )
   let dustCloudNormalTexture = $state<
     ReturnType<typeof createPlanetoidDustCloudNormalTexture> | undefined
   >(undefined)
-  let normalDebugTexture = $state<ReturnType<typeof createPlanetoidNormalTexture> | undefined>(
+  let surfaceNormalTexture = $state<ReturnType<typeof createPlanetoidNormalTexture> | undefined>(
     undefined
   )
-  let colorDebugTexture = $state<ReturnType<typeof createPlanetoidColorTexture> | undefined>(
+  let surfaceColorTexture = $state<ReturnType<typeof createPlanetoidColorTexture> | undefined>(
     undefined
   )
-  let paletteDebugTexture = $state<
-    ReturnType<typeof createPlanetoidPaletteGradientTexture> | undefined
-  >(undefined)
   let color = $derived(new Color('#ffffff'))
   const initialGeometry = createIcosphere(2, 5)
   const dustCloudGeometry = new SphereGeometry(1, 96, 64)
@@ -163,7 +151,7 @@
   let massCentre = $state(new Vector3())
   let meanRadius = $state(2)
 
-  const { camera, size, renderer } = useThrelte()
+  const { renderer } = useThrelte()
 
   function flipRowsRgba(source: Uint8Array, width: number, height: number) {
     const rowSize = width * 4
@@ -233,12 +221,12 @@
   }
 
   export async function downloadTextureMapPng(fileName = 'planetoid-texture-map.png') {
-    const colorMap = (material?.map as Texture | null | undefined) ?? colorDebugTexture
+    const colorMap = (material?.map as Texture | null | undefined) ?? surfaceColorTexture
     return downloadRenderTexture(colorMap, fileName, { convertLinearToSrgb: true })
   }
 
   export async function downloadNormalMapPng(fileName = 'planetoid-normal-map.png') {
-    const normalMap = (material?.normalMap as Texture | null | undefined) ?? normalDebugTexture
+    const normalMap = (material?.normalMap as Texture | null | undefined) ?? surfaceNormalTexture
     return downloadRenderTexture(normalMap, fileName, { convertLinearToSrgb: true })
   }
 
@@ -298,11 +286,7 @@
   }
 
   function clampTriangleDetail(detail: number) {
-    const clampedDetail = Math.max(
-      MinValues.triangleDetail,
-      Math.min(MaxValues.triangleDetail, Math.round(detail))
-    )
-    return clampedDetail
+    return sanitizePlanetoidNumber('triangleDetail', detail)
   }
 
   function copyPositionArray(source: BufferGeometry) {
@@ -594,6 +578,7 @@
     const ridgesEnabled = enableRidges
     const riftsEnabled = enableRifts
     const currentRidgeStrength = ridgeStrength
+    const currentRidgeElevation = ridgeElevation
     const currentRidgeFrequency = ridgeFrequency
     const currentRidgeSharpness = ridgeSharpness
     const currentRiftStrength = riftStrength
@@ -637,6 +622,7 @@
           enableRidges: ridgesEnabled,
           enableRifts: riftsEnabled,
           ridgeStrength: currentRidgeStrength,
+          ridgeElevation: currentRidgeElevation,
           ridgeFrequency: currentRidgeFrequency,
           ridgeSharpness: currentRidgeSharpness,
           riftStrength: currentRiftStrength,
@@ -648,19 +634,15 @@
       )
     )
 
-    colorDebugTexture = colorTexture
+    surfaceColorTexture = colorTexture
     if (material) {
       material.map = colorTexture
       material.needsUpdate = true
     }
-    if (colorDebugMaterial) {
-      colorDebugMaterial.map = colorTexture
-      colorDebugMaterial.needsUpdate = true
-    }
 
     return () => {
-      if (colorDebugTexture === colorTexture) {
-        colorDebugTexture = undefined
+      if (surfaceColorTexture === colorTexture) {
+        surfaceColorTexture = undefined
       }
       disposeGeneratedTexture(colorTexture)
     }
@@ -728,50 +710,14 @@
   })
 
   $effect(() => {
-    if (!renderer) return
-
-    if (!showDebugMeshes) {
-      if (paletteDebugMaterial) {
-        paletteDebugMaterial.map = null
-        paletteDebugMaterial.needsUpdate = true
-      }
-      return
-    }
-
-    const planetoidPalette = trackPalette(PlanetoidPalettes[palette])
-    const gradientWidth = Math.max(64, colorTextureSize * 2)
-    const gradientHeight = Math.max(8, Math.floor(colorTextureSize * 0.2))
-
-    const paletteTexture = createPlanetoidPaletteGradientTexture(
-      renderer,
-      planetoidPalette,
-      gradientWidth,
-      gradientHeight
-    )
-
-    paletteDebugTexture = paletteTexture
-    if (paletteDebugMaterial) {
-      paletteDebugMaterial.map = paletteTexture
-      paletteDebugMaterial.needsUpdate = true
-    }
-
-    return () => {
-      if (paletteDebugTexture === paletteTexture) {
-        paletteDebugTexture = undefined
-      }
-      disposeGeneratedTexture(paletteTexture)
-    }
-  })
-
-  $effect(() => {
     if (!mapPreviewMaterial) return
 
     if (viewMode === 'normal') {
       mapPreviewMaterial.map =
-        normalDebugTexture ?? (material?.normalMap as Texture | null | undefined) ?? null
+        surfaceNormalTexture ?? (material?.normalMap as Texture | null | undefined) ?? null
     } else if (viewMode === 'texture') {
       mapPreviewMaterial.map =
-        colorDebugTexture ?? (material?.map as Texture | null | undefined) ?? null
+        surfaceColorTexture ?? (material?.map as Texture | null | undefined) ?? null
     } else if (viewMode === 'cloudTexture') {
       mapPreviewMaterial.map = dustCloudTexture ?? null
     } else if (viewMode === 'cloudNormal') {
@@ -803,6 +749,7 @@
     const ridgesEnabled = enableRidges
     const riftsEnabled = enableRifts
     const currentRidgeStrength = ridgeStrength
+    const currentRidgeElevation = ridgeElevation
     const currentRidgeFrequency = ridgeFrequency
     const currentRidgeSharpness = ridgeSharpness
     const currentRiftStrength = riftStrength
@@ -813,6 +760,11 @@
     const currentSwirliness = swirliness
 
     const detailOptions = {
+      enableIceCaps,
+      iceCapCoverage,
+      iceCapEdgeNoise,
+      snowExtent,
+      snowCoverage,
       craterCount: currentCraterCount,
       craterScale: currentCraterScale,
       craterStrength: currentCraterStrength,
@@ -825,6 +777,7 @@
       enableRidges: ridgesEnabled,
       enableRifts: riftsEnabled,
       ridgeStrength: currentRidgeStrength,
+      ridgeElevation: currentRidgeElevation,
       ridgeFrequency: currentRidgeFrequency,
       ridgeSharpness: currentRidgeSharpness,
       riftStrength: currentRiftStrength,
@@ -838,7 +791,7 @@
     const normalTexture = traceSpan('effect:normalTexture', () =>
       createPlanetoidNormalTexture(renderer, shape.noiseOffset, textureSize, detailOptions)
     )
-    normalDebugTexture = normalTexture
+    surfaceNormalTexture = normalTexture
 
     if (material) {
       material.bumpMap = null
@@ -847,59 +800,13 @@
       material.normalScale = new Vector2(currentNormalStrength, currentNormalStrength)
       material.needsUpdate = true
     }
-    if (normalDebugMaterial) {
-      normalDebugMaterial.map = normalTexture
-      normalDebugMaterial.needsUpdate = true
-    }
 
     return () => {
-      if (normalDebugTexture === normalTexture) {
-        normalDebugTexture = undefined
+      if (surfaceNormalTexture === normalTexture) {
+        surfaceNormalTexture = undefined
       }
       disposeGeneratedTexture(normalTexture)
     }
-  })
-
-  useTask(() => {
-    if (!showDebugMeshes || !normalDebugMesh || !colorDebugMesh || !paletteDebugMesh) return
-
-    const perspectiveCamera = $camera as PerspectiveCamera
-    const distance = 2.2
-    const quadSize = 0.55
-    const margin = quadSize * 0.55
-
-    const fovRadians = MathUtils.degToRad(perspectiveCamera.fov)
-    const halfHeight = Math.tan(fovRadians / 2) * distance
-    const halfWidth = (halfHeight * size.current.width) / size.current.height
-
-    const forward = new Vector3(0, 0, -1).applyQuaternion(perspectiveCamera.quaternion)
-    const right = new Vector3(1, 0, 0).applyQuaternion(perspectiveCamera.quaternion)
-    const up = new Vector3(0, 1, 0).applyQuaternion(perspectiveCamera.quaternion)
-    const center = perspectiveCamera.position.clone().add(forward.multiplyScalar(distance))
-
-    const topY = halfHeight - margin
-    const bottomY = -halfHeight + margin
-    const leftX = -halfWidth + margin
-    const rightX = halfWidth - margin
-
-    normalDebugMesh.position
-      .copy(center)
-      .add(right.clone().multiplyScalar(leftX))
-      .add(up.clone().multiplyScalar(topY))
-
-    colorDebugMesh.position
-      .copy(center)
-      .add(right.clone().multiplyScalar(rightX))
-      .add(up.clone().multiplyScalar(topY))
-
-    paletteDebugMesh.position
-      .copy(center)
-      .add(right.clone().multiplyScalar(leftX))
-      .add(up.clone().multiplyScalar(bottomY))
-
-    normalDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
-    colorDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
-    paletteDebugMesh.quaternion.copy(perspectiveCamera.quaternion)
   })
 
   onDestroy(() => {
@@ -928,13 +835,17 @@
       }
     }
   })
-
-  const debugScale = 0.5
 </script>
 
 {#if viewMode === 'mesh'}
   <T.Mesh bind:ref={mesh} {geometry} rotation={[0, 0, 0]}>
-    <T.MeshStandardMaterial bind:ref={material} {color} {roughness} {metalness} />
+    <T.MeshStandardMaterial
+      bind:ref={material}
+      {color}
+      {roughness}
+      {metalness}
+      onBeforeCompile={configureSphericalSurfaceSampling}
+    />
     {#if showDustClouds && dustCloudTexture}
       <T.Mesh
         geometry={dustCloudGeometry}
@@ -963,41 +874,6 @@
       terminatorWrap={atmosphereTerminatorWrap}
       palette={AtmospherePalettes[atmospherePalette]}
     />
-  {/if}
-
-  {#if showDebugMeshes}
-    <T.Mesh bind:ref={normalDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-      <T.PlaneGeometry args={[1, 1]} />
-      <T.MeshBasicMaterial
-        bind:ref={normalDebugMaterial}
-        map={normalDebugTexture}
-        toneMapped={false}
-        depthTest={false}
-        depthWrite={false}
-      />
-    </T.Mesh>
-
-    <T.Mesh bind:ref={colorDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-      <T.PlaneGeometry args={[1, 1]} />
-      <T.MeshBasicMaterial
-        bind:ref={colorDebugMaterial}
-        map={colorDebugTexture}
-        toneMapped={false}
-        depthTest={false}
-        depthWrite={false}
-      />
-    </T.Mesh>
-
-    <T.Mesh bind:ref={paletteDebugMesh} scale={[debugScale, debugScale, 1]} renderOrder={999}>
-      <T.PlaneGeometry args={[1, 1]} />
-      <T.MeshBasicMaterial
-        bind:ref={paletteDebugMaterial}
-        map={paletteDebugTexture}
-        toneMapped={false}
-        depthTest={false}
-        depthWrite={false}
-      />
-    </T.Mesh>
   {/if}
 {:else}
   <T.Mesh bind:ref={mapPreviewMesh} scale={[3.8, 3.8, 1]} renderOrder={10}>

@@ -44,7 +44,6 @@ function Invoke-PlanetoidBatch {
         [string]$ViewMode = "",
         [Nullable[int]]$Step = $null,
         [Nullable[bool]]$AutoRotate = $null,
-        [Nullable[bool]]$ShowDebugMeshes = $null,
         [Nullable[bool]]$CratersEnabled = $null,
         [Nullable[bool]]$RidgesEnabled = $null,
         [Nullable[bool]]$RiftsEnabled = $null,
@@ -103,7 +102,6 @@ function Invoke-PlanetoidBatch {
     if ($ViewMode -ne "") { $cliArgs += @('--view-mode', $ViewMode) }
     if ($Step -ne $null) { $cliArgs += @('--step', $Step) }
     if ($AutoRotate -ne $null) { $cliArgs += @('--auto-rotate', $AutoRotate.ToString().ToLowerInvariant()) }
-    if ($ShowDebugMeshes -ne $null) { $cliArgs += @('--show-debug-meshes', $ShowDebugMeshes.ToString().ToLowerInvariant()) }
     if ($CratersEnabled -ne $null) { $cliArgs += @('--craters-enabled', $CratersEnabled.ToString().ToLowerInvariant()) }
     if ($RidgesEnabled -ne $null) { $cliArgs += @('--ridges-enabled', $RidgesEnabled.ToString().ToLowerInvariant()) }
     if ($RiftsEnabled -ne $null) { $cliArgs += @('--rifts-enabled', $RiftsEnabled.ToString().ToLowerInvariant()) }
