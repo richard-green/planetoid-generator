@@ -21,6 +21,7 @@ import {
 
 import { sanitizeGasGiantNumber } from './GasGiantSettings'
 import { getPalettePosition, type Palette } from '../../../types/palette'
+import { traceSpan } from '../../../utils/perfTrace'
 
 type NoiseOffset = { x: number; y: number; z: number }
 
@@ -202,7 +203,7 @@ function renderTexture(
   renderer.setScissor(0, 0, width, height)
   renderer.setScissorTest(false)
   renderer.clear()
-  renderer.render(scene, camera)
+  traceSpan('gpu:gasTexture', () => renderer.render(scene, camera), { mode, width, height })
   renderer.setRenderTarget(previousTarget)
   renderer.setViewport(previousViewport)
   renderer.setScissor(previousScissor)
@@ -245,7 +246,7 @@ function renderNormalFromHeight(
   renderer.setScissor(0, 0, width, height)
   renderer.setScissorTest(false)
   renderer.clear()
-  renderer.render(normalScene, camera)
+  traceSpan('gpu:gasNormal', () => renderer.render(normalScene, camera), { width, height })
   renderer.setRenderTarget(previousTarget)
   renderer.setViewport(previousViewport)
   renderer.setScissor(previousScissor)

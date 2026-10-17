@@ -120,6 +120,15 @@ size in height (2048x1024 for planetoids/giants, 4096x2048 for stars). It exits 
 browser errors, invalid PNGs, or unexpected dimensions. Generated files are ignored
 by Git; only `verify/.gitkeep` is tracked.
 
+## Profiling page changes
+
+Add `?trace` before the route hash, for example `http://127.0.0.1:5173/?trace#/giants`.
+The console and Performance panel include `trace:` measures for texture generation
+and geometry work. Compare entering a page with changing its seed: first visits
+still compile shaders, but subsequent visits reuse the application-owned WebGL
+canvas and a bounded shader-program cache. Inactive scenes are destroyed rather
+than left rendering in the background.
+
 ## PowerShell batch helpers
 
 `regenerate-planetoids.ps1` and `regenerate-giants.ps1` (repo root) run several curated batches,

@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { Canvas } from '@threlte/core'
-  import { WebGLRenderer } from 'three'
+  import Canvas from '../lib/components/Threlte/SceneCanvas.svelte'
   import '../styles/common.css'
   import PageTitle from '../lib/components/Layout/PageTitle.svelte'
   import FullscreenControl from '../lib/components/Controls/FullscreenControl.svelte'
@@ -117,29 +116,19 @@
     <div class="canvas-shell" bind:this={canvasShell}>
       <RenderViewport title="solar system">
         <svelte:boundary>
-          <Canvas
-          dpr={1}
-          createRenderer={(canvas) =>
-            new WebGLRenderer({
-              canvas,
-              powerPreference: 'high-performance',
-              antialias: true,
-              alpha: true,
-              preserveDrawingBuffer: true,
-            })}
-          >
+          <Canvas>
             <SolarSystemScene
-            bind:this={solarSystemScene}
-            {bodies}
-            {rockyPresets}
-            {giantPresets}
-            {starSettings}
-            {autoRotate}
-            {showOrbits}
-            {cinematic}
-            {orbitScale}
-            {textureSize}
-            {seed}
+              bind:this={solarSystemScene}
+              {bodies}
+              {rockyPresets}
+              {giantPresets}
+              {starSettings}
+              {autoRotate}
+              {showOrbits}
+              {cinematic}
+              {orbitScale}
+              {textureSize}
+              {seed}
             />
           </Canvas>
           {#snippet failed(error)}

@@ -1,7 +1,6 @@
 <script lang="ts">
   import RenderViewport from '../lib/components/Threlte/RenderViewport.svelte'
-  import { Canvas } from '@threlte/core'
-  import { WebGLRenderer } from 'three'
+  import Canvas from '../lib/components/Threlte/SceneCanvas.svelte'
   import '../styles/common.css'
   import CollapsibleControl from '../lib/components/Controls/CollapsibleControl.svelte'
   import ExportSplitButton from '../lib/components/Controls/ExportSplitButton.svelte'
@@ -531,17 +530,7 @@
     <div class="canvas-shell" bind:this={canvasShell}>
       <RenderViewport title="gas giant">
         <svelte:boundary>
-          <Canvas
-            dpr={1}
-            createRenderer={(canvas) =>
-              new WebGLRenderer({
-                canvas,
-                powerPreference: 'high-performance',
-                antialias: true,
-                alpha: true,
-                preserveDrawingBuffer: true,
-              })}
-          >
+          <Canvas>
             <GasGiantScene
               bind:this={gasGiantScene}
               viewMode={sceneViewMode}

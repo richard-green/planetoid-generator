@@ -13,6 +13,7 @@
   import { convertLinearRgbaToSrgb } from '../../../utils/colorSpace'
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { createRandom } from '../../../utils/math'
+  import { traceSpan } from '../../../utils/perfTrace'
   import { AtmospherePalettes } from '../Atmosphere/AtmospherePalettes'
   import BodyAtmosphere from '../Atmosphere/BodyAtmosphere.svelte'
   import { GasGiantPalettes } from '../GasGiant/GasGiantPalettes'
@@ -68,7 +69,7 @@
 
   const { renderer } = useThrelte()
 
-  const geometry = new IcosahedronGeometry(2, 18)
+  const geometry = traceSpan('cpu:gasGeometry', () => new IcosahedronGeometry(2, 18))
   const planetRadius = 2
 
   const showAtmosphere = $derived(enableAtmosphere && atmosphereIntensity > 0)

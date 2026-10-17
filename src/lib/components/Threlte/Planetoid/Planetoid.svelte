@@ -29,7 +29,6 @@
     createPlanetoidNormalTexture,
     disposeGeneratedTexture,
   } from './PlanetoidGpuTextures'
-  import { SvelteMap } from 'svelte/reactivity'
   import { trackPalette } from '../../../types/paletteState.svelte'
   import { PlanetoidPalettes } from './PlanetoidPalettes'
   import { DustCloudPalettes } from './DustCloudPalettes'
@@ -144,7 +143,7 @@
   ])
   let geometry = $state<BufferGeometry>(initialGeometry)
   let basePositions = $state<Float32Array>(copyPositionArray(initialGeometry))
-  let normalWeldGroups = $state<number[][]>(
+  let normalWeldGroups = $state.raw<number[][]>(
     buildNormalWeldGroups(copyPositionArray(initialGeometry))
   )
   let disposableGeometry: BufferGeometry = initialGeometry
@@ -294,7 +293,7 @@
   }
 
   function buildNormalWeldGroups(sourcePositions: Float32Array) {
-    const groups = new SvelteMap<string, number[]>()
+    const groups = new Map<string, number[]>()
 
     for (let i = 0; i < sourcePositions.length; i += 3) {
       const vertexIndex = i / 3

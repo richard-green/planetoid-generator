@@ -6,6 +6,7 @@
   import StarsView from './pages/StarsView.svelte'
   import welcomeMarkdown from './welcome.md?raw'
   import type { Component } from 'svelte'
+  import CanvasHost from './lib/components/Threlte/CanvasHost.svelte'
 
   type Route = {
     name: string
@@ -194,38 +195,40 @@
 
 <svelte:window onhashchange={handleHashChange} />
 
-<div class="app-shell">
-  <main onwheelcapture={handleMainWheelCapture}>
-    {#if activeRoute}
-      <activeRoute.component onOpenWelcome={openWelcomeDialog} />
-    {/if}
-  </main>
-</div>
+<CanvasHost>
+  <div class="app-shell">
+    <main onwheelcapture={handleMainWheelCapture}>
+      {#if activeRoute}
+        <activeRoute.component onOpenWelcome={openWelcomeDialog} />
+      {/if}
+    </main>
+  </div>
 
-<dialog
-  class="welcome-dialog"
-  bind:this={welcomeDialogElement}
-  aria-labelledby="welcome-dialog-title"
-  oncancel={onWelcomeDialogCancel}
-  onclick={onWelcomeDialogClick}
->
-  <section class="welcome-dialog-panel">
-    <header class="welcome-dialog-header">
-      <h2 id="welcome-dialog-title">Welcome</h2>
-      <button
-        type="button"
-        class="welcome-dialog-close"
-        onclick={() => closeWelcomeDialog()}
-        aria-label="Close welcome message"
-      >
-        Close
-      </button>
-    </header>
-    <div class="welcome-dialog-content">
-      <SvelteMarkdown source={welcomeMarkdown} />
-    </div>
-  </section>
-</dialog>
+  <dialog
+    class="welcome-dialog"
+    bind:this={welcomeDialogElement}
+    aria-labelledby="welcome-dialog-title"
+    oncancel={onWelcomeDialogCancel}
+    onclick={onWelcomeDialogClick}
+  >
+    <section class="welcome-dialog-panel">
+      <header class="welcome-dialog-header">
+        <h2 id="welcome-dialog-title">Welcome</h2>
+        <button
+          type="button"
+          class="welcome-dialog-close"
+          onclick={() => closeWelcomeDialog()}
+          aria-label="Close welcome message"
+        >
+          Close
+        </button>
+      </header>
+      <div class="welcome-dialog-content">
+        <SvelteMarkdown source={welcomeMarkdown} />
+      </div>
+    </section>
+  </dialog>
+</CanvasHost>
 
 <style>
   :global(body, html, #app) {
