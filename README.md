@@ -14,6 +14,7 @@ https://rdgreen.dev/planetoids/
 
 - Interactive browser UI for procedural planetoid generation
 - Tunable controls for color, geometry, craters, ridges, rifts, volcanoes, and material properties
+- Crater rims use seeded spatial erosion for irregular edges without repeating lobes; age and sharpness control how worn they appear.
 - Optional polar ice caps with coverage, seeded edge breakup, editable palette stops, and tint controls
 - Patchy snow fringes beyond the ice boundary, with snow extent and coverage controls
 - Multiple view modes for output workflows (including texture and normal views)

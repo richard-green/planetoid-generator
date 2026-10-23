@@ -464,6 +464,7 @@ export const fragmentShader = `
 
     vec2 local = vec2(du / rx, dv / ry);
     float baseDistance = length(local);
+    if (baseDistance <= 0.45 || baseDistance >= 1.55) return baseDistance;
 
     // Per-crater age softens local rim sharpness and increases rim corrosion.
     float localRimSharpness = mix(uCraterSharpness * 1.2, uCraterSharpness * 0.45, craterAge);
@@ -472,19 +473,14 @@ export const fragmentShader = `
 
     float rimMask = smoothstep(0.45, 0.95, baseDistance) * (1.0 - smoothstep(1.2, 1.55, baseDistance));
 
-    float angle = atan(local.y, local.x);
-    float phaseA = hash12(vec2(craterUv.x * 41.7, craterUv.y * 67.3)) * TAU;
-    float phaseB = hash12(vec2(craterUv.x * 83.1, craterUv.y * 19.9)) * TAU;
-    float phaseC = hash12(vec2(craterUv.x * 13.7, craterUv.y * 101.3)) * TAU;
-
-    float wobble =
-      sin(angle * 3.0 + phaseA) * 0.55 +
-      sin(angle * 7.0 + phaseB) * 0.3 +
-      sin(angle * 12.0 + phaseC) * 0.15;
-
-    float segment = floor((angle + PI) / TAU * 24.0);
-    float chipNoise = hash12(vec2(segment + phaseB, craterUv.x * 97.3 + craterUv.y * 53.1)) * 2.0 - 1.0;
-    float rimCorrosion = (wobble * 0.75 + chipNoise * 0.25) * corrosionAmount * rimMask;
+    // Spatial erosion avoids repeating angular lobes and radial segment seams.
+    vec3 erosionSeed = hash33(vec3(craterUv * 137.3, 17.1)) * 31.7;
+    float erosionScale = mix(1.8, 3.2, hash12(craterUv * 79.3));
+    vec3 erosionDomain = vec3(local * erosionScale, 0.0) + erosionSeed;
+    float erosion =
+      perlin3(erosionDomain) * 0.7 +
+      perlin3(erosionDomain * 2.7 + vec3(19.1, 7.3, 43.7)) * 0.3;
+    float rimCorrosion = erosion * corrosionAmount * rimMask;
 
     return max(0.0, baseDistance + rimCorrosion);
   }
