@@ -44,8 +44,6 @@
     DefaultValues,
     DustCloudStyleLabels,
     DustCloudStyleNames,
-    MaxValues,
-    MinValues,
     mergePlanetoidPresetSettings,
     PlanetoidNumericControls as controls,
     PlanetoidRangeLabels,
@@ -53,14 +51,20 @@
     PlanetoidViewModeLabels,
     PlanetoidViewModeNames,
     sanitizePlanetoidPresetSettings,
-    StepValues,
     PlanetoidUiLabels,
     sanitizePlanetoidSettings,
     type PlanetoidRangeKey,
     type PlanetoidSettings,
     toPlanetoidPresetSettings,
     type PlanetoidViewMode,
+    PlanetoidSchema,
   } from '../lib/components/Threlte/Planetoid/PlanetoidSettings'
+  import {
+    DefaultSceneValues,
+    SceneSchema,
+    sanitizeSceneSettings,
+    type SceneSettings,
+  } from '../lib/components/Threlte/SceneSettings'
   import {
     reportMissingSettingControls,
     settingControlId as controlId,
@@ -75,6 +79,8 @@
 
   type PlanetoidUiState = {
     viewMode: PlanetoidViewMode
+    autoRotate?: boolean
+    sceneSettings?: SceneSettings
     viewModeSectionOpen: boolean
     cratersEnabled: boolean
     volcanoesEnabled: boolean
@@ -93,6 +99,7 @@
   const DEFAULT_VALUES: PlanetoidSettings = { ...DefaultValues }
 
   let planetoid = $state<PlanetoidSettings>({ ...DEFAULT_VALUES })
+  let sceneSettings = $state<SceneSettings>({ ...DefaultSceneValues })
   let settingsHydrated = $state(false)
 
   type PlanetoidSceneExports = {
@@ -109,6 +116,7 @@
   let planetoidScene: PlanetoidSceneExports | undefined = $state(undefined)
   let isSaving = $state(false)
   let sceneViewMode = $state<PlanetoidViewMode>('mesh')
+  let autoRotate = $state(false)
   let viewModeSectionOpen = $state(true)
   let cratersEnabled = $state(true)
   let volcanoesEnabled = $state(false)
@@ -178,7 +186,26 @@
 
   function resetSceneToDefaults() {
     applyPlanetoidSettings(DEFAULT_VALUES)
+    sceneSettings = { ...DefaultSceneValues }
     sceneViewMode = 'mesh'
+  }
+
+  function numberControlValue(control: PlanetoidRangeKey): number {
+    if (control in SceneSchema) {
+      return sceneSettings[control as keyof SceneSettings]
+    }
+    return planetoid[control as keyof PlanetoidSettings] as number
+  }
+
+  function updateNumberControl(control: PlanetoidRangeKey, value: number) {
+    if (control in SceneSchema) {
+      sceneSettings = sanitizeSceneSettings({
+        ...sceneSettings,
+        [control]: value,
+      })
+      return
+    }
+    planetoid = sanitizePlanetoidSettings({ ...planetoid, [control]: value })
   }
 
   function closePresetsMenu() {
@@ -242,7 +269,8 @@
         enableVolcanoes: toggles.volcanoesEnabled,
       },
       exportTextures,
-      planetoidScene?.getCameraView()
+      planetoidScene?.getCameraView(),
+      sceneSettings
     )
   }
 
@@ -355,6 +383,11 @@
 
     return {
       viewMode: raw.viewMode as PlanetoidViewMode,
+      autoRotate: typeof raw.autoRotate === 'boolean' ? raw.autoRotate : undefined,
+      sceneSettings:
+        typeof raw.sceneSettings === 'object' && raw.sceneSettings !== null
+          ? sanitizeSceneSettings(raw.sceneSettings)
+          : undefined,
       viewModeSectionOpen: raw.viewModeSectionOpen as boolean,
       cratersEnabled: raw.cratersEnabled as boolean,
       volcanoesEnabled: raw.volcanoesEnabled as boolean,
@@ -377,7 +410,15 @@
 
   $effect(() =>
     registerSettingsAutomation(
-      (overrides) =>
+      (overrides) => {
+        const sceneOverrides = Object.fromEntries(
+          Object.keys(SceneSchema)
+            .filter((key) => key in overrides)
+            .map((key) => [key, overrides[key]])
+        )
+        if (Object.keys(sceneOverrides).length > 0) {
+          sceneSettings = sanitizeSceneSettings({ ...sceneSettings, ...sceneOverrides })
+        }
         applyPlanetoidSettings({
           ...$state.snapshot(planetoid),
           enableCraters: cratersEnabled,
@@ -385,7 +426,8 @@
           enableRidges: ridgesEnabled,
           enableRifts: riftsEnabled,
           ...overrides,
-        }),
+        })
+      },
       (view) => planetoidScene?.setCameraView(view)
     )
   )
@@ -397,7 +439,17 @@
       const raw = localStorage.getItem(PLANETOID_SETTINGS_STORAGE_KEY)
 
       if (raw) {
-        planetoid = sanitizePlanetoidSettings(JSON.parse(raw))
+        const storedSettings: unknown = JSON.parse(raw)
+        sceneSettings = sanitizeSceneSettings(storedSettings)
+        if (
+          typeof storedSettings === 'object' &&
+          storedSettings !== null &&
+          'autoRotate' in storedSettings &&
+          typeof storedSettings.autoRotate === 'boolean'
+        ) {
+          autoRotate = storedSettings.autoRotate
+        }
+        planetoid = sanitizePlanetoidSettings(storedSettings)
       }
     } catch (error) {
       console.warn('Failed to restore planetoid settings from localStorage', error)
@@ -431,6 +483,12 @@
 
     if (restoredUiState) {
       sceneViewMode = restoredUiState.viewMode
+      if (restoredUiState.sceneSettings) {
+        sceneSettings = restoredUiState.sceneSettings
+      }
+      if (restoredUiState.autoRotate !== undefined) {
+        autoRotate = restoredUiState.autoRotate
+      }
       viewModeSectionOpen = restoredUiState.viewModeSectionOpen
       cratersEnabled = restoredUiState.cratersEnabled
       volcanoesEnabled = restoredUiState.volcanoesEnabled
@@ -460,6 +518,8 @@
     try {
       const uiState: PlanetoidUiState = {
         viewMode: sceneViewMode,
+        autoRotate,
+        sceneSettings,
         viewModeSectionOpen,
         cratersEnabled,
         volcanoesEnabled,
@@ -611,6 +671,14 @@
               colorScale={planetoid.colorScale}
               tintShadowFloor={planetoid.tintShadowFloor}
               swirliness={planetoid.swirliness}
+              colorNoiseFrequency={planetoid.colorNoiseFrequency}
+              colorNoiseOctaves={planetoid.colorNoiseOctaves}
+              colorNoisePersistence={planetoid.colorNoisePersistence}
+              colorNoiseLacunarity={planetoid.colorNoiseLacunarity}
+              colorSwirlFrequency={planetoid.colorSwirlFrequency}
+              colorSwirlOctaves={planetoid.colorSwirlOctaves}
+              colorSwirlPersistence={planetoid.colorSwirlPersistence}
+              colorSwirlLacunarity={planetoid.colorSwirlLacunarity}
               enableDustClouds={planetoid.enableDustClouds}
               dustCloudCoverage={planetoid.dustCloudCoverage}
               dustCloudWeights={planetoid.dustCloudWeights}
@@ -663,10 +731,10 @@
               colorTextureSize={planetoid.colorTextureSize}
               roughness={planetoid.roughness}
               metalness={planetoid.metalness}
-              autoRotate={planetoid.autoRotate}
-              axialTilt={planetoid.axialTilt}
-              sunElevation={planetoid.sunElevation}
-              sunAscension={planetoid.sunAscension}
+              {autoRotate}
+              axialTilt={sceneSettings.axialTilt}
+              sunElevation={sceneSettings.sunElevation}
+              sunAscension={sceneSettings.sunAscension}
               viewMode={sceneViewMode}
             />
           </Canvas>
@@ -744,8 +812,8 @@
           }))}
         />
         <label class="toggle-row">
-          <span>{schema.autoRotate.label}</span>
-          <input id={controlId('autoRotate')} type="checkbox" bind:checked={planetoid.autoRotate} />
+          <span>Auto-rotate</span>
+          <input id="auto-rotate" type="checkbox" bind:checked={autoRotate} />
         </label>
         <div class="control-grid">
           {#each controls.scene.filter((control) => control !== 'seed') as control (control)}
@@ -754,10 +822,10 @@
         </div>
         <SeedControl
           id={controlId('seed')}
-          label={PlanetoidRangeLabels.seed}
-          min={MinValues.seed}
-          max={MaxValues.seed}
-          step={StepValues.seed}
+          label={PlanetoidSchema.seed.label}
+          min={PlanetoidSchema.seed.min}
+          max={PlanetoidSchema.seed.max}
+          step={PlanetoidSchema.seed.step}
           bind:value={planetoid.seed}
         />
       </fieldset>
@@ -765,7 +833,7 @@
       <fieldset>
         <legend>{PlanetoidUiLabels.texture}</legend>
         <CollapsibleControl
-          title={PlanetoidUiLabels.colorSettings}
+          title={PlanetoidUiLabels.baseTexture}
           bind:open={colorSettingsSectionOpen}
         >
           <PalettePicker
@@ -991,10 +1059,11 @@
     <input
       id={controlId(control)}
       type="number"
-      min={MinValues[control]}
-      max={MaxValues[control]}
-      step={StepValues[control]}
-      bind:value={planetoid[control]}
+      min={PlanetoidSchema[control].min}
+      max={PlanetoidSchema[control].max}
+      step={PlanetoidSchema[control].step}
+      value={numberControlValue(control)}
+      oninput={(event) => updateNumberControl(control, event.currentTarget.valueAsNumber)}
       {disabled}
     />
   </label>

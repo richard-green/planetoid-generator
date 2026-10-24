@@ -1,5 +1,6 @@
 import {
   assertValidSchema,
+  createNumericSanitizer,
   numericLabels,
   numericTable,
   sanitizeWithSchema,
@@ -221,6 +222,7 @@ export const RingMinValues = numericTable(RingSchema, 'min')
 export const RingMaxValues = numericTable(RingSchema, 'max')
 export const RingStepValues = numericTable(RingSchema, 'step')
 export const RingRangeLabels = numericLabels(RingSchema)
+export const sanitizeRingNumber = createNumericSanitizer(RingSchema, DefaultRingValues)
 
 /** Keeps the outer radius at least slightly beyond the inner radius. */
 export function constrainRingRadii<T extends RingSettings>(settings: T): T {

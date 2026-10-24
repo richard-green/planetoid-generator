@@ -12,12 +12,19 @@
     type GasGiantSettings,
     type GasGiantViewMode,
   } from './GasGiant/GasGiantSettings'
+  import { DefaultSceneValues } from './SceneSettings'
   import PlanetaryRingShadow from './Rings/PlanetaryRingShadow.svelte'
   import PlanetaryRings from './Rings/PlanetaryRings.svelte'
   import type { RingSettings } from './Rings/RingSettings'
   import { sunPosition } from './SceneSettings'
 
-  type Props = Partial<GasGiantSettings> & { viewMode?: GasGiantViewMode }
+  type Props = Partial<GasGiantSettings> & {
+    autoRotate?: boolean
+    axialTilt?: number
+    sunElevation?: number
+    sunAscension?: number
+    viewMode?: GasGiantViewMode
+  }
 
   let {
     viewMode = 'mesh',
@@ -45,10 +52,10 @@
     atmosphereThickness = DefaultValues.atmosphereThickness,
     atmosphereDropoff = DefaultValues.atmosphereDropoff,
     atmosphereTerminatorWrap = DefaultValues.atmosphereTerminatorWrap,
-    autoRotate = DefaultValues.autoRotate,
-    axialTilt = DefaultValues.axialTilt,
-    sunElevation = DefaultValues.sunElevation,
-    sunAscension = DefaultValues.sunAscension,
+    autoRotate = false,
+    axialTilt = DefaultSceneValues.axialTilt,
+    sunElevation = DefaultSceneValues.sunElevation,
+    sunAscension = DefaultSceneValues.sunAscension,
     normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
     enableRings = DefaultValues.enableRings,
@@ -176,10 +183,6 @@
     atmosphereThickness,
     atmosphereDropoff,
     atmosphereTerminatorWrap,
-    autoRotate,
-    axialTilt,
-    sunElevation,
-    sunAscension,
     normalTextureSize,
     colorTextureSize,
     enableRings,
@@ -223,7 +226,7 @@
     ringParticleSize,
   })
 
-  const planetSettings: GasGiantSettings = $derived({ ...settings, autoRotate: false })
+  const planetSettings: GasGiantSettings = $derived(settings)
   const tiltRadians = $derived(viewMode === 'mesh' ? (axialTilt * Math.PI) / 180 : 0)
   const lightPosition = $derived(sunPosition(sunElevation, sunAscension))
 
@@ -269,12 +272,7 @@
     <GasGiant bind:this={gasGiantRef} settings={planetSettings} {viewMode} />
   </T.Group>
   {#if viewMode === 'mesh'}
-    <PlanetaryRingShadow
-      settings={ringSettings}
-      {seed}
-      planetRadius={2}
-      {lightPosition}
-    />
+    <PlanetaryRingShadow settings={ringSettings} {seed} planetRadius={2} {lightPosition} />
     <PlanetaryRings
       settings={ringSettings}
       {seed}

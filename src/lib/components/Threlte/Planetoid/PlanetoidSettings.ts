@@ -11,7 +11,6 @@ import {
   createNumericSanitizer,
   numericKeysBySection,
   numericLabels,
-  numericTable,
   sanitizeWithSchema,
   toCliArgs,
   type NumericKeys,
@@ -55,11 +54,9 @@ export const DustCloudStyleLabels: Record<DustCloudStyle, string> = {
   stormWorley: 'Storm + Worley',
 }
 
-export type PlanetoidPresetExcludedKey =
-  'seed' | 'autoRotate' | 'normalTextureSize' | 'colorTextureSize'
+export type PlanetoidPresetExcludedKey = 'seed' | 'normalTextureSize' | 'colorTextureSize'
 
-export type PlanetoidSettings = SceneSettings & {
-  autoRotate: boolean
+export type PlanetoidSettings = {
   enableCraters: boolean
   enableRidges: boolean
   enableRifts: boolean
@@ -79,6 +76,14 @@ export type PlanetoidSettings = SceneSettings & {
   colorScale: number
   tintShadowFloor: number
   swirliness: number
+  colorNoiseFrequency: number
+  colorNoiseOctaves: number
+  colorNoisePersistence: number
+  colorNoiseLacunarity: number
+  colorSwirlFrequency: number
+  colorSwirlOctaves: number
+  colorSwirlPersistence: number
+  colorSwirlLacunarity: number
   dustCloudCoverage: number
   dustCloudWeights: DustCloudWeights
   dustCloudPalette: DustCloudPaletteName
@@ -126,12 +131,15 @@ export type PlanetoidSettings = SceneSettings & {
   triangleDetail: number
 }
 
+export type PlanetoidConfiguration = PlanetoidSettings & SceneSettings
+
 export type PlanetoidPresetSettings = Omit<PlanetoidSettings, PlanetoidPresetExcludedKey>
 
 export type PlanetoidViewSettings = Pick<
   PlanetoidSettings,
-  'autoRotate' | 'normalTextureSize' | 'colorTextureSize'
+  'normalTextureSize' | 'colorTextureSize'
 > & {
+  autoRotate: boolean
   viewMode: PlanetoidViewMode
 }
 
@@ -151,12 +159,10 @@ export const PlanetoidSections = [
 ] as const
 export type PlanetoidSection = (typeof PlanetoidSections)[number]
 
-export type PlanetoidRangeKey = NumericKeys<PlanetoidSettings>
-export type PlanetoidRangeValues = Pick<PlanetoidSettings, PlanetoidRangeKey>
+export type PlanetoidRangeKey = NumericKeys<PlanetoidConfiguration>
+export type PlanetoidRangeValues = Pick<PlanetoidConfiguration, PlanetoidRangeKey>
 
 export const DefaultValues: PlanetoidSettings = {
-  ...DefaultSceneValues,
-  autoRotate: false,
   enableCraters: true,
   enableRidges: false,
   enableRifts: false,
@@ -176,6 +182,14 @@ export const DefaultValues: PlanetoidSettings = {
   colorScale: 1,
   tintShadowFloor: 0.18,
   swirliness: 1,
+  colorNoiseFrequency: 1,
+  colorNoiseOctaves: 5,
+  colorNoisePersistence: 0.5,
+  colorNoiseLacunarity: 2,
+  colorSwirlFrequency: 1,
+  colorSwirlOctaves: 5,
+  colorSwirlPersistence: 0.5,
+  colorSwirlLacunarity: 2,
   dustCloudCoverage: 0.4,
   dustCloudWeights: {
     wisps: 1,
@@ -270,7 +284,7 @@ function parseDustCloudWeights(text: string): DustCloudWeights {
   return weights
 }
 
-export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection> = {
+export const PlanetoidSchema: SettingsSchema<PlanetoidConfiguration, PlanetoidSection> = {
   ...SceneSchema,
   seed: {
     kind: 'number',
@@ -282,7 +296,6 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
     step: 1,
     integer: true,
   },
-  autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
   palette: {
     kind: 'enum',
     label: 'Palette',
@@ -302,7 +315,7 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
     cliFlag: '--color-scale',
     section: 'color',
     min: 0,
-    max: 1,
+    max: 2,
     step: 0.1,
   },
   tintShadowFloor: {
@@ -321,6 +334,80 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
     section: 'color',
     min: 0,
     max: 2,
+    step: 0.05,
+  },
+  colorNoiseFrequency: {
+    kind: 'number',
+    label: 'Color noise frequency',
+    cliFlag: '--color-noise-frequency',
+    section: 'color',
+    min: 0.1,
+    max: 4,
+    step: 0.05,
+  },
+  colorNoiseOctaves: {
+    kind: 'number',
+    label: 'Color noise octaves',
+    cliFlag: '--color-noise-octaves',
+    section: 'color',
+    min: 1,
+    max: 8,
+    step: 1,
+    integer: true,
+  },
+  colorNoisePersistence: {
+    kind: 'number',
+    label: 'Color noise persistence',
+    cliFlag: '--color-noise-persistence',
+    section: 'color',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  colorNoiseLacunarity: {
+    kind: 'number',
+    label: 'Color noise lacunarity',
+    cliFlag: '--color-noise-lacunarity',
+    section: 'color',
+    min: 1,
+    max: 3,
+    step: 0.05,
+  },
+  colorSwirlFrequency: {
+    kind: 'number',
+    label: 'Color swirl frequency',
+    cliFlag: '--color-swirl-frequency',
+    section: 'color',
+    min: 0.1,
+    max: 4,
+    step: 0.05,
+  },
+  colorSwirlOctaves: {
+    kind: 'number',
+    label: 'Color swirl octaves',
+    cliFlag: '--color-swirl-octaves',
+    section: 'color',
+    min: 1,
+    max: 8,
+    step: 1,
+    integer: true,
+  },
+  colorSwirlPersistence: {
+    kind: 'number',
+    label: 'Color swirl persistence',
+    cliFlag: '--color-swirl-persistence',
+    section: 'color',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  colorSwirlLacunarity: {
+    kind: 'number',
+    label: 'Color swirl lacunarity',
+    cliFlag: '--color-swirl-lacunarity',
+    section: 'color',
+    min: 1,
+    max: 3,
     step: 0.05,
   },
   normalTextureSize: {
@@ -818,12 +905,11 @@ export const PlanetoidSchema: SettingsSchema<PlanetoidSettings, PlanetoidSection
   },
 }
 
-assertValidSchema(PlanetoidSchema, DefaultValues, 'Planetoid')
+const DefaultConfiguration: PlanetoidConfiguration = { ...DefaultSceneValues, ...DefaultValues }
 
-export const sanitizePlanetoidNumber = createNumericSanitizer(PlanetoidSchema, DefaultValues)
-export const MinValues = numericTable(PlanetoidSchema, 'min')
-export const MaxValues = numericTable(PlanetoidSchema, 'max')
-export const StepValues = numericTable(PlanetoidSchema, 'step')
+assertValidSchema(PlanetoidSchema, DefaultConfiguration, 'Planetoid')
+
+export const sanitizePlanetoidNumber = createNumericSanitizer(PlanetoidSchema, DefaultConfiguration)
 export const PlanetoidRangeLabels = numericLabels(PlanetoidSchema)
 export const PlanetoidNumericControls = numericKeysBySection(PlanetoidSchema, PlanetoidSections)
 
@@ -837,13 +923,18 @@ export function sanitizePlanetoidSettings(input: unknown): PlanetoidSettings {
       ? { ...raw, dustCloudWeights: { [legacyStyle]: 1 } }
       : raw
 
-  return sanitizeWithSchema(PlanetoidSchema, DefaultValues, migratedRaw)
+  const {
+    axialTilt: _axialTilt,
+    sunElevation: _sunElevation,
+    sunAscension: _sunAscension,
+    ...settings
+  } = sanitizeWithSchema(PlanetoidSchema, DefaultConfiguration, migratedRaw)
+  return settings
 }
 
 export function toPlanetoidPresetSettings(settings: PlanetoidSettings): PlanetoidPresetSettings {
   const {
     seed: _seed,
-    autoRotate: _autoRotate,
     normalTextureSize: _normalTextureSize,
     colorTextureSize: _colorTextureSize,
     ...presetSettings
@@ -870,9 +961,14 @@ export function mergePlanetoidPresetSettings(
 export function buildPlanetoidCliCommand(
   settings: PlanetoidSettings,
   exportTextures: boolean,
-  camera?: CameraView
+  camera?: CameraView,
+  sceneSettings: SceneSettings = DefaultSceneValues
 ) {
-  const args = toCliArgs(PlanetoidSchema, sanitizePlanetoidSettings(settings), ['seed'])
+  const args = toCliArgs(
+    PlanetoidSchema,
+    { ...sceneSettings, ...sanitizePlanetoidSettings(settings) },
+    ['seed']
+  )
   if (exportTextures) args.push('--export-textures')
   else if (camera) args.push(...cameraViewCliArgs(camera))
   args.push(PlanetoidSchema.seed.cliFlag, '1', '--step', '1', '--count', '1')
@@ -884,7 +980,7 @@ export const PlanetoidUiLabels = {
   scene: 'Scene',
   viewMode: 'View mode',
   texture: 'Texture',
-  colorSettings: 'Color settings',
+  baseTexture: 'Base texture',
   textureResolution: 'Texture resolution',
   material: 'Material',
   properties: 'Properties',

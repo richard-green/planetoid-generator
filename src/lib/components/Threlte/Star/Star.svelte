@@ -12,11 +12,7 @@
   } from 'three'
   import { onDestroy } from 'svelte'
   import { createIcosphere } from '../../../utils/geometry'
-  import {
-    createStarColorTexture,
-    disposeStarTexture,
-    starSeedOffset,
-  } from './StarGpuTextures'
+  import { createStarColorTexture, disposeStarTexture, starSeedOffset } from './StarGpuTextures'
   import {
     surfaceVertexShader,
     surfaceFragmentShader,
@@ -30,22 +26,13 @@
   import { getPalettePosition, type Palette } from '../../../types/palette'
   import { trackPalette } from '../../../types/paletteState.svelte'
 
-
-
-
-
-
-
-
-
-
-
   type Props = {
     settings: StarSettings
+    autoRotate?: boolean
     showStarSurface?: boolean
   }
 
-  let { settings, showStarSurface = true }: Props = $props()
+  let { settings, autoRotate = false, showStarSurface = true }: Props = $props()
 
   const geometry = createIcosphere(2, 20)
   const haloGeometry = createIcosphere(2.05, 5)
@@ -242,7 +229,7 @@
   })
 
   useTask((delta) => {
-    if (!settings.autoRotate) return
+    if (!autoRotate) return
     const rotation = delta * 0.07
     if (mesh) mesh.rotation.y += rotation
     if (plasmaMesh) plasmaMesh.rotation.y += rotation

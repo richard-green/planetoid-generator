@@ -42,6 +42,7 @@
 
   const { onOpenWelcome = () => {} }: { onOpenWelcome?: () => void } = $props()
   const STAR_SETTINGS_STORAGE_KEY = 'star-view-settings-v1'
+  const STAR_VIEW_SETTINGS_STORAGE_KEY = 'star-view-ui-v1'
 
   type StarsSceneExports = {
     setCameraView: (view: CameraView) => void
@@ -53,9 +54,11 @@
   let canvasShell = $state<HTMLDivElement | undefined>(undefined)
   let starScene = $state<StarsSceneExports | undefined>(undefined)
   let star = $state<StarSettings>({ ...DefaultValues })
+  let autoRotate = $state(false)
   let starSurfaceVisible = $state(true)
   let isSaving = $state(false)
   let settingsHydrated = $state(false)
+  let viewSettingsHydrated = $state(false)
   let presetsHydrated = $state(false)
   let presetsMenuOpen = $state(false)
   let presetsMenuElement: HTMLDetailsElement | undefined = $state(undefined)
@@ -94,11 +97,55 @@
 
     try {
       const raw = localStorage.getItem(STAR_SETTINGS_STORAGE_KEY)
-      if (raw) applyStarSettings(sanitizeStarSettings(JSON.parse(raw)))
+      if (raw) {
+        const storedSettings: unknown = JSON.parse(raw)
+        if (
+          typeof storedSettings === 'object' &&
+          storedSettings !== null &&
+          'autoRotate' in storedSettings &&
+          typeof storedSettings.autoRotate === 'boolean'
+        ) {
+          autoRotate = storedSettings.autoRotate
+        }
+        applyStarSettings(sanitizeStarSettings(storedSettings))
+      }
     } catch (error) {
       console.warn('Failed to restore star settings from localStorage', error)
     } finally {
       settingsHydrated = true
+    }
+  })
+
+  $effect(() => {
+    if (viewSettingsHydrated) return
+
+    try {
+      const raw = localStorage.getItem(STAR_VIEW_SETTINGS_STORAGE_KEY)
+      if (raw) {
+        const storedViewSettings: unknown = JSON.parse(raw)
+        if (
+          typeof storedViewSettings === 'object' &&
+          storedViewSettings !== null &&
+          'autoRotate' in storedViewSettings &&
+          typeof storedViewSettings.autoRotate === 'boolean'
+        ) {
+          autoRotate = storedViewSettings.autoRotate
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to restore star view settings from localStorage', error)
+    } finally {
+      viewSettingsHydrated = true
+    }
+  })
+
+  $effect(() => {
+    if (!viewSettingsHydrated) return
+
+    try {
+      localStorage.setItem(STAR_VIEW_SETTINGS_STORAGE_KEY, JSON.stringify({ autoRotate }))
+    } catch (error) {
+      console.warn('Failed to persist star view settings to localStorage', error)
     }
   })
 
@@ -260,7 +307,12 @@
       <RenderViewport title="star">
         <svelte:boundary>
           <Canvas>
-            <StarsScene bind:this={starScene} {...star} showStarSurface={starSurfaceVisible} />
+            <StarsScene
+              bind:this={starScene}
+              {...star}
+              {autoRotate}
+              showStarSurface={starSurfaceVisible}
+            />
           </Canvas>
           {#snippet failed(error)}
             <WebGLFailure {error} />
@@ -320,8 +372,8 @@
           </details>
         </div>
         <label class="toggle-row">
-          <span>{schema.autoRotate.label}</span>
-          <input id={controlId('autoRotate')} type="checkbox" bind:checked={star.autoRotate} />
+          <span>Auto-rotate</span>
+          <input id="auto-rotate" type="checkbox" bind:checked={autoRotate} />
         </label>
         <SeedControl
           id={controlId('seed')}

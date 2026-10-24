@@ -100,26 +100,6 @@ A 36-frame turntable of a single gas giant:
 npm run auto-generate-gas-giants -- --seed 42 --step 0 --count 36 --camera-azimuth-step 10
 ```
 
-## Export verification
-
-With the app running, run:
-
-```bash
-npm run verify:exports
-```
-
-Use `-- --base-url http://127.0.0.1:5180/` if the app is on a different port.
-Each run clears the root `verify/` folder except `.gitkeep`, then exports one scene
-from every routed generator (planetoid, gas/ice giant, star, solar system) and all
-seven supported texture maps. Fresh browser contexts and explicit default body
-settings prevent saved preferences from affecting the output.
-
-The script checks each PNG signature and dimensions: scenes must be 1200x1200;
-texture maps must be twice the configured default texture size in width and that
-size in height (2048x1024 for planetoids/giants, 4096x2048 for stars). It exits nonzero on missing downloads,
-browser errors, invalid PNGs, or unexpected dimensions. Generated files are ignored
-by Git; only `verify/.gitkeep` is tracked.
-
 ## Profiling page changes
 
 Add `?trace` before the route hash, for example `http://127.0.0.1:5173/?trace#/giants`.

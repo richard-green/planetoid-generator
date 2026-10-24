@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { T, useTask, useThrelte } from '@threlte/core'
+  import { T, useThrelte } from '@threlte/core'
   import {
     Color,
     IcosahedronGeometry,
@@ -49,7 +49,6 @@
     normalStrength,
     roughness,
     metalness,
-    autoRotate,
     enableAtmosphere,
     atmospherePalette,
     atmosphereIntensity,
@@ -267,11 +266,6 @@
       }
       disposeGeneratedTexture(nextNormal)
     }
-  })
-
-  useTask((delta) => {
-    if (!autoRotate || !mesh) return
-    mesh.rotation.y += delta * 0.18
   })
 
   onDestroy(() => {

@@ -25,6 +25,7 @@ import {
   DustCloudStyleNames,
   sanitizePlanetoidNumber,
   type DustCloudWeights,
+  type PlanetoidSettings,
 } from './PlanetoidSettings'
 
 type NoiseOffset = { x: number; y: number; z: number }
@@ -59,7 +60,21 @@ type SurfaceDetailTextureOptions = {
   debugMidline?: boolean
 }
 
-type ColorTextureOptions = {
+type ColorNoiseOptions = Partial<
+  Pick<
+    PlanetoidSettings,
+    | 'colorNoiseFrequency'
+    | 'colorNoiseOctaves'
+    | 'colorNoisePersistence'
+    | 'colorNoiseLacunarity'
+    | 'colorSwirlFrequency'
+    | 'colorSwirlOctaves'
+    | 'colorSwirlPersistence'
+    | 'colorSwirlLacunarity'
+  >
+>
+
+type ColorTextureOptions = ColorNoiseOptions & {
   iceCapPalette?: PaletteColor[]
   enableIceCaps?: boolean
   iceCapCoverage?: number
@@ -137,6 +152,14 @@ const material = new ShaderMaterial({
     uIcePalettePositions: new Uniform(Array.from({ length: MAX_PALETTE }, () => 1)),
     uTintShadowFloor: new Uniform(0.18),
     uSwirliness: new Uniform(1),
+    uColorNoiseFrequency: new Uniform(DefaultValues.colorNoiseFrequency),
+    uColorNoiseOctaves: new Uniform(DefaultValues.colorNoiseOctaves),
+    uColorNoisePersistence: new Uniform(DefaultValues.colorNoisePersistence),
+    uColorNoiseLacunarity: new Uniform(DefaultValues.colorNoiseLacunarity),
+    uColorSwirlFrequency: new Uniform(DefaultValues.colorSwirlFrequency),
+    uColorSwirlOctaves: new Uniform(DefaultValues.colorSwirlOctaves),
+    uColorSwirlPersistence: new Uniform(DefaultValues.colorSwirlPersistence),
+    uColorSwirlLacunarity: new Uniform(DefaultValues.colorSwirlLacunarity),
     uDustCloudCoverage: new Uniform(DefaultValues.dustCloudCoverage),
     uDustCloudWeights: new Uniform(
       DustCloudStyleNames.map((style) => DefaultValues.dustCloudWeights[style])
@@ -277,7 +300,7 @@ function renderTexture(
   width: number,
   height: number,
   noiseOffset: NoiseOffset,
-  options: {
+  options: ColorNoiseOptions & {
     iceCapPalette?: PaletteColor[]
     enableIceCaps?: boolean
     iceCapCoverage?: number
@@ -352,6 +375,38 @@ function renderTexture(
     options.tintShadowFloor
   )
   material.uniforms.uSwirliness.value = sanitizePlanetoidNumber('swirliness', options.swirliness)
+  material.uniforms.uColorNoiseFrequency.value = sanitizePlanetoidNumber(
+    'colorNoiseFrequency',
+    options.colorNoiseFrequency
+  )
+  material.uniforms.uColorNoiseOctaves.value = sanitizePlanetoidNumber(
+    'colorNoiseOctaves',
+    options.colorNoiseOctaves
+  )
+  material.uniforms.uColorNoisePersistence.value = sanitizePlanetoidNumber(
+    'colorNoisePersistence',
+    options.colorNoisePersistence
+  )
+  material.uniforms.uColorNoiseLacunarity.value = sanitizePlanetoidNumber(
+    'colorNoiseLacunarity',
+    options.colorNoiseLacunarity
+  )
+  material.uniforms.uColorSwirlFrequency.value = sanitizePlanetoidNumber(
+    'colorSwirlFrequency',
+    options.colorSwirlFrequency
+  )
+  material.uniforms.uColorSwirlOctaves.value = sanitizePlanetoidNumber(
+    'colorSwirlOctaves',
+    options.colorSwirlOctaves
+  )
+  material.uniforms.uColorSwirlPersistence.value = sanitizePlanetoidNumber(
+    'colorSwirlPersistence',
+    options.colorSwirlPersistence
+  )
+  material.uniforms.uColorSwirlLacunarity.value = sanitizePlanetoidNumber(
+    'colorSwirlLacunarity',
+    options.colorSwirlLacunarity
+  )
   material.uniforms.uDustCloudCoverage.value = sanitizePlanetoidNumber(
     'dustCloudCoverage',
     options.dustCloudCoverage
@@ -540,6 +595,14 @@ export function createPlanetoidColorTexture(
     surfaceTint: options.surfaceTint,
     tintShadowFloor: options.tintShadowFloor,
     swirliness: options.swirliness,
+    colorNoiseFrequency: options.colorNoiseFrequency,
+    colorNoiseOctaves: options.colorNoiseOctaves,
+    colorNoisePersistence: options.colorNoisePersistence,
+    colorNoiseLacunarity: options.colorNoiseLacunarity,
+    colorSwirlFrequency: options.colorSwirlFrequency,
+    colorSwirlOctaves: options.colorSwirlOctaves,
+    colorSwirlPersistence: options.colorSwirlPersistence,
+    colorSwirlLacunarity: options.colorSwirlLacunarity,
     textureScale,
     enableCraters: options.enableCraters,
     craterCount: options.craterCount,

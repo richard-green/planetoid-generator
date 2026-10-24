@@ -57,6 +57,14 @@
     colorScale,
     tintShadowFloor,
     swirliness,
+    colorNoiseFrequency,
+    colorNoiseOctaves,
+    colorNoisePersistence,
+    colorNoiseLacunarity,
+    colorSwirlFrequency,
+    colorSwirlOctaves,
+    colorSwirlPersistence,
+    colorSwirlLacunarity,
     enableDustClouds,
     dustCloudCoverage,
     dustCloudWeights,
@@ -106,7 +114,6 @@
     ridgesRiftsBlend,
     roughness,
     metalness,
-    autoRotate,
     triangleDetail,
     normalTextureSize,
     colorTextureSize,
@@ -606,6 +613,14 @@
           surfaceTint,
           tintShadowFloor: currentTintShadowFloor,
           swirliness: currentSwirliness,
+          colorNoiseFrequency,
+          colorNoiseOctaves,
+          colorNoisePersistence,
+          colorNoiseLacunarity,
+          colorSwirlFrequency,
+          colorSwirlOctaves,
+          colorSwirlPersistence,
+          colorSwirlLacunarity,
           craterCount: currentCraterCount,
           craterScale: currentCraterScale,
           craterColorStrength: currentCraterColorStrength,
@@ -828,10 +843,6 @@
       mesh.position.x = -massCentre.x
       mesh.position.y = -massCentre.y
       mesh.position.z = -massCentre.z
-
-      if (autoRotate) {
-        mesh.rotation.y += delta * 0.18
-      }
     }
   })
 </script>

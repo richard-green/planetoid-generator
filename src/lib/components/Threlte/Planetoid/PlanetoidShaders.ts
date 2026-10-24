@@ -57,6 +57,14 @@ export const fragmentShader = `
   uniform float uIcePalettePositions[${MAX_PALETTE}];
   uniform float uTintShadowFloor;
   uniform float uSwirliness;
+  uniform float uColorNoiseFrequency;
+  uniform int uColorNoiseOctaves;
+  uniform float uColorNoisePersistence;
+  uniform float uColorNoiseLacunarity;
+  uniform float uColorSwirlFrequency;
+  uniform int uColorSwirlOctaves;
+  uniform float uColorSwirlPersistence;
+  uniform float uColorSwirlLacunarity;
   uniform float uDustCloudCoverage;
   uniform float uDustCloudWeights[5];
   uniform float uDustCloudOpacity;
@@ -121,20 +129,32 @@ export const fragmentShader = `
       sin(p.z * 4.1 + sin(p.x * 2.9));
   }
 
-  float fractalNoise(vec3 p) {
+  float layeredNoise(vec3 p, int octaves, float persistence, float lacunarity) {
     float value = 0.0;
     float amplitude = 1.0;
     float frequency = 1.0;
     float total = 0.0;
 
-    for (int i = 0; i < 5 * uOne; i++) {
+    for (int i = 0; i < octaves * uOne; i++) {
       value += noise3(p * frequency) * amplitude;
       total += amplitude;
-      amplitude *= 0.5;
-      frequency *= 2.0;
+      amplitude *= persistence;
+      frequency *= lacunarity;
     }
 
     return value / max(1e-6, total);
+  }
+
+  float fractalNoise(vec3 p) {
+    return layeredNoise(p, 5, 0.5, 2.0);
+  }
+
+  float colorNoise(vec3 p) {
+    return layeredNoise(p, uColorNoiseOctaves, uColorNoisePersistence, uColorNoiseLacunarity);
+  }
+
+  float colorSwirlNoise(vec3 p) {
+    return layeredNoise(p, uColorSwirlOctaves, uColorSwirlPersistence, uColorSwirlLacunarity);
   }
 
   vec3 hash33(vec3 p) {
@@ -598,43 +618,6 @@ export const fragmentShader = `
     return vec3(sin(phi) * cos(theta), cos(phi), sin(phi) * sin(theta));
   }
 
-  float volcanoSpokeHash(float slot, float spokeCount, vec2 volcanoUv, float salt) {
-    float wrappedSlot = mod(slot, spokeCount);
-    return hash12(vec2(
-      wrappedSlot * 7.17 + volcanoUv.x * 31.1 + salt,
-      volcanoUv.y * 43.7 + wrappedSlot * 13.9 - salt
-    ));
-  }
-
-  float volcanoRadialCrackMask(float angle, float phase, float spokeCount, vec2 volcanoUv, float t) {
-    float rayAxis = ((angle + PI) / TAU) * spokeCount + phase / TAU;
-    float slot = floor(rayAxis);
-    float nextSlot = mod(slot + 1.0, spokeCount);
-    float slotBlend = smoothstep(0.0, 1.0, fract(rayAxis));
-
-    float jitter0 = (volcanoSpokeHash(slot, spokeCount, volcanoUv, 11.3) - 0.5) * 0.4;
-    float jitter1 = (volcanoSpokeHash(nextSlot, spokeCount, volcanoUv, 11.3) - 0.5) * 0.4;
-    float angleJitter = mix(jitter0, jitter1, slotBlend);
-    float width0 = mix(0.18, 0.32, volcanoSpokeHash(slot, spokeCount, volcanoUv, 23.7));
-    float width1 = mix(0.18, 0.32, volcanoSpokeHash(nextSlot, spokeCount, volcanoUv, 23.7));
-    float angularWidth = mix(width0, width1, slotBlend);
-    float angularSignal = 0.5 + 0.5 * cos((rayAxis - angleJitter) * TAU);
-    float angularThreshold = 0.5 + 0.5 * cos(angularWidth * TAU);
-    float angularMask = pow(smoothstep(angularThreshold, 1.0, angularSignal), 1.8);
-
-    float start0 = mix(0.14, 0.3, volcanoSpokeHash(slot, spokeCount, volcanoUv, 37.1));
-    float start1 = mix(0.14, 0.3, volcanoSpokeHash(nextSlot, spokeCount, volcanoUv, 37.1));
-    float end0 = mix(0.78, 1.18, volcanoSpokeHash(slot, spokeCount, volcanoUv, 53.9));
-    float end1 = mix(0.78, 1.18, volcanoSpokeHash(nextSlot, spokeCount, volcanoUv, 53.9));
-    float radialStart = mix(start0, start1, slotBlend);
-    float radialEnd = mix(end0, end1, slotBlend);
-    float radialBand = smoothstep(radialStart, radialStart + 0.12, t)
-      * (1.0 - smoothstep(radialEnd - 0.12, radialEnd + 0.06, t));
-    float radialDecay = pow(clamp(1.0 - t / radialEnd, 0.0, 1.0), 1.1);
-
-    return angularMask * radialBand * radialDecay;
-  }
-
   float accumulateVolcanoHeight(vec2 uv, out float coverage) {
     float height = 0.0;
     coverage = 0.0;
@@ -649,11 +632,10 @@ export const fragmentShader = `
       float shapeNoise = perlin3(
         spherePos * 38.0 + uSeed * 0.47 + vec3(31.7, 9.3, 57.1)
       );
-      float t = max(0.0, volcanoNormalizedDistance(uv, volcanoUv, volcanoRadius) + shapeNoise * 0.14);
+      float t = max(0.0, volcanoNormalizedDistance(uv, volcanoUv, volcanoRadius) + shapeNoise * 0.07);
       coverage = max(coverage, 1.0 - smoothstep(1.05, 1.45, t));
       if (t > 1.45) continue;
 
-      float cone = exp(-pow(t / 0.82, 2.0)) * 0.72;
       float caldera = exp(-pow(t / 0.18, 4.0)) * 0.9;
       float calderaRim = exp(-pow((t - 0.22) / 0.05, 2.0)) * 0.16;
 
@@ -667,24 +649,19 @@ export const fragmentShader = `
       float angle = atan(local.y, local.x);
       float phase = hash12(vec2(volcanoUv.x * 9.1, volcanoUv.y * 13.7)) * TAU;
       float size01 = clamp((volcanoRadius - 0.012) / 0.036, 0.0, 1.0);
-      float spokeCount = floor(mix(9.0, 20.0, size01) + 0.5);
-      float warpA = (hash12(vec2(volcanoUv.x * 33.7, volcanoUv.y * 29.1)) - 0.5) * 0.8;
-      float warpB = (hash12(vec2(volcanoUv.x * 47.2, volcanoUv.y * 41.5)) - 0.5) * 0.45;
-      float angleWarp =
-        angle +
-        sin(angle * 2.0 + phase * 1.4) * warpA * 0.28 +
-        sin(angle * 5.0 + phase * 0.6) * warpB * 0.2;
-      float radialCrackMask = volcanoRadialCrackMask(angleWarp, phase, spokeCount, volcanoUv, t);
-      float radialCrackDepth = radialCrackMask * 0.22;
-      float radialCrackRelief = radialCrackMask * 0.06;
+      float facetCount = floor(mix(6.0, 10.0, size01) + 0.5);
+      float facetPosition = fract(((angle + PI) / TAU) * facetCount + phase / TAU);
+      float facet = 1.0 - abs(facetPosition * 2.0 - 1.0);
+      float facetedT = t * mix(1.04, 0.96, facet);
+      float cone = exp(-pow(facetedT / 0.82, 2.0)) * 0.72;
+      float buttressRelief = exp(-pow((t - 0.82) / 0.32, 2.0)) * 0.05;
 
       height +=
         (
           cone +
           calderaRim -
-          caldera -
-          radialCrackDepth +
-          radialCrackRelief
+          caldera +
+          buttressRelief
         )
         * uVolcanoStrength;
     }
@@ -706,10 +683,9 @@ export const fragmentShader = `
       float shapeNoise = perlin3(
         spherePos * 38.0 + uSeed * 0.47 + vec3(31.7, 9.3, 57.1)
       );
-      float t = max(0.0, volcanoNormalizedDistance(uv, volcanoUv, volcanoRadius) + shapeNoise * 0.14);
+      float t = max(0.0, volcanoNormalizedDistance(uv, volcanoUv, volcanoRadius) + shapeNoise * 0.07);
       if (t > 1.5) continue;
 
-      float coneLighten = exp(-pow(t / 0.82, 2.0)) * 0.32;
       float craterDarken = exp(-pow(t / 0.18, 4.0)) * 0.65;
       float ringLighten = exp(-pow((t - 0.22) / 0.07, 2.0)) * 0.2;
 
@@ -723,15 +699,12 @@ export const fragmentShader = `
       float angle = atan(local.y, local.x);
       float phase = hash12(vec2(volcanoUv.x * 9.1, volcanoUv.y * 13.7)) * TAU;
       float size01 = clamp((volcanoRadius - 0.012) / 0.036, 0.0, 1.0);
-      float spokeCount = floor(mix(9.0, 20.0, size01) + 0.5);
-      float warpA = (hash12(vec2(volcanoUv.x * 33.7, volcanoUv.y * 29.1)) - 0.5) * 0.8;
-      float warpB = (hash12(vec2(volcanoUv.x * 47.2, volcanoUv.y * 41.5)) - 0.5) * 0.45;
-      float angleWarp =
-        angle +
-        sin(angle * 2.0 + phase * 1.4) * warpA * 0.28 +
-        sin(angle * 5.0 + phase * 0.6) * warpB * 0.2;
-      float radialCrackMask = volcanoRadialCrackMask(angleWarp, phase, spokeCount, volcanoUv, t);
-      float radialCrackDarken = radialCrackMask * 0.2;
+      float facetCount = floor(mix(6.0, 10.0, size01) + 0.5);
+      float facetPosition = fract(((angle + PI) / TAU) * facetCount + phase / TAU);
+      float facet = 1.0 - abs(facetPosition * 2.0 - 1.0);
+      float facetedT = t * mix(1.04, 0.96, facet);
+      float coneLighten = exp(-pow(facetedT / 0.82, 2.0)) * 0.32;
+      float buttressHighlight = exp(-pow((t - 0.82) / 0.32, 2.0)) * 0.06;
 
       float detailField = perlin3(
         spherePos * 56.0 + uSeed * 1.61 + vec3(41.9, 23.7, 67.4)
@@ -740,8 +713,8 @@ export const fragmentShader = `
 
       // Use strongest local volcano influence instead of additive stacking
       // so overlapping volcanoes do not over-saturate color.
-      lift = max(lift, clamp((coneLighten + ringLighten) * detailMask, 0.0, 1.0));
-      darken = max(darken, clamp((craterDarken + radialCrackDarken) * detailMask, 0.0, 1.0));
+      lift = max(lift, clamp((coneLighten + ringLighten + buttressHighlight) * detailMask, 0.0, 1.0));
+      darken = max(darken, clamp(craterDarken * detailMask, 0.0, 1.0));
     }
 
     return vec2(lift, darken) * uVolcanoColorStrength;
@@ -1215,9 +1188,21 @@ export const fragmentShader = `
 #endif
 
 #if MODE == 0
-    float colorLarge = fractalNoise(remappedPos * 2.0 + seed);
-    float colorMedium = fractalNoise(remappedPos * 6.0 + seed);
-    float colorFine = fractalNoise(remappedPos * 40.0 + seed);
+    // Colour-only warping leaves terrain features and their normal maps aligned.
+    vec3 colorWarp = vec3(
+      colorSwirlNoise(spherePos * (7.3 * uColorSwirlFrequency) + seed * 0.43 + vec3(13.1, 37.2, 73.8)),
+      colorSwirlNoise(spherePos * (6.7 * uColorSwirlFrequency) + seed * 0.57 + vec3(29.4, 11.8, 47.3)),
+      colorSwirlNoise(spherePos * (8.1 * uColorSwirlFrequency) + seed * 0.49 + vec3(41.7, 59.6, 19.5))
+    );
+    vec3 colorSpherePos = normalize(spherePos + colorWarp * swirlStrength);
+    vec3 colorPos = vec3(
+      dot(colorSpherePos, vec3(0.00, 0.83, 0.56)),
+      dot(colorSpherePos, vec3(0.56, 0.00, 0.83)),
+      dot(colorSpherePos, vec3(0.83, 0.56, 0.00))
+    ) * uColorNoiseFrequency;
+    float colorLarge = colorNoise(colorPos * 2.0 + seed);
+    float colorMedium = colorNoise(colorPos * 6.0 + seed);
+    float colorFine = colorNoise(colorPos * 40.0 + seed);
 
     float polarHighFrequencyScale = mix(0.18, 1.0, equatorFactor);
     float value =

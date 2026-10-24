@@ -14,6 +14,7 @@
   import type { AtmospherePaletteName } from './Atmosphere/AtmospherePalettes'
   import type { TextureSize } from '../../types/textureSize'
   import type { IceCapPaletteName } from './Planetoid/IceCapPalettes'
+  import { DefaultSceneValues } from './SceneSettings'
   import { sunPosition } from './SceneSettings'
 
   type Props = {
@@ -30,6 +31,14 @@
     colorScale?: number
     tintShadowFloor?: number
     swirliness?: number
+    colorNoiseFrequency?: number
+    colorNoiseOctaves?: number
+    colorNoisePersistence?: number
+    colorNoiseLacunarity?: number
+    colorSwirlFrequency?: number
+    colorSwirlOctaves?: number
+    colorSwirlPersistence?: number
+    colorSwirlLacunarity?: number
     enableDustClouds?: boolean
     dustCloudCoverage?: number
     dustCloudWeights?: DustCloudWeights
@@ -102,6 +111,14 @@
     colorScale = DefaultValues.colorScale,
     tintShadowFloor = DefaultValues.tintShadowFloor,
     swirliness = DefaultValues.swirliness,
+    colorNoiseFrequency = DefaultValues.colorNoiseFrequency,
+    colorNoiseOctaves = DefaultValues.colorNoiseOctaves,
+    colorNoisePersistence = DefaultValues.colorNoisePersistence,
+    colorNoiseLacunarity = DefaultValues.colorNoiseLacunarity,
+    colorSwirlFrequency = DefaultValues.colorSwirlFrequency,
+    colorSwirlOctaves = DefaultValues.colorSwirlOctaves,
+    colorSwirlPersistence = DefaultValues.colorSwirlPersistence,
+    colorSwirlLacunarity = DefaultValues.colorSwirlLacunarity,
     enableDustClouds = DefaultValues.enableDustClouds,
     dustCloudCoverage = DefaultValues.dustCloudCoverage,
     dustCloudWeights = DefaultValues.dustCloudWeights,
@@ -151,10 +168,10 @@
     ridgesRiftsBlend = DefaultValues.ridgesRiftsBlend,
     roughness = DefaultValues.roughness,
     metalness = DefaultValues.metalness,
-    autoRotate = DefaultValues.autoRotate,
-    axialTilt = DefaultValues.axialTilt,
-    sunElevation = DefaultValues.sunElevation,
-    sunAscension = DefaultValues.sunAscension,
+    autoRotate = false,
+    axialTilt = DefaultSceneValues.axialTilt,
+    sunElevation = DefaultSceneValues.sunElevation,
+    sunAscension = DefaultSceneValues.sunAscension,
     triangleDetail = DefaultValues.triangleDetail,
     normalTextureSize = DefaultValues.normalTextureSize,
     colorTextureSize = DefaultValues.colorTextureSize,
@@ -174,6 +191,14 @@
     colorScale,
     tintShadowFloor,
     swirliness,
+    colorNoiseFrequency,
+    colorNoiseOctaves,
+    colorNoisePersistence,
+    colorNoiseLacunarity,
+    colorSwirlFrequency,
+    colorSwirlOctaves,
+    colorSwirlPersistence,
+    colorSwirlLacunarity,
     enableDustClouds,
     dustCloudCoverage,
     dustCloudWeights,
@@ -223,10 +248,6 @@
     ridgesRiftsBlend,
     roughness,
     metalness,
-    autoRotate: false,
-    axialTilt,
-    sunElevation,
-    sunAscension,
     triangleDetail,
     normalTextureSize,
     colorTextureSize,

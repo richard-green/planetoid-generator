@@ -77,7 +77,7 @@
     plasmaSharpness = DefaultValues.plasmaSharpness,
     plasmaTextureScale = DefaultValues.plasmaTextureScale,
     colorTextureSize = DefaultValues.colorTextureSize,
-    autoRotate = DefaultValues.autoRotate,
+    autoRotate = false,
     showStarSurface = true,
   }: Props = $props()
 
@@ -112,7 +112,6 @@
     plasmaSharpness,
     plasmaTextureScale,
     colorTextureSize,
-    autoRotate,
   })
 
   type StarExports = {
@@ -167,4 +166,4 @@
   />
 </T.PerspectiveCamera>
 
-<Star bind:this={starRef} {settings} {showStarSurface} />
+<Star bind:this={starRef} {settings} {autoRotate} {showStarSurface} />

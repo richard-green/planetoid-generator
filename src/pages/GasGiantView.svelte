@@ -41,11 +41,18 @@
     MaxValues,
     MinValues,
     StepValues,
+    sanitizeGasGiantPresetSettings,
     sanitizeGasGiantSettings,
     type GasGiantRangeKey,
     type GasGiantSettings,
     type GasGiantViewMode,
   } from '../lib/components/Threlte/GasGiant/GasGiantSettings'
+  import {
+    DefaultSceneValues,
+    SceneSchema,
+    sanitizeSceneSettings,
+    type SceneSettings,
+  } from '../lib/components/Threlte/SceneSettings'
   import {
     reportMissingSettingControls,
     settingControlId as controlId,
@@ -56,6 +63,8 @@
 
   type GasGiantUiState = {
     viewMode: GasGiantViewMode
+    autoRotate?: boolean
+    sceneSettings?: SceneSettings
     viewModeSectionOpen: boolean
     colorSettingsSectionOpen: boolean
     cloudSettingsSectionOpen: boolean
@@ -87,12 +96,14 @@
   let isSaving = $state(false)
 
   let gasGiant = $state<GasGiantSettings>({ ...DEFAULT_GAS_GIANT_SETTINGS })
+  let sceneSettings = $state<SceneSettings>({ ...DefaultSceneValues })
 
   let settingsHydrated = $state(false)
   let sectionTogglesHydrated = $state(false)
   let presetsHydrated = $state(false)
 
   let sceneViewMode = $state<GasGiantViewMode>('mesh')
+  let autoRotate = $state(false)
   let viewModeSectionOpen = $state(true)
   let colorSettingsSectionOpen = $state(true)
   let cloudSettingsSectionOpen = $state(true)
@@ -135,7 +146,7 @@
     return {
       id,
       name,
-      settings: sanitizeGasGiantSettings(raw.settings),
+      settings: sanitizeGasGiantPresetSettings(raw.settings),
     }
   }
 
@@ -165,7 +176,26 @@
 
   function resetSceneToDefaults() {
     applyGasGiantSettings(DEFAULT_GAS_GIANT_SETTINGS)
+    sceneSettings = { ...DefaultSceneValues }
     sceneViewMode = 'mesh'
+  }
+
+  function numberControlValue(control: GasGiantRangeKey): number {
+    if (control in SceneSchema) {
+      return sceneSettings[control as keyof SceneSettings]
+    }
+    return gasGiant[control as keyof GasGiantSettings] as number
+  }
+
+  function updateNumberControl(control: GasGiantRangeKey, value: number) {
+    if (control in SceneSchema) {
+      sceneSettings = sanitizeSceneSettings({
+        ...sceneSettings,
+        [control]: value,
+      })
+      return
+    }
+    gasGiant = sanitizeGasGiantSettings({ ...gasGiant, [control]: value })
   }
 
   function closePresetsMenu() {
@@ -185,7 +215,7 @@
     const nextPreset: GasGiantPreset = {
       id: createPresetId(),
       name,
-      settings: sanitizeGasGiantSettings({
+      settings: sanitizeGasGiantPresetSettings({
         ...gasGiant,
         enableStorms: effectiveStormsEnabled,
         enableRings: effectiveRingsEnabled,
@@ -213,7 +243,8 @@
     return buildGasGiantCliCommand(
       { ...settings, enableStorms: toggles.stormsEnabled, enableRings: toggles.ringsEnabled },
       exportTextures,
-      gasGiantScene?.getCameraView()
+      gasGiantScene?.getCameraView(),
+      sceneSettings
     )
   }
 
@@ -305,13 +336,22 @@
 
   $effect(() =>
     registerSettingsAutomation(
-      (overrides) =>
+      (overrides) => {
+        const sceneOverrides = Object.fromEntries(
+          Object.keys(SceneSchema)
+            .filter((key) => key in overrides)
+            .map((key) => [key, overrides[key]])
+        )
+        if (Object.keys(sceneOverrides).length > 0) {
+          sceneSettings = sanitizeSceneSettings({ ...sceneSettings, ...sceneOverrides })
+        }
         applyGasGiantSettings({
           ...$state.snapshot(gasGiant),
           enableStorms: stormsEnabled,
           enableRings: ringsEnabled,
           ...overrides,
-        }),
+        })
+      },
       (view) => gasGiantScene?.setCameraView(view)
     )
   )
@@ -322,7 +362,17 @@
     try {
       const raw = localStorage.getItem(GAS_GIANT_SETTINGS_STORAGE_KEY)
       if (raw) {
-        applyGasGiantSettings(sanitizeGasGiantSettings(JSON.parse(raw)))
+        const storedSettings: unknown = JSON.parse(raw)
+        sceneSettings = sanitizeSceneSettings(storedSettings)
+        if (
+          typeof storedSettings === 'object' &&
+          storedSettings !== null &&
+          'autoRotate' in storedSettings &&
+          typeof storedSettings.autoRotate === 'boolean'
+        ) {
+          autoRotate = storedSettings.autoRotate
+        }
+        applyGasGiantSettings(sanitizeGasGiantSettings(storedSettings))
       }
     } catch (error) {
       console.warn('Failed to restore gas giant settings from localStorage', error)
@@ -364,6 +414,11 @@
 
     return {
       viewMode: raw.viewMode === 'normal' || raw.viewMode === 'texture' ? raw.viewMode : 'mesh',
+      autoRotate: typeof raw.autoRotate === 'boolean' ? raw.autoRotate : undefined,
+      sceneSettings:
+        typeof raw.sceneSettings === 'object' && raw.sceneSettings !== null
+          ? sanitizeSceneSettings(raw.sceneSettings)
+          : undefined,
       viewModeSectionOpen: (raw.viewModeSectionOpen ?? raw.sceneSectionOpen) as boolean,
       colorSettingsSectionOpen: raw.colorSettingsSectionOpen as boolean,
       cloudSettingsSectionOpen: raw.cloudSettingsSectionOpen as boolean,
@@ -401,6 +456,12 @@
 
     if (restoredUiState) {
       sceneViewMode = restoredUiState.viewMode
+      if (restoredUiState.sceneSettings) {
+        sceneSettings = restoredUiState.sceneSettings
+      }
+      if (restoredUiState.autoRotate !== undefined) {
+        autoRotate = restoredUiState.autoRotate
+      }
       viewModeSectionOpen = restoredUiState.viewModeSectionOpen
       colorSettingsSectionOpen = restoredUiState.colorSettingsSectionOpen
       cloudSettingsSectionOpen = restoredUiState.cloudSettingsSectionOpen
@@ -425,6 +486,8 @@
     try {
       const uiState: GasGiantUiState = {
         viewMode: sceneViewMode,
+        autoRotate,
+        sceneSettings,
         viewModeSectionOpen,
         colorSettingsSectionOpen,
         cloudSettingsSectionOpen,
@@ -535,10 +598,10 @@
               bind:this={gasGiantScene}
               viewMode={sceneViewMode}
               seed={gasGiant.seed}
-              autoRotate={gasGiant.autoRotate}
-              axialTilt={gasGiant.axialTilt}
-              sunElevation={gasGiant.sunElevation}
-              sunAscension={gasGiant.sunAscension}
+              {autoRotate}
+              axialTilt={sceneSettings.axialTilt}
+              sunElevation={sceneSettings.sunElevation}
+              sunAscension={sceneSettings.sunAscension}
               palette={gasGiant.palette}
               surfaceTint={gasGiant.surfaceTint}
               colorScale={gasGiant.colorScale}
@@ -656,8 +719,8 @@
           ]}
         />
         <label class="toggle-row">
-          <span>{schema.autoRotate.label}</span>
-          <input id={controlId('autoRotate')} type="checkbox" bind:checked={gasGiant.autoRotate} />
+          <span>Auto-rotate</span>
+          <input id="auto-rotate" type="checkbox" bind:checked={autoRotate} />
         </label>
         <div class="control-grid">
           {#each controls.scene.filter((control) => control !== 'seed') as control (control)}
@@ -677,7 +740,7 @@
       <fieldset>
         <legend>{GasGiantUiLabels.texture}</legend>
         <CollapsibleControl
-          title={GasGiantUiLabels.colorSettings}
+          title={GasGiantUiLabels.baseTexture}
           bind:open={colorSettingsSectionOpen}
         >
           <PalettePicker
@@ -819,8 +882,11 @@
       min={MinValues[control]}
       max={MaxValues[control]}
       step={StepValues[control]}
-      bind:value={gasGiant[control]}
-      {oninput}
+      value={numberControlValue(control)}
+      oninput={(event) => {
+        updateNumberControl(control, event.currentTarget.valueAsNumber)
+        oninput?.()
+      }}
       {disabled}
     />
   </label>

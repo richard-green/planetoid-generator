@@ -27,36 +27,37 @@ import { DefaultSceneValues, SceneSchema, type SceneSettings } from '../SceneSet
 
 export type GasGiantViewMode = 'mesh' | 'normal' | 'texture'
 
-export type GasGiantSettings = RingSettings &
-  SceneSettings & {
-    seed: number
-    autoRotate: boolean
-    palette: GasGiantPaletteName
-    surfaceTint: string
-    colorScale: number
-    tintShadowFloor: number
-    cloudBandCount: number
-    cloudBandSharpness: number
-    cloudChaos: number
-    cloudTurbulence: number
-    enableStorms: boolean
-    stormCount: number
-    stormScale: number
-    stormPower: number
-    stormStrength: number
-    stormColorStrength: number
-    normalStrength: number
-    roughness: number
-    metalness: number
-    enableAtmosphere: boolean
-    atmospherePalette: AtmospherePaletteName
-    atmosphereIntensity: number
-    atmosphereThickness: number
-    atmosphereDropoff: number
-    atmosphereTerminatorWrap: number
-    normalTextureSize: TextureSize
-    colorTextureSize: TextureSize
-  }
+export type GasGiantSettings = RingSettings & {
+  seed: number
+  palette: GasGiantPaletteName
+  surfaceTint: string
+  colorScale: number
+  tintShadowFloor: number
+  cloudBandCount: number
+  cloudBandSharpness: number
+  cloudChaos: number
+  cloudTurbulence: number
+  enableStorms: boolean
+  stormCount: number
+  stormScale: number
+  stormPower: number
+  stormStrength: number
+  stormColorStrength: number
+  normalStrength: number
+  roughness: number
+  metalness: number
+  enableAtmosphere: boolean
+  atmospherePalette: AtmospherePaletteName
+  atmosphereIntensity: number
+  atmosphereThickness: number
+  atmosphereDropoff: number
+  atmosphereTerminatorWrap: number
+  normalTextureSize: TextureSize
+  colorTextureSize: TextureSize
+}
+
+export type GasGiantConfiguration = GasGiantSettings & SceneSettings
+export type GasGiantPresetSettings = Omit<GasGiantSettings, keyof SceneSettings>
 
 export const GasGiantSections = [
   'scene',
@@ -70,14 +71,12 @@ export const GasGiantSections = [
 ] as const
 export type GasGiantSection = (typeof GasGiantSections)[number]
 
-export type GasGiantRangeKey = NumericKeys<GasGiantSettings>
-export type GasGiantRangeValues = Pick<GasGiantSettings, GasGiantRangeKey>
+export type GasGiantRangeKey = NumericKeys<GasGiantConfiguration>
+export type GasGiantRangeValues = Pick<GasGiantConfiguration, GasGiantRangeKey>
 
 export const DefaultValues: GasGiantSettings = {
   ...DefaultRingValues,
-  ...DefaultSceneValues,
   seed: 1,
-  autoRotate: false,
   palette: 'verdantCeruleanDrift',
   surfaceTint: '#c1d9b7',
   colorScale: 0.8,
@@ -105,7 +104,7 @@ export const DefaultValues: GasGiantSettings = {
   colorTextureSize: 1024,
 }
 
-export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> = {
+export const GasGiantSchema: SettingsSchema<GasGiantConfiguration, GasGiantSection> = {
   ...SceneSchema,
   seed: {
     kind: 'number',
@@ -117,7 +116,6 @@ export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> =
     step: 1,
     integer: true,
   },
-  autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
   palette: {
     kind: 'enum',
     label: 'Palette',
@@ -331,9 +329,11 @@ export const GasGiantSchema: SettingsSchema<GasGiantSettings, GasGiantSection> =
   },
 }
 
-assertValidSchema(GasGiantSchema, DefaultValues, 'Gas giant')
+const DefaultConfiguration: GasGiantConfiguration = { ...DefaultSceneValues, ...DefaultValues }
 
-export const sanitizeGasGiantNumber = createNumericSanitizer(GasGiantSchema, DefaultValues)
+assertValidSchema(GasGiantSchema, DefaultConfiguration, 'Gas giant')
+
+export const sanitizeGasGiantNumber = createNumericSanitizer(GasGiantSchema, DefaultConfiguration)
 export const MinValues = numericTable(GasGiantSchema, 'min')
 export const MaxValues = numericTable(GasGiantSchema, 'max')
 export const StepValues = numericTable(GasGiantSchema, 'step')
@@ -348,15 +348,30 @@ export function sanitizeGasGiantSettings(input: unknown): GasGiantSettings {
     normalTextureSize: raw.normalTextureSize ?? raw.bumpTextureSize,
   }
 
-  return constrainRingRadii(sanitizeWithSchema(GasGiantSchema, DefaultValues, migratedRaw))
+  const {
+    axialTilt: _axialTilt,
+    sunElevation: _sunElevation,
+    sunAscension: _sunAscension,
+    ...settings
+  } = constrainRingRadii(sanitizeWithSchema(GasGiantSchema, DefaultConfiguration, migratedRaw))
+  return settings
+}
+
+export function sanitizeGasGiantPresetSettings(input: unknown): GasGiantPresetSettings {
+  return sanitizeGasGiantSettings(input)
 }
 
 export function buildGasGiantCliCommand(
   settings: GasGiantSettings,
   exportTextures: boolean,
-  camera?: CameraView
+  camera?: CameraView,
+  sceneSettings: SceneSettings = DefaultSceneValues
 ) {
-  const args = toCliArgs(GasGiantSchema, sanitizeGasGiantSettings(settings), ['seed'])
+  const args = toCliArgs(
+    GasGiantSchema,
+    { ...sceneSettings, ...sanitizeGasGiantSettings(settings) },
+    ['seed']
+  )
   if (exportTextures) args.push('--export-textures')
   else if (camera) args.push(...cameraViewCliArgs(camera))
   args.push(GasGiantSchema.seed.cliFlag, '1', '--step', '1', '--count', '1')
@@ -370,7 +385,7 @@ export const GasGiantUiLabels = {
   texture: 'Texture',
   features: 'Features',
   material: 'Material',
-  colorSettings: 'Color settings',
+  baseTexture: 'Base texture',
   textureResolution: 'Texture resolution',
   cloudBands: 'Cloud bands',
   properties: 'Properties',

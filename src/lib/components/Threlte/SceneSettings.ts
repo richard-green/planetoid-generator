@@ -1,4 +1,5 @@
 import type { SettingsSchema } from '../../types/settingsSchema'
+import { sanitizeWithSchema } from '../../types/settingsSchema'
 
 export type SceneSettings = {
   axialTilt: number
@@ -40,6 +41,10 @@ export const SceneSchema: SettingsSchema<SceneSettings, 'scene'> = {
     max: 180,
     step: 1,
   },
+}
+
+export function sanitizeSceneSettings(input: unknown): SceneSettings {
+  return sanitizeWithSchema(SceneSchema, DefaultSceneValues, input)
 }
 
 export function sunPosition(elevation: number, ascension: number): [number, number, number] {

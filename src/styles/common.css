@@ -66,7 +66,7 @@
 
 .threlte-view {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 400px;
   gap: 1rem;
   min-height: 0;
   /* No bottom padding so the sticky canvas is never pushed up at scroll end */

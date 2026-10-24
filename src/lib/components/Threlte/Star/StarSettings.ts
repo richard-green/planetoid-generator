@@ -52,7 +52,6 @@ export type StarSettings = {
   sunspotNeighbours: number
   penumbraScale: number
   sunspotDarkness: number
-  autoRotate: boolean
 }
 
 export const StarSections = [
@@ -100,7 +99,6 @@ export const DefaultValues: StarSettings = {
   sunspotNeighbours: 5,
   penumbraScale: 1.2,
   sunspotDarkness: 0.5,
-  autoRotate: false,
 }
 
 type NumberSpecArgs = [
@@ -117,7 +115,6 @@ function num(section: StarSection, ...[label, cliFlag, min, max, step]: NumberSp
 
 export const StarSchema: SettingsSchema<StarSettings, StarSection> = {
   seed: { ...num('scene', 'Seed', '--seed', 1, 999999, 1), integer: true },
-  autoRotate: { kind: 'boolean', label: 'Auto-rotate', cliFlag: '--auto-rotate', section: 'scene' },
   palette: {
     kind: 'enum',
     label: 'Stellar class',
